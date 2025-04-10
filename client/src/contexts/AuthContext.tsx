@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authAPI } from '../services/api';
-import apiService from '../services/api';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
+import apiService, { authAPI } from '../services/api';
+import { api } from '../services/api';
 
 interface User {
   id: number;
@@ -99,7 +99,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           // For session-only persistence, we still set the token in API
           // but don't store it in localStorage
-          apiService.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+          api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
         }
         
         setUser(response.user);

@@ -12,6 +12,9 @@ enum TimerState {
   RUNNING = 'running',
   PAUSED = 'paused',
   COMPLETED = 'completed',
+  POMODORO = 'pomodoro',
+  SHORT_BREAK = 'short_break',
+  LONG_BREAK = 'long_break',
 }
 
 // Timer types
@@ -86,22 +89,22 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Set the initial timer based on the timer state
+  // Set the initial timer based on the timer type
   useEffect(() => {
     if (!settings) return;
     
     let duration = 0;
-    if (timerState === TimerState.POMODORO) {
+    if (timerType === TimerType.POMODORO) {
       duration = settings.pomodoro_duration * 60;
-    } else if (timerState === TimerState.SHORT_BREAK) {
+    } else if (timerType === TimerType.SHORT_BREAK) {
       duration = settings.short_break_duration * 60;
-    } else if (timerState === TimerState.LONG_BREAK) {
+    } else if (timerType === TimerType.LONG_BREAK) {
       duration = settings.long_break_duration * 60;
     }
     
     setTimeLeft(duration);
     setInitialTime(duration);
-  }, [timerState, settings]);
+  }, [timerType, settings]);
 
   // Save todos to localStorage when they change
   const saveTodosToLocalStorage = (todos: Todo[]) => {

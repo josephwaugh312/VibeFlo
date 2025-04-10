@@ -58,10 +58,16 @@ const Navbar: React.FC = () => {
               <>
                 <Button 
                   variant="contained" 
-                  color="secondary" 
+                  color="primary"
                   component={RouterLink} 
                   to="/login"
-                  sx={{ mr: 1 }}
+                  sx={{ 
+                    mr: 1,
+                    bgcolor: 'rgb(124, 58, 237)', /* Tailwind's purple-600 */
+                    '&:hover': {
+                      bgcolor: 'rgb(109, 40, 217)' /* Tailwind's purple-700 */
+                    }
+                  }}
                 >
                   Login
                 </Button>
@@ -73,29 +79,6 @@ const Navbar: React.FC = () => {
           </Box>
         </Toolbar>
       </AppBar>
-      
-      {/* Authentication Alert */}
-      {!isAuthenticated && (
-        <Alert 
-          severity="warning" 
-          sx={{ 
-            borderRadius: 0,
-            justifyContent: 'center',
-            alignItems: 'center'
-          }}
-        >
-          You are not logged in. Please <Button 
-            component={RouterLink} 
-            to="/login"
-            color="inherit"
-            size="small"
-            variant="outlined"
-            sx={{ mx: 1 }}
-          >
-            Log In
-          </Button> to see your stats and track your progress.
-        </Alert>
-      )}
     </>
   );
 };

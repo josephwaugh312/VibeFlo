@@ -30,7 +30,7 @@ VibeFlo is a full-stack web application for productivity using the Pomodoro Tech
 
 1. Clone the repository:
    ```
-   git clone https://github.com/your-username/VibeFlo.git
+   git clone https://github.com/josephwaugh312/VibeFlo.git
    cd VibeFlo
    ```
 
