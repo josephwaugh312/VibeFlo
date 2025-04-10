@@ -576,7 +576,9 @@ const Profile: React.FC = () => {
               margin="normal"
               multiline
               rows={3}
+              inputProps={{ maxLength: 150 }}
               placeholder="Tell us something about yourself or add your personal motto..."
+              helperText={`${formData.bio?.length || 0}/150 characters`}
               InputProps={{
                 sx: { 
                   color: 'white',
@@ -604,6 +606,13 @@ const Profile: React.FC = () => {
                   },
                 },
                 shrink: true,
+              }}
+              FormHelperTextProps={{
+                sx: {
+                  color: 'rgba(255, 255, 255, 0.5)',
+                  textAlign: 'right',
+                  mr: 1
+                }
               }}
             />
           </Grid>

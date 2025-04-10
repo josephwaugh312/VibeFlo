@@ -46,7 +46,17 @@ export const updateUserProfile = async (req: AuthRequest, res: Response) => {
 
     const { name, username, email, bio, avatarUrl } = req.body;
     
-    console.log(`Server: Updating profile for user ${userId} with data:`, req.body);
+    // Validate bio length
+    if (bio && bio.length > 150) {
+      return res.status(400).json({ message: 'Bio cannot exceed 150 characters' });
+    }
+    
+    // Username format validation
+    if (username && !/^[a-zA-Z0-9_]+$/.test(username)) {
+      return res.status(400).json({ message: 'Username can only contain letters, numbers, and underscores' });
+    }
+    
+    console.log('Server: Updating profile for user', userId, 'with data:', { name, username, email, bio, avatarUrl });
     
     // If updating username, check if it's unique
     if (username) {

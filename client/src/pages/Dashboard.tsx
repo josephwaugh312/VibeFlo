@@ -3,7 +3,7 @@ import PomodoroTimer from '../components/pomodoro/PomodoroTimer';
 import { useAuth } from '../contexts/AuthContext';
 import { useStats } from '../contexts/StatsContext';
 import { Link } from 'react-router-dom';
-import { Box, Typography } from '@mui/material';
+import { Box, Typography, Paper } from '@mui/material';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -27,6 +27,42 @@ const Dashboard: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-white drop-shadow-lg mb-6">Welcome, @{user?.username || 'User'}!</h1>
+      
+      {/* User Bio Quote Display */}
+      {user?.bio && (
+        <Paper 
+          elevation={3} 
+          sx={{ 
+            p: 3, 
+            mb: 5, 
+            bgcolor: 'rgba(30, 30, 30, 0.7)', 
+            borderRadius: 2,
+            borderLeft: '4px solid',
+            borderColor: 'primary.main',
+          }}
+        >
+          <Typography 
+            variant="h4" 
+            component="p" 
+            sx={{ 
+              fontStyle: 'italic', 
+              fontWeight: 700,
+              color: 'white',
+              textShadow: '1px 1px 3px rgba(0,0,0,0.3)',
+              fontFamily: '"Playfair Display", "Georgia", serif',
+              letterSpacing: '0.02em',
+              wordBreak: 'break-word', 
+              overflowWrap: 'break-word',
+              hyphens: 'auto',
+              lineHeight: 1.3,
+              textAlign: 'center',
+              px: 2
+            }}
+          >
+            {user.bio}
+          </Typography>
+        </Paper>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div>
