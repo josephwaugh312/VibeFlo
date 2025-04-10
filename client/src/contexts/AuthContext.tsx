@@ -4,10 +4,15 @@ import apiService, { authAPI } from '../services/api';
 import { api } from '../services/api';
 
 interface User {
-  id: number;
-  email: string;
-  username: string;
+  id: string;
   name: string;
+  username: string;
+  email: string;
+  bio?: string;
+  avatarUrl?: string;
+  created_at?: string;
+  updated_at?: string;
+  // ... any other existing fields
 }
 
 interface AuthContextType {
@@ -17,7 +22,9 @@ interface AuthContextType {
   setUser: (user: User | null) => void;
   login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
   register: (name: string, username: string, email: string, password: string) => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<void>;
+  updateProfile: (data: Partial<User>) => Promise<User>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -28,7 +35,9 @@ const AuthContext = createContext<AuthContextType>({
   setUser: () => {},
   login: async () => {},
   register: async () => {},
-  updateProfile: async () => {},
+  updateProfile: async () => ({} as User),
+  changePassword: async () => {},
+  deleteAccount: async () => {},
   logout: () => {},
 });
 
@@ -50,31 +59,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           // Check if token is valid by getting user data
           const userData = await authAPI.getCurrentUser();
+          console.log('User authenticated successfully:', userData);
           setUser(userData);
-          console.log('User authenticated on page load:', userData.username);
         } catch (error: any) {
           console.error('Token validation failed:', error);
           
-          // More specific error handling
-          if (error.response) {
-            if (error.response.status === 401) {
-              console.log('Token expired or invalid');
-              toast.error('Session expired. Please log in again.');
-            } else {
-              console.log(`Server error: ${error.response.status}`);
-              toast.error('Authentication error. Please log in again.');
-            }
-          } else if (error.request) {
-            console.log('No response from server');
-            toast.error('Server not responding. Please try again later.');
+          // Only log out for specific 401 unauthorized errors
+          if (error.response && error.response.status === 401 && 
+              error.response.data && 
+              error.response.data.message === 'Invalid token') {
+            
+            console.log('Invalid token detected - logging out');
+            localStorage.removeItem('token');
+            apiService.setToken(null);
+            setUser(null);
+            toast.error('Session expired. Please log in again.');
           } else {
-            console.log('Error:', error.message);
+            // For network errors or other server issues, keep the user logged in
+            console.log('Error checking auth status, but keeping user logged in');
+            
+            // If we have cached user data, use it instead of forcing logout
+            const cachedUser = localStorage.getItem('cachedUser');
+            if (cachedUser) {
+              try {
+                setUser(JSON.parse(cachedUser));
+                console.log('Using cached user data during server unavailability');
+              } catch (e) {
+                console.error('Failed to parse cached user data', e);
+              }
+            }
           }
-          
-          // Clear invalid token
-          localStorage.removeItem('token');
-          apiService.setToken(null);
-          setUser(null);
         }
       } else {
         console.log('No authentication token found');
@@ -86,6 +100,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     checkAuthStatus();
   }, []);
+
+  // Cache user data when it changes
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('cachedUser', JSON.stringify(user));
+    }
+  }, [user]);
 
   const login = async (email: string, password: string, rememberMe = true) => {
     try {
@@ -154,8 +175,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (data: Partial<User>) => {
     try {
       setIsLoading(true);
+      console.log('AuthContext.updateProfile - data sent to API:', data);
+      
       const updatedUser = await authAPI.updateProfile(data);
-      setUser(updatedUser);
+      console.log('AuthContext.updateProfile - response from API:', updatedUser);
+      
+      // Important: Ensure we update the current user with the new data
+      setUser(current => {
+        const newUserState = current ? { ...current, ...updatedUser } : updatedUser;
+        console.log('AuthContext.updateProfile - updating user state:', newUserState);
+        return newUserState;
+      });
+      
       toast.success('Profile updated successfully!');
       return updatedUser;
     } catch (error: any) {
@@ -165,6 +196,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.error(error.response.data.message);
       } else {
         toast.error('Failed to update profile. Please try again.');
+      }
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    try {
+      setIsLoading(true);
+      await authAPI.changePassword(currentPassword, newPassword);
+      toast.success('Password changed successfully!');
+    } catch (error: any) {
+      console.error('Password change error:', error);
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to change password. Please try again.');
+      }
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const deleteAccount = async (password: string) => {
+    try {
+      setIsLoading(true);
+      await authAPI.deleteAccount(password);
+      localStorage.removeItem('token');
+      apiService.setToken(null);
+      setUser(null);
+      toast.success('Your account has been deleted.');
+    } catch (error: any) {
+      console.error('Account deletion error:', error);
+      
+      if (error.response && error.response.data && error.response.data.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Failed to delete account. Please try again.');
       }
       throw error;
     } finally {
@@ -189,6 +261,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         register,
         updateProfile,
+        changePassword,
+        deleteAccount,
         logout
       }}
     >

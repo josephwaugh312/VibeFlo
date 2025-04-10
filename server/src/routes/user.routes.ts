@@ -26,4 +26,18 @@ router.get('/me', protect, userController.getUserProfile as any);
  */
 router.put('/me', protect, userController.updateUserProfile as any);
 
+/**
+ * @route   POST /api/users/password
+ * @desc    Change user password
+ * @access  Private
+ */
+router.post('/password', protect, userController.changePassword as any);
+
+/**
+ * @route   DELETE /api/users/delete
+ * @desc    Delete user account
+ * @access  Private
+ */
+router.delete('/delete', protect, userController.deleteAccount as any);
+
 export default router; 

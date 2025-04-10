@@ -9,6 +9,9 @@ import { StatsProvider } from './contexts/StatsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
 import PrivateRoute from './components/PrivateRoute';
+import { MusicPlayer } from './components/music';
+import { MusicPlayerProvider } from './contexts/MusicPlayerContext';
+import { Toaster } from 'react-hot-toast';
 
 // Lazy loaded components
 const Home = lazy(() => import('./pages/Home'));
@@ -83,25 +86,51 @@ const App: React.FC = () => {
             <ThemeBackground />
             <SettingsProvider>
               <StatsProvider>
-                <Router>
-                  <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-                    <Navbar />
-                    <Box 
-                      component="main" 
-                      sx={{ 
-                        flexGrow: 1, 
-                        p: 3,
-                        pb: '100px',
-                      }}
-                    >
-                      <AppRoutes />
+                <MusicPlayerProvider>
+                  <Router>
+                    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                      <Navbar />
+                      <Box 
+                        component="main" 
+                        sx={{ 
+                          flexGrow: 1, 
+                          p: 3,
+                          pb: '100px',
+                        }}
+                      >
+                        <AppRoutes />
+                      </Box>
+                      <MusicPlayer />
                     </Box>
-                  </Box>
-                </Router>
+                  </Router>
+                </MusicPlayerProvider>
               </StatsProvider>
             </SettingsProvider>
           </ThemeProvider>
         </AuthProvider>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#374151',
+              color: '#ffffff',
+              border: '1px solid #4B5563',
+            },
+            success: {
+              iconTheme: {
+                primary: '#10B981',
+                secondary: '#ffffff',
+              },
+            },
+            error: {
+              iconTheme: {
+                primary: '#EF4444',
+                secondary: '#ffffff',
+              },
+            },
+          }}
+        />
       </Box>
     </MuiThemeProvider>
   );

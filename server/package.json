@@ -7,6 +7,10 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc",
     "migrate:username": "ts-node src/db/run-migration.ts",
+    "migrate:bio": "ts-node src/db/run-bio-migration.ts",
+    "migrate:verification": "ts-node src/db/run-verification-migration.ts",
+    "check:users": "ts-node src/scripts/check-users.ts",
+    "create:testuser": "ts-node src/scripts/create-test-user.ts",
     "test": "echo \"Error: no test specified\" && exit 1",
     "db:schema": "node src/db/apply-schema.js",
     "db:fix-songs": "node src/db/fix-songs.js"

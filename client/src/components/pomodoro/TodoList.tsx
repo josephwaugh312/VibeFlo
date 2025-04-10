@@ -67,8 +67,21 @@ const TodoList: React.FC<TodoListProps> = ({
   useEffect(() => {
     if (initialTodos && initialTodos.length > 0) {
       setTodos(initialTodos);
+    } else {
+      // Set default empty todos if none provided
+      const emptyTodos = [
+        { id: `todo-1-${generateId()}`, text: '', completed: false, recordedInStats: false },
+        { id: `todo-2-${generateId()}`, text: '', completed: false, recordedInStats: false },
+        { id: `todo-3-${generateId()}`, text: '', completed: false, recordedInStats: false },
+      ];
+      setTodos(emptyTodos);
+      
+      // Update parent component if onTodosChange is provided
+      if (onTodosChange) {
+        onTodosChange(emptyTodos);
+      }
     }
-  }, [initialTodos]);
+  }, [initialTodos, onTodosChange]);
 
   // Save todos when they change
   useEffect(() => {
@@ -147,6 +160,11 @@ const TodoList: React.FC<TodoListProps> = ({
     setSelectedTodoId(null);
     if (currentTask) {
       onTaskSelect('');
+    }
+    
+    // Make sure to call onTodosChange to update localStorage
+    if (onTodosChange) {
+      onTodosChange(emptyTodos);
     }
     
     toast.success('Tasks have been reset');

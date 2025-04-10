@@ -215,9 +215,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="soundEnabled" className="ml-2 block text-sm text-gray-700">
-                Sound
+                Sound notifications
               </label>
             </div>
+            <p className="text-xs text-gray-500 ml-6 mb-2">Play a sound when timer completes</p>
             
             <div className="flex items-center">
               <input
@@ -228,9 +229,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="notificationEnabled" className="ml-2 block text-sm text-gray-700">
-                Browser notification
+                Browser notifications
               </label>
             </div>
+            <p className="text-xs text-gray-500 ml-6">Show desktop notifications when timer completes (requires browser permission)</p>
           </div>
         </div>
         

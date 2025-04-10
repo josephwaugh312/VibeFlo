@@ -106,55 +106,81 @@ export const register = async (req: Request, res: Response) => {
  */
 export const login = async (req: Request, res: Response) => {
   try {
-    const { login: loginIdentifier, password } = req.body;
-    const clientIp = req.ip || 'unknown';
+    const { login, password } = req.body;
 
-    // Check if required fields are provided
-    if (!loginIdentifier || !password) {
-      return res.status(400).json({ message: 'Please provide username/email and password' });
+    if (!login || !password) {
+      return res.status(400).json({ message: 'Please provide both login and password' });
     }
 
-    // Check if account is locked
-    const isLocked = await checkAccountLocked(loginIdentifier, clientIp);
-    if (isLocked) {
-      return res.status(429).json({ 
-        message: 'Account temporarily locked due to too many failed login attempts. Please try again in 15 minutes.' 
-      });
-    }
-
-    // Check if user exists (search by email or username)
-    const userResult = await pool.query('SELECT * FROM users WHERE email = $1 OR username = $1', [loginIdentifier]);
+    const isEmail = login.includes('@');
+    
+    // Query based on whether the login is an email or username
+    const queryText = isEmail 
+      ? 'SELECT * FROM users WHERE email = $1' 
+      : 'SELECT * FROM users WHERE username = $1';
+    
+    const userResult = await pool.query(queryText, [login]);
     
     if (userResult.rows.length === 0) {
-      // Record failed attempt even when user doesn't exist
-      await recordFailedLoginAttempt(loginIdentifier, clientIp);
+      // Record the failed attempt
+      await recordFailedLoginAttempt(login);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
+    
     const user = userResult.rows[0];
+    
+    // Check if account is locked
+    if (user.is_locked) {
+      const lockExpiryTime = new Date(user.lock_expires);
+      if (lockExpiryTime > new Date()) {
+        // Account is still locked
+        const timeRemaining = Math.ceil((lockExpiryTime.getTime() - Date.now()) / (1000 * 60));
+        return res.status(401).json({ 
+          message: `Account is temporarily locked. Please try again in ${timeRemaining} minute(s).`
+        });
+      } else {
+        // Lock has expired, reset the lock status
+        await pool.query('UPDATE users SET is_locked = false, failed_login_attempts = 0 WHERE id = $1', [user.id]);
+      }
+    }
     
     // Check if password matches
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
-      // Record failed login attempt
-      await recordFailedLoginAttempt(loginIdentifier, clientIp);
+      // Record the failed attempt
+      await recordFailedLoginAttempt(login);
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
-    // If login successful, clear any failed login attempts
-    await clearFailedLoginAttempts(loginIdentifier, clientIp);
-
+    
+    // Reset failed login attempts on successful login
+    if (user.failed_login_attempts > 0) {
+      await pool.query('UPDATE users SET failed_login_attempts = 0 WHERE id = $1', [user.id]);
+    }
+    
     // Generate JWT token
     const token = generateToken(user);
-
-    res.json({
+    
+    // Set token in HTTP-only cookie
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    
+    // Return user information (excluding sensitive data)
+    res.status(200).json({
+      message: 'Login successful',
       user: {
         id: user.id,
         name: user.name,
         username: user.username,
         email: user.email,
-        profile_picture: user.profile_picture
+        avatarUrl: user.avatar_url,
+        bio: user.bio,
+        created_at: user.created_at,
+        updated_at: user.updated_at
       },
       token
     });
@@ -167,11 +193,11 @@ export const login = async (req: Request, res: Response) => {
 /**
  * Record a failed login attempt
  */
-const recordFailedLoginAttempt = async (loginIdentifier: string, ipAddress: string) => {
+const recordFailedLoginAttempt = async (loginIdentifier: string, ipAddress?: string) => {
   try {
     await pool.query(
       'INSERT INTO failed_login_attempts (login_identifier, ip_address) VALUES ($1, $2)',
-      [loginIdentifier, ipAddress]
+      [loginIdentifier, ipAddress || 'unknown']
     );
   } catch (error) {
     console.error('Error recording failed login attempt:', error);
@@ -221,34 +247,42 @@ const clearFailedLoginAttempts = async (loginIdentifier: string, ipAddress: stri
 /**
  * Get current authenticated user
  */
-export const getCurrentUser = async (req: Request, res: Response) => {
+export const getCurrentUser = async (req: AuthRequest, res: Response) => {
   try {
-    const authReq = req as AuthRequest;
-    
-    if (!authReq.user) {
+    if (!req.user) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
     
-    // Fetch the latest user data from the database
-    const userResult = await pool.query('SELECT * FROM users WHERE id = $1', [authReq.user.id]);
+    const userId = req.user.id;
     
-    if (userResult.rows.length === 0) {
+    // Get user data from database
+    const userQuery = `
+      SELECT id, name, username, email, bio, avatar_url, created_at, updated_at 
+      FROM users 
+      WHERE id = $1
+    `;
+    const result = await pool.query(userQuery, [userId]);
+    
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    const user = userResult.rows[0];
+    const user = result.rows[0];
     
-    // Return user data without sensitive information
+    // Return user information (excluding sensitive data)
     res.json({
       id: user.id,
       name: user.name,
       username: user.username,
       email: user.email,
-      profile_picture: user.profile_picture
+      bio: user.bio,
+      avatarUrl: user.avatar_url,
+      created_at: user.created_at,
+      updated_at: user.updated_at
     });
   } catch (error) {
     console.error('Get current user error:', error);
-    res.status(500).json({ message: 'Server error while retrieving user data' });
+    res.status(500).json({ message: 'Server error retrieving user data' });
   }
 };
 

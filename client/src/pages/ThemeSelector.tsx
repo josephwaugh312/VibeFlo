@@ -100,8 +100,6 @@ const ThemeSelector: React.FC = () => {
   // Add edit mode states
   const [editMode, setEditMode] = useState(false);
   const [themeToEdit, setThemeToEdit] = useState<Theme | null>(null);
-  // Add debug state
-  const [debugInfo, setDebugInfo] = useState<string>('');
 
   // Modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -332,11 +330,9 @@ const ThemeSelector: React.FC = () => {
       // Set theme directly in ThemeContext
       setCurrentTheme(updatedTheme);
       
-      setDebugInfo(`Force set theme: ${updatedTheme.name} (ID: ${updatedTheme.id})\nImage URL: ${updatedTheme.image_url}`);
       console.log('===== DONE FORCE SETTING THEME =====');
     } catch (err) {
       console.error('Error in force setting theme:', err);
-      setDebugInfo(`Error: ${err}`);
     }
   };
 
@@ -462,33 +458,6 @@ const ThemeSelector: React.FC = () => {
             My Themes
           </button>
         )}
-      </div>
-      
-      {/* Debug info - to help troubleshoot issues */}
-      {debugInfo && (
-        <div className="bg-gray-800 p-3 mb-4 rounded border border-gray-700 text-xs text-gray-300 font-mono overflow-auto">
-          {debugInfo}
-        </div>
-      )}
-      
-      {/* Add debug button to check if user is authenticated */}
-      <div className="mb-4">
-        <button 
-          onClick={() => {
-            const authStatus = `User status: ${user ? 'Authenticated as ' + user.username : 'Not authenticated'}`;
-            const themesInfo = `
-              Standard Themes: ${standardThemes.length}
-              Community Themes: ${communityThemes.length}
-              User Themes: ${userThemes.length}
-              Current Theme: ${currentTheme ? currentTheme.name + ' (ID: ' + currentTheme.id + ')' : 'None'}
-            `;
-            setDebugInfo(authStatus + '\n' + themesInfo);
-            refreshAllThemes();
-          }}
-          className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-600 text-sm"
-        >
-          Debug Info
-        </button>
       </div>
       
       {/* Theme Grid */}

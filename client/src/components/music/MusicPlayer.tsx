@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef, FormEvent } from 'react';
+import React, { FormEvent, useEffect } from 'react';
 import YouTube from 'react-youtube';
-import { playlistAPI } from '../../services/api';
-import { toast } from 'react-hot-toast';
+import { useMusicPlayer } from '../../contexts/MusicPlayerContext';
 
 export interface Track {
   id: string;
@@ -13,219 +12,64 @@ export interface Track {
   source: string;
 }
 
-interface MusicPlayerProps {
-  tracks?: Track[];
-  currentTrack?: Track;
-  onTrackSelect?: (track: Track) => void;
-  onTrackEnd?: () => void;
-}
+interface MusicPlayerProps {}
 
-type PlayerTab = 'nowPlaying' | 'playlist' | 'search';
+// Global reference to prevent multiple YouTube players
+let globalPlayerInstance: any = null;
 
 const MusicPlayer: React.FC<MusicPlayerProps> = () => {
-  const [tracks, setTracks] = useState<Track[]>([]);
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [isMinimized, setIsMinimized] = useState(false);
-  const [currentTab, setCurrentTab] = useState<PlayerTab>('nowPlaying');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [playlistName, setPlaylistName] = useState('My Playlist');
-  const [isSaving, setIsSaving] = useState(false);
-  const [volume, setVolume] = useState(50);
-  const playerRef = useRef<any>(null);
-  const [isVolumeOpen, setIsVolumeOpen] = useState(false);
+  // We're using togglePlay from context but not directly in this component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const {
+    tracks,
+    currentTrack,
+    isPlaying,
+    volume,
+    isOpen,
+    isMinimized,
+    currentTab,
+    searchQuery,
+    searchResults,
+    isSearching,
+    addTrack,
+    removeTrack,
+    playTrack,
+    togglePlay,
+    play,
+    pause,
+    playPrevious,
+    playNext,
+    setVolume,
+    toggleOpen,
+    toggleMinimize,
+    setCurrentTab,
+    setSearchQuery,
+    handleSearch,
+    savePlaylistToAccount,
+    setPlayerReference
+  } = useMusicPlayer();
 
-  // YouTube API key - Note: this is a public API key with limited usage
-  const YOUTUBE_API_KEY = 'AIzaSyCoui8gnwmosPMGCGuX2cImY4SLre7JgiA';
+  // Local state for UI-specific items
+  const [isVolumeOpen, setIsVolumeOpen] = React.useState(false);
+  const [playlistName, setPlaylistName] = React.useState('My Playlist');
+  const [searchError, setSearchError] = React.useState<string | null>(null);
+  const playerRef = React.useRef<any>(null);
 
-  // Mock data for fallback when YouTube API fails
-  const mockSearchResults = [
-    {
-      id: { videoId: 'dQw4w9WgXcQ' },
-      snippet: {
-        title: 'Rick Astley - Never Gonna Give You Up',
-        channelTitle: 'Rick Astley',
-        thumbnails: {
-          default: { url: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg' },
-          high: { url: 'https://i.ytimg.com/vi/dQw4w9WgXcQ/hqdefault.jpg' }
-        }
-      }
-    },
-    {
-      id: { videoId: 'y6120QOlsfU' },
-      snippet: {
-        title: 'Darude - Sandstorm',
-        channelTitle: 'Darude',
-        thumbnails: {
-          default: { url: 'https://i.ytimg.com/vi/y6120QOlsfU/default.jpg' },
-          high: { url: 'https://i.ytimg.com/vi/y6120QOlsfU/hqdefault.jpg' }
-        }
-      }
-    },
-    {
-      id: { videoId: 'CevxZvSJLk8' },
-      snippet: {
-        title: 'Katy Perry - Roar',
-        channelTitle: 'Katy Perry',
-        thumbnails: {
-          default: { url: 'https://i.ytimg.com/vi/CevxZvSJLk8/default.jpg' },
-          high: { url: 'https://i.ytimg.com/vi/CevxZvSJLk8/hqdefault.jpg' }
-        }
-      }
-    }
-  ];
-
+  // Clean up player when component unmounts
   useEffect(() => {
-    // Load tracks from localStorage
-    const storedTracks = localStorage.getItem('vibeflo_playlist');
-    const storedCurrentTrack = localStorage.getItem('vibeflo_current_track');
-    
-    if (storedTracks) {
-      setTracks(JSON.parse(storedTracks));
-    }
-    
-    if (storedCurrentTrack) {
-      setCurrentTrack(JSON.parse(storedCurrentTrack));
-    }
-    
-    // Listen for playlist updates
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'vibeflo_playlist') {
-        const newTracks = e.newValue ? JSON.parse(e.newValue) : [];
-        setTracks(newTracks);
-      }
-      if (e.key === 'vibeflo_current_track') {
-        const newTrack = e.newValue ? JSON.parse(e.newValue) : null;
-        setCurrentTrack(newTrack);
-      }
+    return () => {
+      // Don't destroy the player on navigation
+      // This allows playback to continue between pages
     };
-    
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  // Extract YouTube ID from URL
   const extractYouTubeId = (url: string): string => {
     const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
     return match ? match[1] : '';
   };
 
-  const handlePlay = () => {
-    setIsPlaying(true);
-    playerRef.current?.playVideo();
-  };
-
-  const handlePause = () => {
-    setIsPlaying(false);
-    playerRef.current?.pauseVideo();
-  };
-
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseInt(e.target.value, 10);
-    setVolume(newVolume);
-    if (playerRef.current) {
-      playerRef.current.setVolume(newVolume);
-    }
-  };
-
-  const handleNextTrack = () => {
-    if (!currentTrack || tracks.length === 0) return;
-    
-    const currentIndex = tracks.findIndex(track => track.id === currentTrack.id);
-    const nextIndex = (currentIndex + 1) % tracks.length;
-    const nextTrack = tracks[nextIndex];
-    
-    setCurrentTrack(nextTrack);
-    localStorage.setItem('vibeflo_current_track', JSON.stringify(nextTrack));
-  };
-
-  const handlePreviousTrack = () => {
-    if (!currentTrack || tracks.length === 0) return;
-    
-    const currentIndex = tracks.findIndex(track => track.id === currentTrack.id);
-    const previousIndex = (currentIndex - 1 + tracks.length) % tracks.length;
-    const previousTrack = tracks[previousIndex];
-    
-    setCurrentTrack(previousTrack);
-    localStorage.setItem('vibeflo_current_track', JSON.stringify(previousTrack));
-  };
-
-  const togglePlayer = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const toggleMinimize = () => {
-    // Always show "Now Playing" when minimizing
-    if (!isMinimized) {
-      setCurrentTab('nowPlaying');
-    }
-    setIsMinimized(!isMinimized);
-  };
-
-  const selectTrack = (track: Track) => {
-    setCurrentTrack(track);
-    localStorage.setItem('vibeflo_current_track', JSON.stringify(track));
-    setIsPlaying(true);
-    setCurrentTab('nowPlaying');
-  };
-
-  const handleSearch = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
-    
-    setIsSearching(true);
-    setSearchError(null);
-    setSearchResults([]);
-    
-    try {
-      console.log('Searching YouTube for:', searchQuery);
-      console.log('Using YouTube API Key:', YOUTUBE_API_KEY);
-      
-      const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(
-        searchQuery
-      )}&type=video&key=${YOUTUBE_API_KEY}`;
-      
-      console.log('API URL (without key):', apiUrl.replace(YOUTUBE_API_KEY, 'API_KEY_HIDDEN'));
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('YouTube API Error Details:', {
-          status: response.status,
-          statusText: response.statusText,
-          responseText: errorText
-        });
-        throw new Error(`YouTube API error: ${response.status} - ${errorText}`);
-      }
-      
-      const data = await response.json();
-      console.log('YouTube search results:', data);
-      
-      if (data.items && data.items.length > 0) {
-        setSearchResults(data.items);
-        toast.success('Tracks found');
-      } else {
-        console.log('No YouTube results found, falling back to mock data');
-        setSearchResults(mockSearchResults);
-        toast('No results found, showing sample tracks');
-      }
-    } catch (error) {
-      console.error('Error searching YouTube:', error);
-      
-      // Fall back to mock results on error
-      console.log('Falling back to mock search results due to error');
-      setSearchResults(mockSearchResults);
-      setSearchError('YouTube API error. Showing sample tracks instead.');
-      toast.error('YouTube search failed. Showing sample tracks.');
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
+  // Add track from search results
   const addTrackToPlaylist = (result: any) => {
     const newTrack: Track = {
       id: result.id.videoId,
@@ -236,50 +80,45 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
       source: 'youtube'
     };
     
-    const updatedTracks = [...tracks, newTrack];
-    setTracks(updatedTracks);
-    localStorage.setItem('vibeflo_playlist', JSON.stringify(updatedTracks));
-    
-    if (!currentTrack) {
-      selectTrack(newTrack);
-    }
-    
-    toast.success('Added to playlist');
+    addTrack(newTrack);
   };
 
-  const removeTrackFromPlaylist = (trackId: string) => {
-    const updatedTracks = tracks.filter(track => track.id !== trackId);
-    setTracks(updatedTracks);
-    localStorage.setItem('vibeflo_playlist', JSON.stringify(updatedTracks));
-    
-    if (currentTrack?.id === trackId) {
-      if (updatedTracks.length > 0) {
-        selectTrack(updatedTracks[0]);
-      } else {
-        setCurrentTrack(null);
-        localStorage.removeItem('vibeflo_current_track');
-      }
-    }
-    
-    toast.success('Removed from playlist');
+  // Handle playlist saving
+  const handleSavePlaylist = () => {
+    savePlaylistToAccount(playlistName);
   };
 
-  const savePlaylistToAccount = async () => {
-    if (!tracks.length) {
-      toast.error('Cannot save an empty playlist');
-      return;
+  // Volume change handler for local UI
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVolume = parseInt(e.target.value, 10);
+    setVolume(newVolume);
+    
+    // Also update the current player volume directly
+    if (playerRef.current) {
+      playerRef.current.setVolume(newVolume);
     }
+  };
+
+  const handleSearchSubmit = (e: FormEvent) => {
+    handleSearch(e);
+    setSearchError(null);
+  };
+
+  // Handle player ready event
+  const handlePlayerReady = (event: any) => {
+    // Store reference to player
+    playerRef.current = event.target;
+    globalPlayerInstance = event.target;
     
-    setIsSaving(true);
+    // Update reference in context
+    setPlayerReference(event.target);
     
-    try {
-      await playlistAPI.createPlaylist(playlistName, tracks);
-      toast.success('Playlist saved to your account');
-    } catch (error) {
-      console.error('Error saving playlist:', error);
-      toast.error('Failed to save playlist');
-    } finally {
-      setIsSaving(false);
+    // Set the volume
+    event.target.setVolume(volume);
+    
+    // If isPlaying is true, start playing
+    if (isPlaying) {
+      event.target.playVideo();
     }
   };
 
@@ -288,7 +127,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
       {/* Music Player Button - fixed to bottom right, hide when player is open */}
       {!isOpen && (
         <button 
-          onClick={togglePlayer}
+          onClick={toggleOpen}
           className="fixed bottom-6 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-all duration-300"
           aria-label="Toggle Music Player"
         >
@@ -329,7 +168,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 )}
               </button>
               <button
-                onClick={togglePlayer}
+                onClick={toggleOpen}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,10 +186,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   <img 
                     src={currentTrack.artwork} 
                     alt={currentTrack.title} 
-                    className="w-10 h-10 rounded object-cover mr-2"
+                    className="w-10 h-10 rounded object-cover mr-2 flex-shrink-0"
                   />
                 )}
-                <div className="min-w-0">
+                <div className="min-w-0 max-w-[180px]">
                   <h4 className="text-white text-sm font-medium truncate">{currentTrack.title}</h4>
                   <p className="text-gray-400 text-xs truncate">{currentTrack.artist}</p>
                 </div>
@@ -383,7 +222,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 )}
                 
                 <button
-                  onClick={handlePreviousTrack}
+                  onClick={playPrevious}
                   className="text-gray-400 hover:text-white mx-1"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -392,7 +231,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 </button>
                 {isPlaying ? (
                   <button
-                    onClick={handlePause}
+                    onClick={pause}
                     className="text-white hover:text-gray-200 mx-1"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -401,7 +240,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   </button>
                 ) : (
                   <button
-                    onClick={handlePlay}
+                    onClick={play}
                     className="text-white hover:text-gray-200 mx-1"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -411,7 +250,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   </button>
                 )}
                 <button
-                  onClick={handleNextTrack}
+                  onClick={playNext}
                   className="text-gray-400 hover:text-white mx-1"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,6 +258,33 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   </svg>
                 </button>
               </div>
+            </div>
+          )}
+          
+          {/* YouTube Player - always render but hide */}
+          {currentTrack?.source === 'youtube' && (
+            <div className="hidden">
+              <YouTube
+                videoId={extractYouTubeId(currentTrack.url)}
+                opts={{
+                  height: '0',
+                  width: '0',
+                  playerVars: {
+                    autoplay: isPlaying ? 1 : 0,
+                    controls: 0,
+                    disablekb: 1,
+                    fs: 0,
+                    modestbranding: 1,
+                    playsinline: 1
+                  }
+                }}
+                onReady={handlePlayerReady}
+                onEnd={playNext}
+                onError={() => {
+                  console.error('YouTube player error');
+                  playNext();
+                }}
+              />
             </div>
           )}
           
@@ -471,19 +337,19 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                             <img
                               src={currentTrack.artwork}
                               alt={currentTrack.title}
-                              className="w-48 h-48 mx-auto rounded object-cover shadow-lg"
+                              className="w-48 h-48 mx-auto rounded object-cover shadow-lg flex-shrink-0"
                             />
                           ) : (
-                            <div className="w-48 h-48 mx-auto rounded bg-gray-800 flex items-center justify-center">
+                            <div className="w-48 h-48 mx-auto rounded bg-gray-800 flex items-center justify-center flex-shrink-0">
                               <svg className="w-16 h-16 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                               </svg>
                             </div>
                           )}
                           
-                          <div className="mt-3">
-                            <h4 className="text-white font-medium truncate">{currentTrack.title}</h4>
-                            <p className="text-gray-400 text-sm truncate">{currentTrack.artist}</p>
+                          <div className="mt-3 w-full px-2">
+                            <h4 className="text-white font-medium truncate max-w-[280px] mx-auto">{currentTrack.title}</h4>
+                            <p className="text-gray-400 text-sm truncate max-w-[280px] mx-auto">{currentTrack.artist}</p>
                           </div>
                         </div>
                         
@@ -506,7 +372,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                           
                           <div className="flex items-center justify-center space-x-6 mb-6">
                             <button
-                              onClick={handlePreviousTrack}
+                              onClick={playPrevious}
                               className="text-gray-400 hover:text-white transition-colors"
                             >
                               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -516,7 +382,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                             
                             {isPlaying ? (
                               <button
-                                onClick={handlePause}
+                                onClick={pause}
                                 className="text-white hover:text-gray-200 transition-colors"
                               >
                                 <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -525,7 +391,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                               </button>
                             ) : (
                               <button
-                                onClick={handlePlay}
+                                onClick={play}
                                 className="text-white hover:text-gray-200 transition-colors"
                               >
                                 <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -536,7 +402,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                             )}
                             
                             <button
-                              onClick={handleNextTrack}
+                              onClick={playNext}
                               className="text-gray-400 hover:text-white transition-colors"
                             >
                               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -569,11 +435,11 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                         placeholder="Playlist name"
                       />
                       <button
-                        onClick={savePlaylistToAccount}
-                        disabled={isSaving || !tracks.length}
+                        onClick={handleSavePlaylist}
+                        disabled={!tracks.length}
                         className="ml-2 bg-purple-600 hover:bg-purple-700 text-white rounded px-3 py-2 text-sm disabled:bg-gray-700 disabled:cursor-not-allowed"
                       >
-                        {isSaving ? 'Saving...' : 'Save'}
+                        Save
                       </button>
                     </div>
                     
@@ -595,17 +461,17 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                           >
                             <div
                               className="flex-1 min-w-0 cursor-pointer"
-                              onClick={() => selectTrack(track)}
+                              onClick={() => playTrack(track)}
                             >
                               <div className="flex items-center">
                                 {track.artwork && (
                                   <img
                                     src={track.artwork}
                                     alt={track.title}
-                                    className="w-10 h-10 rounded mr-3 object-cover"
+                                    className="w-10 h-10 rounded mr-3 object-cover flex-shrink-0"
                                   />
                                 )}
-                                <div className="min-w-0">
+                                <div className="min-w-0 max-w-[200px]">
                                   <h4 className="text-white text-sm font-medium truncate">
                                     {track.title}
                                   </h4>
@@ -614,7 +480,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                               </div>
                             </div>
                             <button
-                              onClick={() => removeTrackFromPlaylist(track.id)}
+                              onClick={() => removeTrack(track.id)}
                               className="ml-2 text-gray-400 hover:text-red-400"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -631,7 +497,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 {/* Search Tab */}
                 {currentTab === 'search' && (
                   <div className="p-4">
-                    <form onSubmit={handleSearch} className="mb-4">
+                    <form onSubmit={handleSearchSubmit} className="mb-4">
                       <div className="flex">
                         <input
                           type="text"
@@ -666,9 +532,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                             <img
                               src={result.snippet.thumbnails.default.url}
                               alt={result.snippet.title}
-                              className="w-16 h-16 rounded object-cover mr-3"
+                              className="w-16 h-16 rounded object-cover mr-3 flex-shrink-0"
                             />
-                            <div className="flex-1 min-w-0">
+                            <div className="flex-1 min-w-0 max-w-[220px]">
                               <h4 className="text-white text-sm font-medium line-clamp-2">
                                 {result.snippet.title}
                               </h4>
@@ -708,36 +574,6 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
           className="fixed inset-0 z-40" 
           onClick={() => setIsVolumeOpen(false)}
         ></div>
-      )}
-      
-      {currentTrack?.source === 'youtube' && (
-        <div className="hidden">
-          <YouTube
-            videoId={extractYouTubeId(currentTrack.url)}
-            opts={{
-              height: '0',
-              width: '0',
-              playerVars: {
-                autoplay: 1,
-                controls: 0,
-                disablekb: 1,
-                fs: 0,
-                modestbranding: 1,
-                playsinline: 1
-              }
-            }}
-            onReady={(event) => {
-              playerRef.current = event.target;
-              // Set initial volume
-              event.target.setVolume(volume);
-            }}
-            onEnd={handleNextTrack}
-            onError={() => {
-              console.error('YouTube player error');
-              handleNextTrack();
-            }}
-          />
-        </div>
       )}
     </>
   );

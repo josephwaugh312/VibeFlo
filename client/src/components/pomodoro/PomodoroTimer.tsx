@@ -32,7 +32,6 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
   const { settings, updateSettings } = useSettings();
   
   const [timeLeft, setTimeLeft] = useState<number>(settings.pomodoro_duration * 60);
-  const [initialTime, setInitialTime] = useState<number>(settings.pomodoro_duration * 60);
   const [timerState, setTimerState] = useState<TimerState>(TimerState.IDLE);
   const [timerType, setTimerType] = useState<TimerType>(TimerType.POMODORO);
   const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
@@ -103,7 +102,6 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     }
     
     setTimeLeft(duration);
-    setInitialTime(duration);
   }, [timerType, settings]);
 
   // Save todos to localStorage when they change
@@ -188,6 +186,23 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     }
   }, [task, todoItems, isAuthenticated, addSession, refreshStats, settings.pomodoro_duration]);
 
+  // Request notification permission when component mounts
+  useEffect(() => {
+    // Check if browser supports notifications
+    if ('Notification' in window && settings.notification_enabled) {
+      if (Notification.permission !== 'granted' && Notification.permission !== 'denied') {
+        // Request permission
+        Notification.requestPermission().then(permission => {
+          if (permission === 'granted') {
+            toast.success('Notifications enabled!');
+          } else {
+            toast('Notifications permission denied. You can enable them in your browser settings.');
+          }
+        });
+      }
+    }
+  }, [settings.notification_enabled]);
+
   // Handle timer completion
   useEffect(() => {
     if (timeLeft <= 0 && timerState === TimerState.RUNNING) {
@@ -226,13 +241,21 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
       
       // Play a sound to indicate completion if enabled
       if (settings.sound_enabled) {
-        const audio = new Audio('/notification.mp3');
+        const audio = new Audio('/sounds/notification.mp3');
         audio.play().catch(error => console.error('Error playing notification sound:', error));
       }
       
       // Show browser notification if supported and enabled
-      if (settings.notification_enabled && Notification.permission === 'granted') {
-        new Notification(timerType === TimerType.POMODORO ? 'Time for a break!' : 'Break is over, time to focus!');
+      if (settings.notification_enabled && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          new Notification(timerType === TimerType.POMODORO ? 'Time for a break!' : 'Break is over, time to focus!');
+        } else if (Notification.permission !== 'denied') {
+          Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+              new Notification(timerType === TimerType.POMODORO ? 'Time for a break!' : 'Break is over, time to focus!');
+            }
+          });
+        }
       }
     }
   }, [timeLeft, timerState, timerType, completedPomodoros, task, addSession, isAuthenticated, refreshStats, settings, recordCompletedTasks]);

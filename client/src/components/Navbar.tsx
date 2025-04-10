@@ -1,11 +1,23 @@
 import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Alert } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+
+  // Common button styles with purple border on hover
+  const buttonStyle = {
+    color: 'white',
+    borderRadius: '4px',
+    transition: 'all 0.2s',
+    '&:hover': {
+      border: '1px solid rgb(124, 58, 237)', // Purple border on hover
+      backgroundColor: 'rgba(124, 58, 237, 0.3)', // More visible purple background
+      color: 'white' // Ensure text stays white
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -22,21 +34,46 @@ const Navbar: React.FC = () => {
           
           {/* Navigation Links */}
           <Box sx={{ flexGrow: 1, display: 'flex' }}>
-            <Button color="inherit" component={RouterLink} to="/about">
+            <Button 
+              color="inherit" 
+              component={RouterLink} 
+              to="/about"
+              sx={buttonStyle}
+            >
               About
             </Button>
             {isAuthenticated && (
               <>
-                <Button color="inherit" component={RouterLink} to="/dashboard">
+                <Button 
+                  color="inherit" 
+                  component={RouterLink} 
+                  to="/dashboard"
+                  sx={buttonStyle}
+                >
                   Dashboard
                 </Button>
-                <Button color="inherit" component={RouterLink} to="/stats">
+                <Button 
+                  color="inherit" 
+                  component={RouterLink} 
+                  to="/stats"
+                  sx={buttonStyle}
+                >
                   Stats
                 </Button>
-                <Button color="inherit" component={RouterLink} to="/playlists">
+                <Button 
+                  color="inherit" 
+                  component={RouterLink} 
+                  to="/playlists"
+                  sx={buttonStyle}
+                >
                   Playlists
                 </Button>
-                <Button color="inherit" component={RouterLink} to="/themes">
+                <Button 
+                  color="inherit" 
+                  component={RouterLink} 
+                  to="/themes"
+                  sx={buttonStyle}
+                >
                   Themes
                 </Button>
               </>
@@ -47,10 +84,22 @@ const Navbar: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {isAuthenticated ? (
               <>
-                <Typography variant="body1" sx={{ mr: 2 }}>
-                  @{user?.username}
-                </Typography>
-                <Button color="inherit" onClick={handleLogout}>
+                <Button 
+                  color="inherit" 
+                  component={RouterLink} 
+                  to="/profile"
+                  sx={{
+                    ...buttonStyle,
+                    mr: 2
+                  }}
+                >
+                  Profile
+                </Button>
+                <Button 
+                  color="inherit" 
+                  onClick={handleLogout}
+                  sx={buttonStyle}
+                >
                   Logout
                 </Button>
               </>
@@ -71,7 +120,12 @@ const Navbar: React.FC = () => {
                 >
                   Login
                 </Button>
-                <Button color="inherit" component={RouterLink} to="/register">
+                <Button 
+                  color="inherit" 
+                  component={RouterLink} 
+                  to="/register"
+                  sx={buttonStyle}
+                >
                   Register
                 </Button>
               </>

@@ -12,8 +12,20 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Determine if we're in development mode - either explicitly set or default to true when NODE_ENV is development
+const isDevelopment = process.env.SKIP_EMAILS === 'true' || process.env.NODE_ENV === 'development';
+
 export const sendVerificationEmail = async (email: string, verificationUrl: string) => {
   try {
+    // In development, just log the URL instead of sending an email
+    if (isDevelopment) {
+      console.log('\n==== DEVELOPMENT MODE: Email not sent ====');
+      console.log(`Verification URL for ${email}: ${verificationUrl}`);
+      console.log('Copy this URL to verify the account');
+      console.log('=======================================\n');
+      return; // Skip actual email sending
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,
@@ -46,6 +58,15 @@ export const sendVerificationEmail = async (email: string, verificationUrl: stri
 
 export const sendPasswordResetEmail = async (email: string, resetUrl: string) => {
   try {
+    // In development, just log the URL instead of sending an email
+    if (isDevelopment) {
+      console.log('\n==== DEVELOPMENT MODE: Email not sent ====');
+      console.log(`Password reset URL for ${email}: ${resetUrl}`);
+      console.log('Copy this URL to reset the password');
+      console.log('=======================================\n');
+      return; // Skip actual email sending
+    }
+
     const mailOptions = {
       from: process.env.EMAIL_USER,
       to: email,

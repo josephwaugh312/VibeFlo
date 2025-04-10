@@ -65,17 +65,12 @@ const apiService = (() => {
   api.interceptors.response.use(
     (response) => response,
     (error) => {
-      // Only clear token for non-auth and non-pomodoro endpoints
-      const isAuthEndpoint = error.config?.url?.includes('/auth/');
-      const isPomodoroEndpoint = error.config?.url?.includes('/pomodoro/');
-      
-      // Don't clear tokens for pomodoro endpoints - prevents logout when refreshing stats
-      if (error.response?.status === 401 && !isAuthEndpoint && !isPomodoroEndpoint) {
-        console.error('Unauthorized request - clearing auth state');
-        localStorage.removeItem('token');
-      } else if (error.response?.status === 401) {
-        // For pomodoro endpoints, just log the error without clearing token
-        console.log('401 received but not clearing token (auth or pomodoro endpoint)');
+      // Log the error but don't clear auth token automatically
+      if (error.response?.status === 401) {
+        console.warn(`401 Unauthorized received from ${error.config?.url} - auth handling delegated to context`);
+        
+        // Don't clear token here - let the Auth context handle it based on the actual error message
+        // This prevents unwanted logouts during temporary server issues
       }
       
       return Promise.reject(error);
@@ -117,8 +112,44 @@ const apiService = (() => {
     },
     
     updateProfile: async (userData: any) => {
-      const response = await api.put('/auth/profile', userData);
-      return response.data;
+      try {
+        console.log('API service - updateProfile raw data:', userData);
+        const response = await api.put('/users/me', userData);
+        console.log('API service - updateProfile raw response:', response);
+        
+        // Make sure avatar changes are preserved
+        if (userData.avatarUrl && !response.data.avatarUrl) {
+          console.warn('API response missing avatarUrl! Adding back from request data.');
+          response.data.avatarUrl = userData.avatarUrl;
+        }
+        
+        return response.data;
+      } catch (error) {
+        console.error('Failed to update profile:', error);
+        throw error;
+      }
+    },
+    
+    changePassword: async (currentPassword: string, newPassword: string) => {
+      try {
+        const response = await api.post('/users/password', { currentPassword, newPassword });
+        return response.data;
+      } catch (error) {
+        console.error('Failed to change password:', error);
+        throw error;
+      }
+    },
+    
+    deleteAccount: async (password: string) => {
+      try {
+        const response = await api.delete('/users/delete', { 
+          data: { password } 
+        });
+        return response.data;
+      } catch (error) {
+        console.error('Failed to delete account:', error);
+        throw error;
+      }
     },
     
     requestPasswordReset: async (email: string) => {

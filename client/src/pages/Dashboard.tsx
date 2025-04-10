@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import PomodoroTimer from '../components/pomodoro/PomodoroTimer';
 import { useAuth } from '../contexts/AuthContext';
 import { useStats } from '../contexts/StatsContext';
-import { MusicPlayer } from '../components/music';
 import { Link } from 'react-router-dom';
 import { Box, Typography } from '@mui/material';
 
@@ -105,9 +104,6 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
-      
-      {/* Music Player is now positioned via fixed positioning in its own component */}
-      <MusicPlayer />
     </div>
   );
 };
