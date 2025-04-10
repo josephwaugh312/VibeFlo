@@ -3,7 +3,7 @@ import PomodoroTimer from '../components/pomodoro/PomodoroTimer';
 import { useAuth } from '../contexts/AuthContext';
 import { useStats } from '../contexts/StatsContext';
 import { Link } from 'react-router-dom';
-import { Box, Typography, Paper } from '@mui/material';
+import { Typography, Paper } from '@mui/material';
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
@@ -22,7 +22,7 @@ const Dashboard: React.FC = () => {
     
     // Refresh stats when the dashboard loads
     refreshStats();
-  }, [user, refreshStats]);
+  }, [user, refreshStats, sessions?.length]);
   
   return (
     <div className="container mx-auto px-4 py-8">
