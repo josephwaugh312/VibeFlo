@@ -213,6 +213,7 @@ Use this checklist to track progress on test coverage improvements:
     - [x] Test password changing functionality
     - [x] Test account deletion dialog
     - [x] Test password validation
+  - 📊 Current coverage: 38.16% Statements, 32.97% Branches, 52.38% Functions, 40.32% Lines
 - [x] Add tests for remaining Pomodoro components
 - [ ] Improve MusicPlayer component test coverage
 - [ ] Add tests for API service functions
