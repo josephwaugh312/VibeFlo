@@ -207,6 +207,12 @@ Use this checklist to track progress on test coverage improvements:
   - [x] Test loading states
   - [x] Test user not logged in state
   - [x] Test user profile display when logged in
+  - [x] Test interactive features
+    - [x] Test form fields display and interaction
+    - [x] Test avatar selection
+    - [x] Test password changing functionality
+    - [x] Test account deletion dialog
+    - [x] Test password validation
 - [x] Add tests for remaining Pomodoro components
 - [ ] Improve MusicPlayer component test coverage
 - [ ] Add tests for API service functions
