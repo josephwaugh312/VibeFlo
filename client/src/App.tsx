@@ -29,14 +29,19 @@ const ThemeSelector = lazy(() => import('./pages/ThemeSelector'));
 const Playlists = lazy(() => import('./pages/Playlists'));
 const PlaylistDetail = lazy(() => import('./pages/PlaylistDetail'));
 const About = lazy(() => import('./pages/About'));
+const Admin = lazy(() => import('./pages/Admin'));
 
 // Root component that handles auth state and routing
 const AppRoutes = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   
   // Redirect to login if not authenticated
   useEffect(() => {
+    // Don't redirect during the initial loading
+    if (isLoading) return;
+    
+    // If not authenticated and not on an allowed public page, redirect to login
     if (!isAuthenticated && window.location.pathname !== '/login' && 
         window.location.pathname !== '/register' && 
         window.location.pathname !== '/forgot-password' &&
@@ -47,7 +52,7 @@ const AppRoutes = () => {
         window.location.pathname !== '/') {
       navigate('/login');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, isLoading]);
   
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -65,6 +70,7 @@ const AppRoutes = () => {
         <Route path="/playlists" element={<PrivateRoute><Playlists /></PrivateRoute>} />
         <Route path="/playlist/:id" element={<PrivateRoute><PlaylistDetail /></PrivateRoute>} />
         <Route path="/help" element={<PrivateRoute><Help /></PrivateRoute>} />
+        <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="*" element={<Navigate to="/" replace />} />
@@ -79,7 +85,10 @@ const App: React.FC = () => {
       <CssBaseline />
       <Box sx={{ 
         minHeight: '100vh',
-        color: 'text.primary'
+        color: 'text.primary',
+        overflowX: 'hidden',
+        width: '100%',
+        position: 'relative'
       }}>
         <AuthProvider>
           <ThemeProvider>
@@ -88,7 +97,13 @@ const App: React.FC = () => {
               <StatsProvider>
                 <MusicPlayerProvider>
                   <Router>
-                    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+                    <Box sx={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      minHeight: '100vh',
+                      width: '100%',
+                      overflowX: 'hidden'
+                    }}>
                       <Navbar />
                       <Box 
                         component="main" 
@@ -96,6 +111,7 @@ const App: React.FC = () => {
                           flexGrow: 1, 
                           p: 3,
                           pb: '100px',
+                          width: '100%'
                         }}
                       >
                         <AppRoutes />

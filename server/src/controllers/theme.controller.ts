@@ -101,15 +101,39 @@ export const createCustomTheme = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Name and image URL are required' });
     }
 
+    // Default moderation status is 'pending' if theme is public
+    const moderationStatus = is_public ? 'pending' : null;
+    const actualIsPublic = is_public ? false : false; // Set to false if is_public is true (pending moderation)
+    
     const newTheme = await pool.query(
       `INSERT INTO custom_themes 
-       (user_id, name, description, image_url, is_public, prompt) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
+       (user_id, name, description, image_url, is_public, prompt, 
+        moderation_status, moderation_notes) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
        RETURNING *`,
-      [userId, name, description || null, image_url, is_public || false, prompt || null]
+      [
+        userId, 
+        name, 
+        description || null, 
+        image_url, 
+        actualIsPublic, 
+        prompt || null,
+        moderationStatus,
+        is_public ? 'Theme pending moderation review' : null
+      ]
     );
     
-    res.status(201).json(newTheme.rows[0]);
+    const theme = newTheme.rows[0];
+    
+    // Add a message to inform the user about moderation if theme is public
+    const responseObj = {
+      ...theme,
+      message: is_public ? 
+        'Your theme has been submitted for moderation and will be public once approved.' :
+        'Theme created successfully.'
+    };
+    
+    res.status(201).json(responseObj);
   } catch (error) {
     console.error('Error creating custom theme:', error);
     res.status(500).json({ message: 'Server error' });
@@ -138,7 +162,22 @@ export const updateCustomTheme = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Theme not found or not owned by user' });
     }
 
+    const existingTheme = themeCheck.rows[0];
     const { name, description, image_url, is_public, prompt } = req.body;
+    
+    // Determine if moderation status needs to be updated
+    let moderationStatus = existingTheme.moderation_status;
+    let actualIsPublic = is_public;
+    let moderationNotes = existingTheme.moderation_notes;
+    
+    // If the theme wasn't public before but is now, or if the image has changed for a public theme
+    const imageChanged = image_url && image_url !== existingTheme.image_url;
+    
+    if ((is_public && !existingTheme.is_public) || (is_public && imageChanged)) {
+      moderationStatus = 'pending';
+      actualIsPublic = false; // Keep it private until approved
+      moderationNotes = 'Theme pending moderation review';
+    }
     
     const updatedTheme = await pool.query(
       `UPDATE custom_themes 
@@ -147,13 +186,35 @@ export const updateCustomTheme = async (req: AuthRequest, res: Response) => {
            image_url = COALESCE($5, image_url),
            is_public = COALESCE($6, is_public),
            prompt = COALESCE($7, prompt),
+           moderation_status = $8,
+           moderation_notes = $9,
            updated_at = CURRENT_TIMESTAMP
        WHERE id = $1 AND user_id = $2
        RETURNING *`,
-      [id, userId, name, description, image_url, is_public, prompt]
+      [
+        id, 
+        userId, 
+        name, 
+        description, 
+        image_url, 
+        actualIsPublic, 
+        prompt,
+        moderationStatus,
+        moderationNotes
+      ]
     );
     
-    res.json(updatedTheme.rows[0]);
+    const theme = updatedTheme.rows[0];
+    
+    // Add a message to inform the user about moderation if needed
+    const responseObj = {
+      ...theme,
+      message: moderationStatus === 'pending' ? 
+        'Your theme has been submitted for moderation and will be public once approved.' :
+        'Theme updated successfully.'
+    };
+    
+    res.json(responseObj);
   } catch (error) {
     console.error('Error updating custom theme:', error);
     res.status(500).json({ message: 'Server error' });

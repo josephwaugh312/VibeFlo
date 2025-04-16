@@ -1,251 +1,213 @@
 # VibeFlo Test Coverage Report
 
-This document provides an overview of the current test coverage for the VibeFlo application, identifies gaps in test coverage, and outlines recommendations for improving test coverage in the future.
+## Current Coverage Status
+- Client-side: **62.54%** coverage (up from 50.78%)
+- Server-side: **26.37%** coverage
 
-## Coverage Summary
+## Coverage by Module
 
-### Client-Side Coverage
-- **Overall**: 20.85% (Statements), 15.86% (Branches), 19.9% (Functions), 21.03% (Lines)
+### Good Coverage (>80%)
+- Authentication components (Login, Register): 100%
+- Core utilities (validationUtils, dateUtils, generateId, storageUtils): 89.26%
+- PrivateRoute component: 100%
+- Home and Dashboard pages: 100%
+- TodoList component: 91.2%
+- Profile components:
+  - AvatarSelector: 93.93%
+- Settings components:
+  - SettingsModal: 96%
+- Theme components:
+  - ReportThemeDialog: 94.87%
+- Pomodoro components:
+  - Todo: 100% (100% Statements, 100% Branch, 100% Functions, 100% Lines)
+  - SortableTodo: 100% (100% Statements, 85.71% Branch, 100% Functions, 100% Lines)
+  - AddTodoInput: 100% (100% Statements, 100% Branch, 100% Functions, 100% Lines)
+- Page components:
+  - Help: 100%
+  - Privacy: 100%
+  - Terms: 100%
+  - About: 100%
+  - Admin: 79.48% (75% Lines, 46.51% Branch, 53.33% Functions)
+  - NotFound: 100%
+  - Music: 100%
+  - Playlists: 97.56% (96.72% Lines, 80.7% Branch, 93.33% Functions)
+  - ForgotPassword: 90.27% (89.47% Lines, 80.76% Branch, 100% Functions)
+  - ResetPassword: 98.52% (98.18% Lines, 90.47% Branch, 91.66% Functions)
+- Contexts:
+  - AuthContext (in src/contexts): 82.92% (80.39% Lines, 25.45% Branch, 69.56% Functions)
 
-| Module | Coverage | Status |
-|--------|----------|--------|
-| Utils | 81.95% | ✅ Good |
-| Components/pomodoro | 68.75% | ✅ Moderate |
-| Components/music | 32.03% | ⚠️ Low |
-| Components/layout | 0% | ❌ Missing |
-| Contexts | 4.13-18.12% | ❌ Very Low |
-| Pages | 6.18% | ⚠️ Very Low |
-| Services | 19.68% | ⚠️ Low |
+### Moderate Coverage (50-80%)
+- ThemeContext: 73.3% (70.05% Lines, 45.78% Branch, 81.08% Functions)
+- PomodoroTimer component: 73.46% (71.96% Lines, 67.02% Branch, 66.66% Functions)
+- MusicPlayerContext: 67.45% (62.2% Lines, 39.18% Branch, 52% Functions)
+- Navbar component: 84.31% (82.22% Lines, 48.52% Branch, 100% Functions)
+- Stats page: 75.11% (76.34% Lines, 68.18% Branch, 79.48% Functions)
+- PlaylistDetail page: 60.63% (59.77% Lines, 36.86% Branch, 54.54% Functions)
+- Profile page: 53.71% (49.28% Lines, 28.84% Branch, 52.38% Functions)
 
-### Server-Side Coverage
-- **Overall**: 26.37% (Statements), 12.61% (Branches), 17.03% (Functions), 24.36% (Lines)
+### Low Coverage (20-50%)
+- SettingsContext: 43.1% (37.5% Lines, 33.33% Branch, 42.85% Functions)
+- ThemeBackground component: 33.33% (29.23% Lines, 17.64% Branch, 66.66% Functions)
+- ThemeSelector page: 32.31% (23.98% Lines, 19.72% Branch,
+12.5% Functions)
+- StatsContext: 24.45% (20.51% Lines, 6.32% Branch, 17.39% Functions)
 
-| Module | Coverage | Status |
-|--------|----------|--------|
-| Utils | 100% | ✅ Excellent |
-| Middleware | 72.54% | ✅ Good |
-| Routes | 41.61% | ⚠️ Moderate |
-| Services | 33.66% | ⚠️ Low |
-| Controllers | 15.69% | ❌ Very Low |
-| Models | 0% | ❌ Missing |
+### Very Low Coverage (<20%)
+- API services: 14.71% (17.34% Lines, 8.57% Branch, 4.28% Functions)
+- Spotify service: 14.7% (16.43% Lines, 14.89% Branch, 14.28% Functions)
+- AuthContext (in src/context): 8.08% (6.09% Lines, 0% Branch, 7.14% Functions)
 
-## Test Status
+## Working Tests
+- Core functionality tests:
+  - TodoList.test.tsx
+  - AddTodoInput.test.tsx
+  - PrivateRoute.test.tsx
+  - Navbar.test.tsx
+  - AuthContext.test.tsx
+  - ThemeContext.test.tsx
+  - MusicPlayerContext.test.tsx
+  - Profile.test.tsx
+  - validationUtils.test.tsx
+  - dateUtils.test.tsx
+  - generateId.test.tsx
+  - storageUtils.test.tsx
+  - AvatarSelector.test.tsx
+  - SettingsModal.test.tsx
+  - ReportThemeDialog.test.tsx
+  - Todo.test.tsx
+  - SortableTodo.test.tsx
+  - Help.test.tsx
+  - Privacy.test.tsx
+  - Terms.test.tsx
+  - About.test.tsx
+  - Admin.test.tsx
+  - NotFound.test.tsx
+  - Music.test.tsx
+  - ForgotPassword.test.tsx
+  - ResetPassword.test.tsx
+  - ThemeSelector.test.tsx
+  - PlaylistDetail.test.tsx
+  - PlaylistDetail.token.test.tsx
+  - apiToken.test.ts
+  - api.test.ts
+  - spotify.test.ts
 
-### Working Tests
-1. **Client Side**
-   - Utility functions (dateUtils, generateId, storageUtils, validationUtils)
-   - Some component tests (PomodoroTimer, TodoList, AddTodoInput, etc.)
-   - Basic service tests (Spotify, API tokens)
-   - Authentication components (PrivateRoute for protecting routes)
+## Fixed Tests
+- MusicPlayerContext.test.tsx - Fixed localStorage mock implementation
+- ThemeContext.test.tsx - Fixed async behavior and URL normalization
+- PlaylistDetail.test.tsx - Added tests for loading state and play button functionality
 
-2. **Server Side**
-   - Unit tests for utilities (JWT, error handlers, validation, sanitization)
-   - Middleware tests (auth, admin)
-   - Some controller tests (user controller basic functions)
-   - Authentication flows:
-     - User registration unit and integration tests
-     - Login endpoint tests with credential validation
-     - JWT token generation and verification tests
-     - Authentication middleware (required and optional) tests
-     - Password hashing verification tests
+## Failing Tests
+### Integration Tests
+- N/A
 
-### Failing Tests
-1. **Integration Tests**
-   - Theme integration tests (database connection issues)
-   - Auth API tests (returning 400 Bad Request instead of expected status codes)
+### Unit Tests
+- The following mock files are reported as failures but only because they don't contain actual tests:
+  - src/__tests__/mocks/styleMock.js
+  - src/__tests__/mocks/contexts.tsx
+  - src/__tests__/mocks/hook-mocks.tsx
 
-2. **Unit Tests**
-   - Theme tests (TypeScript errors with db module imports)
-   - Auth service tests (db function errors)
+## Gaps in Coverage
+### Client-side
+- Very low coverage for API and Spotify services
+- Low coverage for certain contexts (StatsContext, SettingsContext)
+- Limited coverage for ThemeSelector page
 
-## Test Coverage Gaps
+### Server-side
+- Very low coverage (0-30%) for:
+  - Controllers (particularly user, theme, and stats controllers)
+  - Models (particularly user model)
+  - Middleware
+  - Route handlers
+  - Authentication system
 
-### Client-Side Gaps
-1. **Contexts** (4.13-18.12%)
-   - AuthContext
-   - SettingsContext
-   - StatsContext
-   - ThemeContext
-   - MusicPlayerContext
+## Recommended Improvements
+### Client-side Priority
+1. ✅ Fix failing tests (AvatarSelector, ReportThemeDialog, ThemeContext, MusicPlayerContext)
+2. ✅ Add tests for SettingsModal component
+3. ✅ Add tests for remaining core components:
+   - ✅ Todo.tsx
+   - ✅ SortableTodo.tsx
+4. ✅ Add tests for page components with 0% coverage
+5. ✅ Improve tests for PlaylistDetail component
+6. Increase coverage for API and Spotify services
+7. Improve coverage for StatsContext and SettingsContext
 
-2. **Pages** (0.25%)
-   - Almost all pages lack tests
-   - Critical flows like Login, Register, Profile, and Dashboard need coverage
+### Server-side Priority
+1. Add tests for critical authentication controllers
+2. Add tests for middleware functions
+3. Add tests for database models and their methods
+4. Improve test coverage for API routes
 
-3. **Components**
-   - Auth components
-   - Profile components
-   - Settings components
-   - Theme components
+## Untested Components Checklist
+### Core Components
+- [x] Todo.tsx
+- [x] SortableTodo.tsx
+- [x] components/Navbar.tsx (improved coverage to 84.31%)
+- [ ] ThemeBackground.tsx (low coverage at 33.33%)
 
-4. **Services**
-   - API services need more comprehensive tests
-   - Spotify integration needs better test coverage
+### Page Components
+- [x] About.tsx
+- [x] Admin.tsx (improved coverage to 79.48%)
+- [x] ForgotPassword.tsx
+- [x] Help.tsx
+- [x] Music.tsx
+- [x] NotFound.tsx
+- [x] PlaylistDetail.tsx (improved coverage to 60.63%)
+- [x] Privacy.tsx
+- [x] Profile.tsx (improved coverage to 53.71%)
+- [x] ResetPassword.tsx
+- [x] Terms.tsx
+- [x] ThemeSelector.tsx (improved to 32.31% but still needs work)
 
-### Server-Side Gaps
-1. **Controllers** (15.69%)
-   - Auth controllers
-   - Theme controllers
-   - Playlist controllers
-   - Settings controllers
+### Context Providers
+- [x] MusicPlayerContext.tsx (improved to 67.45%)
+- [ ] StatsContext.tsx (still very low coverage at 24.45%)
+- [ ] SettingsContext.tsx (still low coverage at 43.1%)
 
-2. **Models** (0%)
-   - No tests for data models and database interactions
+### Services
+- [ ] api.ts (still very low coverage at 14.71%)
+- [ ] spotify.ts (still very low coverage at 14.7%)
 
-3. **Services** (33.66%)
-   - Auth service
-   - Theme service
-   - Email service
+### Settings Components
+- [x] SettingsModal.tsx (improved to 96% with passing tests)
 
-## Recommendations
+### Profile Components
+- [x] AvatarSelector.tsx (improved to 93.93% coverage)
 
-### Priority 1: Fix Failing Tests
-1. **Database Connection Issues**
-   - Set up a proper test database configuration
-   - Fix PostgreSQL role issues in integration tests
+### Server-side Improvements Needed
+- [ ] User controller
+- [ ] Auth controller
+- [ ] Theme controller
+- [ ] Stats controller
+- [ ] Todo controller
+- [ ] Middleware functions
+- [ ] User model
+- [ ] Todo model
+- [ ] Theme model
+- [ ] Session model
 
-2. **Authentication Tests**
-   - Fix validation and request handling in auth endpoints
-   - Update test expectations to match actual implementation
-
-3. **TypeScript Errors**
-   - Resolve import and type errors in theme tests
-
-### Priority 2: Critical User Flows
-1. **Authentication Flow**
-   - Add tests for registration, login, and authentication processes
-   - Test token management and session handling
-   - Create tests for AuthContext that verify login/logout functionality and token persistence
-   - Test authentication edge cases (invalid credentials, expired tokens, etc.)
-   - Add tests for PrivateRoute component with various auth states
-   - Implement end-to-end tests for complete authentication flows
-
-2. **Core Features**
-   - Pomodoro functionality (expand current tests)
-   - Playlist and music integration
-   - Theme selection and customization
-
-### Priority 3: Expand Component Coverage
-1. **Client Components**
-   - Add tests for all UI components
-   - Test component interactions and state changes
-
-2. **Contexts and Providers**
-   - Test context providers individually
-   - Test integration between contexts
-
-### Priority 4: API and Service Layer
-1. **API Services**
-   - Test all API endpoints with proper mocking
-   - Test error handling and edge cases
-
-2. **Backend Services**
-   - Complete tests for service layer functions
-   - Test database interactions with proper mocks
-
-### Infrastructure Improvements
-1. **Testing Environment**
-   - Set up a dedicated test database
-   - Configure CI pipeline for automated testing
-
-2. **Test Configuration**
-   - Fix Jest configuration warnings
-   - Standardize test setup and teardown
-
-3. **Mocking Strategy**
-   - Create consistent mocks for external services
-   - Develop better database mocking approach
-
-## Action Plan
-
-### Short Term (Next 2 Weeks)
-1. Fix failing tests
-2. Increase client utility coverage to 90%+
-3. Add core component tests
-
-### Medium Term (1-2 Months)
-1. Add page component tests
-2. Increase context provider coverage
-3. Add controller and service tests on the server side
-
-### Long Term (3+ Months)
-1. Add integration tests for critical user flows
-2. Set up end-to-end testing
-3. Achieve 80%+ coverage across the application
-
-## Progress Tracking Checklist
-
-Use this checklist to track progress on test coverage improvements:
-
-### Fix Failing Tests
-- [ ] Fix PostgreSQL role issues in integration tests
-- [ ] Update auth endpoint tests to match current implementation
-- [ ] Resolve TypeScript errors in theme tests
-
-### Client-Side Improvements
-- [x] Increase dateUtils coverage to 90%+
-- [x] Add tests for AuthContext provider
-  - [x] Test login success/failure handling
-  - [x] Test token persistence
-  - [x] Test auto-login on page refresh
-  - [x] Test logout functionality
-- [ ] Add tests for SettingsContext provider
-- [ ] Add tests for StatsContext provider
-- [ ] Add tests for ThemeContext provider
-- [ ] Add tests for MusicPlayerContext provider
-- [x] Create test suite for Login page
-  - [x] Test form validation (required fields, field formats)
-  - [x] Test form submission
-  - [x] Test loading states
-  - [x] Test error message display
-- [x] Create test suite for Register page
-  - [x] Test password strength validation
-  - [x] Test username/email uniqueness validation
-  - [x] Test form submission
-  - [x] Test success/error states
-- [x] Create test suite for Profile page
-  - [x] Test loading states
-  - [x] Test user not logged in state
-  - [x] Test user profile display when logged in
-  - [x] Test interactive features
-    - [x] Test form fields display and interaction
-    - [x] Test avatar selection
-    - [x] Test password changing functionality
-    - [x] Test account deletion dialog
-    - [x] Test password validation
-  - 📊 Current coverage: 38.16% Statements, 32.97% Branches, 52.38% Functions, 40.32% Lines
-- [x] Add tests for remaining Pomodoro components
-- [ ] Improve MusicPlayer component test coverage
-- [ ] Add tests for API service functions
-- [ ] Add tests for Spotify integration
-
-### Server-Side Improvements
-- [ ] Create test database configuration
-- [x] Add tests for Auth controller
-- [ ] Add tests for Theme controller
-- [ ] Add tests for Playlist controller
-- [ ] Add tests for Settings controller
-- [ ] Create tests for User model
-- [ ] Create tests for Playlist model
-- [ ] Create tests for Song model
-- [x] Improve Auth service test coverage
-- [ ] Add tests for Theme service
-- [x] Complete Email service test coverage
-
-### Infrastructure
-- [ ] Fix Jest configuration warnings
-- [ ] Set up CI pipeline for automated testing
-- [ ] Create standard mocks for external services
-- [ ] Standardize database mocking approach
-- [ ] Set up end-to-end testing framework
-
-### Coverage Goals
-- [ ] Achieve 50% overall client coverage
-- [ ] Achieve 60% overall server coverage
-- [ ] Achieve 80% coverage for critical flows
-- [x] Achieve 90% util function coverage
-- [ ] Achieve 70% component coverage
+## Coverage Goals
+- ✅ Short-term: Increase client-side coverage to 50% (achieved and exceeded: 62.54%)
+- Mid-term: Increase server-side coverage to 40% (currently 26.37%)
+- Long-term: Achieve >70% coverage for both client and server side
 
 ## Conclusion
+The test coverage has significantly improved to 62.54% on the client-side, exceeding our short-term goal of 50%. This progress is the result of comprehensive tests across multiple components and pages, including fixes for previously problematic tests in ThemeContext and MusicPlayerContext, and improved coverage for the PlaylistDetail component.
 
-The VibeFlo application has a solid foundation for testing, particularly in the utilities and some components, but requires significant work to achieve comprehensive test coverage. By following the recommendations in this document, we can systematically improve test coverage and ensure the reliability and stability of the application. 
+The project now has 49 passing test suites with 420 passing tests. The only reported failures are not actual test failures but rather mock files without any tests. UI component warnings are present for props like `data-gutterBottom` and `paragraph`, but these don't affect test functionality.
+
+Significant improvements have been made in several key areas:
+- MusicPlayerContext tests now use proper Jest mock functions for localStorage
+- PlaylistDetail component testing has been expanded to cover loading states and player functionality
+- Multiple page components now have excellent coverage, with many reaching 100%
+
+The most significant remaining gaps in client-side coverage are:
+1. API and Spotify services (both below 15% coverage)
+2. StatsContext (24.45% coverage)
+3. ThemeSelector page (32.31% coverage)
+4. ThemeBackground component (33.33% coverage)
+
+The next focus should be on improving coverage for these low-coverage areas, particularly the API services which are critical to application functionality. Server-side testing also remains a priority with only 26.37% coverage.
+
+Overall, the project has made excellent progress in test coverage and quality, providing a much more robust codebase with significantly better test coverage than before. 

@@ -1,5 +1,5 @@
-import React from 'react';
-import { AppBar, Toolbar, Typography, Button, Box, Avatar } from '@mui/material';
+import React, { useState } from 'react';
+import { AppBar, Toolbar, Typography, Button, Box, Avatar, IconButton, Drawer, List, ListItem, ListItemText } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -16,6 +16,8 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
 
 // Map of icon identifiers to icon components
 const iconMap: { [key: string]: React.ReactNode } = {
@@ -36,6 +38,7 @@ const iconMap: { [key: string]: React.ReactNode } = {
 const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Common button styles with purple border on hover
   const buttonStyle = {
@@ -52,6 +55,10 @@ const Navbar: React.FC = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   // Function to render avatar based on the user's avatar URL
@@ -129,16 +136,98 @@ const Navbar: React.FC = () => {
     }
   };
 
+  const renderMobileMenu = () => {
+    return (
+      <Drawer
+        anchor="top"
+        open={mobileMenuOpen}
+        onClose={toggleMobileMenu}
+        sx={{
+          '& .MuiDrawer-paper': {
+            bgcolor: 'rgba(31, 41, 55, 0.95)', // Dark background with transparency
+            color: 'white',
+            paddingBottom: 2
+          }
+        }}
+      >
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', p: 1 }}>
+          <IconButton 
+            edge="end" 
+            color="inherit" 
+            onClick={toggleMobileMenu}
+            aria-label="Close menu"
+          >
+            <CloseIcon />
+          </IconButton>
+        </Box>
+        <List>
+          <ListItem component={RouterLink} to="/" onClick={toggleMobileMenu}>
+            <ListItemText primary="Home" />
+          </ListItem>
+          <ListItem component={RouterLink} to="/about" onClick={toggleMobileMenu}>
+            <ListItemText primary="About" />
+          </ListItem>
+          {isAuthenticated && (
+            <>
+              <ListItem component={RouterLink} to="/profile" onClick={toggleMobileMenu}>
+                <ListItemText primary="Profile" />
+              </ListItem>
+              <ListItem component={RouterLink} to="/dashboard" onClick={toggleMobileMenu}>
+                <ListItemText primary="Dashboard" />
+              </ListItem>
+              <ListItem component={RouterLink} to="/stats" onClick={toggleMobileMenu}>
+                <ListItemText primary="Stats" />
+              </ListItem>
+              <ListItem component={RouterLink} to="/playlists" onClick={toggleMobileMenu}>
+                <ListItemText primary="Playlists" />
+              </ListItem>
+              <ListItem component={RouterLink} to="/themes" onClick={toggleMobileMenu}>
+                <ListItemText primary="Themes" />
+              </ListItem>
+              {user && (
+                <ListItem>
+                  <ListItemText primary={`@${user.username}`} />
+                </ListItem>
+              )}
+              <ListItem component="div" onClick={() => { handleLogout(); toggleMobileMenu(); }}>
+                <ListItemText primary="Logout" />
+              </ListItem>
+            </>
+          )}
+          {!isAuthenticated && (
+            <>
+              <ListItem component={RouterLink} to="/login" onClick={toggleMobileMenu}>
+                <ListItemText primary="Login" />
+              </ListItem>
+              <ListItem component={RouterLink} to="/register" onClick={toggleMobileMenu}>
+                <ListItemText primary="Register" />
+              </ListItem>
+            </>
+          )}
+        </List>
+      </Drawer>
+    );
+  };
+
   return (
     <>
-      <AppBar position="static">
-        <Toolbar>
+      <AppBar 
+        position="static" 
+        sx={{
+          width: '100vw',  // Force full viewport width
+          maxWidth: '100%', // Prevent horizontal scrolling
+          left: 0,
+          right: 0,
+          boxSizing: 'border-box'  // Ensure padding is included in width
+        }}
+      >
+        <Toolbar sx={{ width: '100%' }}>
           <Typography variant="h6" component={RouterLink} to="/" sx={{ flexGrow: 0, textDecoration: 'none', color: 'inherit', mr: 2 }}>
             VibeFlo
           </Typography>
           
           {/* Navigation Links */}
-          <Box sx={{ flexGrow: 1, display: 'flex' }}>
+          <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, flexWrap: { xs: 'wrap', md: 'nowrap' } }}>
             <Button 
               color="inherit" 
               component={RouterLink} 
@@ -194,7 +283,7 @@ const Navbar: React.FC = () => {
           </Box>
           
           {/* Auth Section */}
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>
             {isAuthenticated ? (
               <>
                 <Box 
@@ -258,8 +347,25 @@ const Navbar: React.FC = () => {
               </>
             )}
           </Box>
+
+          {/* Mobile menu button */}
+          <IconButton
+            edge="end"
+            color="inherit"
+            aria-label="Open main menu"
+            onClick={toggleMobileMenu}
+            sx={{ 
+              display: { xs: 'flex', md: 'none' },
+              ml: 1
+            }}
+          >
+            {mobileMenuOpen ? <CloseIcon /> : <MenuIcon />}
+          </IconButton>
         </Toolbar>
       </AppBar>
+
+      {/* Mobile menu drawer */}
+      {renderMobileMenu()}
     </>
   );
 };

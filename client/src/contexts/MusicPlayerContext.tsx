@@ -149,10 +149,108 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
         const newTrack = e.newValue ? JSON.parse(e.newValue) : null;
         setCurrentTrack(newTrack);
       }
+      if (e.key === 'vibeflo_playlist_updated') {
+        // Reload playlist from localStorage
+        const refreshedTracks = localStorage.getItem('vibeflo_playlist');
+        const refreshedCurrentTrack = localStorage.getItem('vibeflo_current_track');
+        
+        if (refreshedTracks) {
+          const parsedTracks = JSON.parse(refreshedTracks);
+          setTracks(parsedTracks);
+          console.log('Music player refreshed with playlist:', parsedTracks);
+        }
+        
+        if (refreshedCurrentTrack) {
+          const parsedCurrentTrack = JSON.parse(refreshedCurrentTrack);
+          setCurrentTrack(parsedCurrentTrack);
+          setIsPlaying(true);
+          setIsOpen(true);
+        }
+      }
     };
     
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
+  // Listen for the playlist_updated flag in this window
+  useEffect(() => {
+    const checkPlaylistUpdated = () => {
+      const updated = localStorage.getItem('vibeflo_playlist_updated');
+      if (updated) {
+        // Clear the flag
+        localStorage.removeItem('vibeflo_playlist_updated');
+        
+        // Reload playlist from localStorage
+        const refreshedTracks = localStorage.getItem('vibeflo_playlist');
+        const refreshedCurrentTrack = localStorage.getItem('vibeflo_current_track');
+        
+        if (refreshedTracks) {
+          const parsedTracks = JSON.parse(refreshedTracks);
+          setTracks(parsedTracks);
+          console.log('Music player refreshed with playlist:', parsedTracks);
+        }
+        
+        if (refreshedCurrentTrack) {
+          const parsedCurrentTrack = JSON.parse(refreshedCurrentTrack);
+          setCurrentTrack(parsedCurrentTrack);
+          setIsPlaying(true);
+          setIsOpen(true);
+        }
+      }
+    };
+    
+    // Check immediately on component mount
+    checkPlaylistUpdated();
+    
+    // Also set an interval to check periodically (for race conditions)
+    const intervalId = setInterval(checkPlaylistUpdated, 1000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  // Listen for custom events to load a playlist
+  useEffect(() => {
+    const handlePlaylistLoaded = (e: any) => {
+      try {
+        const { tracks, currentTrack, keepOpen } = e.detail;
+        console.log('Playlist loaded via custom event:', tracks);
+        
+        if (tracks && Array.isArray(tracks)) {
+          setTracks(tracks);
+          
+          if (currentTrack) {
+            setCurrentTrack(currentTrack);
+            setIsPlaying(true);
+            
+            // When keepOpen is true, ensure player stays visible
+            if (keepOpen) {
+              setIsOpen(true);
+              setIsMinimized(false);
+              localStorage.setItem('vibeflo_player_open', 'true');
+            } else {
+              setIsOpen(true);
+            }
+            
+            // Force play attempt if we have a global player instance
+            if (playerRef.current) {
+              setTimeout(() => {
+                console.log('Attempting to play track immediately after load');
+                try {
+                  playerRef.current.playVideo();
+                } catch (err) {
+                  console.error('Error auto-playing after load:', err);
+                }
+              }, 300);
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error handling custom playlist event:', err);
+      }
+    };
+    
+    window.addEventListener('vibeflo_playlist_loaded', handlePlaylistLoaded);
+    return () => window.removeEventListener('vibeflo_playlist_loaded', handlePlaylistLoaded);
   }, []);
 
   // Add a track to the playlist
@@ -216,31 +314,52 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const play = () => {
     if (!currentTrack) return;
     setIsPlaying(true);
-    if (playerRef.current) {
-      playerRef.current.playVideo();
-      
-      // Only show toast on manual play, not auto-play
-      const truncatedTitle = currentTrack.title.length > 30 
-        ? `${currentTrack.title.slice(0, 30)}...` 
-        : currentTrack.title;
-      toast.success(`Playing: ${truncatedTitle}`, { 
-        id: 'play-status',  // Using ID prevents multiple toasts when clicking play repeatedly
-        duration: 1500      // Shorter duration for playback toasts
-      });
+    
+    if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+      try {
+        playerRef.current.playVideo();
+        
+        // Only show toast on manual play, not auto-play
+        const truncatedTitle = currentTrack.title.length > 30 
+          ? `${currentTrack.title.slice(0, 30)}...` 
+          : currentTrack.title;
+        toast.success(`Playing: ${truncatedTitle}`, { 
+          id: 'play-status',  // Using ID prevents multiple toasts when clicking play repeatedly
+          duration: 1500      // Shorter duration for playback toasts
+        });
+      } catch (err) {
+        console.error("Error playing video:", err);
+      }
+    } else {
+      console.log("Player not ready yet, retrying in 500ms");
+      // Retry after short delay
+      setTimeout(() => {
+        if (playerRef.current && typeof playerRef.current.playVideo === 'function') {
+          try {
+            playerRef.current.playVideo();
+          } catch (err) {
+            console.error("Error playing video on retry:", err);
+          }
+        }
+      }, 500);
     }
   };
 
   // Pause the current track
   const pause = () => {
     setIsPlaying(false);
-    if (playerRef.current) {
-      playerRef.current.pauseVideo();
-      
-      if (currentTrack) {
-        toast.success('Paused', { 
-          id: 'play-status',  // Using same ID as play toast
-          duration: 1500      // Shorter duration
-        });
+    if (playerRef.current && typeof playerRef.current.pauseVideo === 'function') {
+      try {
+        playerRef.current.pauseVideo();
+        
+        if (currentTrack) {
+          toast.success('Paused', { 
+            id: 'play-status',  // Using same ID as play toast
+            duration: 1500      // Shorter duration
+          });
+        }
+      } catch (err) {
+        console.error("Error pausing video:", err);
       }
     }
   };
@@ -256,11 +375,16 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setCurrentTrack(previousTrack);
     localStorage.setItem('vibeflo_current_track', JSON.stringify(previousTrack));
     
+    // Ensure we're playing
+    setIsPlaying(true);
+    
+    // The actual playing will be handled by the useEffect that watches currentTrack
+    
     const truncatedTitle = previousTrack.title.length > 30 
       ? `${previousTrack.title.slice(0, 30)}...` 
       : previousTrack.title;
-    toast.success(`Playing: ${truncatedTitle}`, { 
-      id: 'track-change',
+    toast.success(`Playing previous: ${truncatedTitle}`, {
+      id: 'play-status',
       duration: 1500
     });
   };
@@ -276,166 +400,137 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setCurrentTrack(nextTrack);
     localStorage.setItem('vibeflo_current_track', JSON.stringify(nextTrack));
     
+    // Ensure we're playing
+    setIsPlaying(true);
+    
+    // The actual playing will be handled by the useEffect that watches currentTrack
+    
     const truncatedTitle = nextTrack.title.length > 30 
       ? `${nextTrack.title.slice(0, 30)}...` 
       : nextTrack.title;
-    toast.success(`Playing: ${truncatedTitle}`, {
-      id: 'track-change',
+    toast.success(`Playing next: ${truncatedTitle}`, {
+      id: 'play-status',
       duration: 1500
     });
   };
 
-  // Seek to a specific time
+  // Seek to a specific time in the current track
   const seek = (time: number) => {
-    if (playerRef.current) {
-      playerRef.current.seekTo(time);
-      setCurrentTime(time);
-    }
-  };
-
-  // Set the volume
-  const handleSetVolume = (newVolume: number) => {
-    // Only show notification when volume changes significantly (>10%)
-    const significantChange = Math.abs(newVolume - volume) >= 10;
-    
-    setVolume(newVolume);
-    if (playerRef.current) {
-      playerRef.current.setVolume(newVolume);
-      
-      // Show toast only for significant volume changes
-      if (significantChange) {
-        toast.success(`Volume: ${newVolume}%`, { 
-          id: 'volume-change',
-          duration: 1000
-        });
+    if (currentTrack && playerRef.current && typeof playerRef.current.seekTo === 'function') {
+      try {
+        playerRef.current.seekTo(time);
+      } catch (err) {
+        console.error("Error seeking video:", err);
       }
     }
   };
 
-  // Toggle the music player open/closed
+  // Toggle the player's open state
   const toggleOpen = () => {
-    setIsOpen(!isOpen);
-  };
-
-  // Toggle the music player minimized
-  const toggleMinimize = () => {
-    if (!isMinimized) {
-      setCurrentTab('nowPlaying');
+    // Toggle the isOpen state
+    const newOpenState = !isOpen;
+    setIsOpen(newOpenState);
+    
+    // Update localStorage based on new state
+    if (newOpenState) {
+      localStorage.setItem('vibeflo_player_open', 'true');
+    } else {
+      localStorage.removeItem('vibeflo_player_open');
     }
-    setIsMinimized(!isMinimized);
+    
+    console.log("Player visibility toggled:", newOpenState ? "opened" : "closed");
   };
 
-  // Handle search
+  // Toggle the player's minimized state
+  const toggleMinimize = () => {
+    setIsMinimized(!isMinimized);
+    if (isMinimized) {
+      localStorage.setItem('vibeflo_player_minimized', 'true');
+    } else {
+      localStorage.removeItem('vibeflo_player_minimized');
+    }
+  };
+
+  // Handle search form submission
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-    
     setIsSearching(true);
-    setSearchResults([]);
-    
     try {
-      const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(
-        searchQuery
-      )}&type=video&key=${YOUTUBE_API_KEY}`;
-      
-      const response = await fetch(apiUrl);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('YouTube API Error:', {
-          status: response.status,
-          statusText: response.statusText,
-          responseText: errorText
-        });
-        throw new Error(`YouTube API error: ${response.status}`);
-      }
-      
+      // Assuming playlistAPI has a search method
+      // If not, you'll need to implement it or modify this code
+      const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(searchQuery)}&type=video&key=${YOUTUBE_API_KEY}`);
       const data = await response.json();
-      
-      if (data.items && data.items.length > 0) {
-        setSearchResults(data.items);
-        toast.success(`Found ${data.items.length} tracks for "${searchQuery}"`);
-      } else {
-        setSearchResults(mockSearchResults);
-        toast(`No results for "${searchQuery}". Showing sample tracks`);
-      }
-    } catch (error) {
-      console.error('Error searching YouTube:', error);
-      
-      // Fall back to mock results on error
+      setSearchResults(data.items || []);
+    } catch (err) {
+      console.error('Error searching:', err);
       setSearchResults(mockSearchResults);
-      toast.error(`Search failed for "${searchQuery}". Showing sample tracks`);
     } finally {
       setIsSearching(false);
     }
   };
 
-  // Save playlist to account
+  // Save the playlist to the user's account
   const savePlaylistToAccount = async (playlistName: string) => {
-    if (!tracks.length) {
-      toast.error('Cannot save an empty playlist');
-      return;
-    }
-    
     setIsSaving(true);
-    
     try {
+      // Assuming playlistAPI has a createPlaylist method that can be used instead of savePlaylist
       await playlistAPI.createPlaylist(playlistName, tracks);
-      toast.success(`Playlist "${playlistName}" saved (${tracks.length} tracks)`);
-    } catch (error) {
-      console.error('Error saving playlist:', error);
+      toast.success('Playlist saved successfully');
+    } catch (err) {
+      console.error('Error saving playlist:', err);
       toast.error('Failed to save playlist');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Set playerRef from MusicPlayer component
+  // Set the player reference
   const setPlayerReference = (player: any) => {
     playerRef.current = player;
-    // Initialize with current volume when a new player is created
-    if (player) {
-      player.setVolume(volume);
-    }
   };
 
   return (
-    <MusicPlayerContext.Provider
-      value={{
-        tracks,
-        currentTrack,
-        isPlaying,
-        volume,
-        currentTime,
-        duration,
-        isOpen,
-        isMinimized,
-        currentTab,
-        searchQuery,
-        searchResults,
-        isSearching,
-        addTrack,
-        removeTrack,
-        playTrack,
-        togglePlay,
-        play,
-        pause,
-        playPrevious,
-        playNext,
-        seek,
-        setVolume: handleSetVolume,
-        toggleOpen,
-        toggleMinimize,
-        setCurrentTab,
-        setSearchQuery,
-        handleSearch,
-        savePlaylistToAccount,
-        setPlayerReference
-      }}
-    >
+    <MusicPlayerContext.Provider value={{
+      tracks,
+      currentTrack,
+      isPlaying,
+      volume,
+      currentTime,
+      duration,
+      isOpen,
+      isMinimized,
+      currentTab,
+      searchQuery,
+      searchResults,
+      isSearching,
+      addTrack,
+      removeTrack,
+      playTrack,
+      togglePlay,
+      play,
+      pause,
+      playPrevious,
+      playNext,
+      seek,
+      setVolume,
+      toggleOpen,
+      toggleMinimize,
+      setCurrentTab,
+      setSearchQuery,
+      handleSearch,
+      savePlaylistToAccount,
+      setPlayerReference
+    }}>
       {children}
     </MusicPlayerContext.Provider>
   );
 };
 
-export const useMusicPlayer = () => useContext(MusicPlayerContext); 
+// Add the useMusicPlayer hook
+export const useMusicPlayer = () => {
+  const context = useContext(MusicPlayerContext);
+  if (context === undefined) {
+    throw new Error('useMusicPlayer must be used within a MusicPlayerProvider');
+  }
+  return context;
+};

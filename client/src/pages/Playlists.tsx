@@ -15,10 +15,11 @@ const Playlists: React.FC = () => {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [newPlaylistDescription, setNewPlaylistDescription] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [validationError, setValidationError] = useState('');
 
   // Fetch playlists on component mount
   useEffect(() => {
@@ -47,7 +48,13 @@ const Playlists: React.FC = () => {
 
   const handleCreatePlaylist = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPlaylistName.trim()) return;
+    // Clear any previous validation errors
+    setValidationError('');
+    
+    if (!newPlaylistName.trim()) {
+      setValidationError('Playlist name is required');
+      return;
+    }
     
     setIsCreating(true);
     try {
@@ -127,6 +134,9 @@ const Playlists: React.FC = () => {
                 className="shadow appearance-none border bg-gray-700 rounded w-full py-2 px-3 text-white leading-tight focus:outline-none focus:shadow-outline focus:border-purple-500"
                 required
               />
+              {validationError && (
+                <p className="text-red-500 text-xs italic mt-1">{validationError}</p>
+              )}
             </div>
             <div className="mb-4">
               <label className="block text-white text-sm font-bold mb-2" htmlFor="playlist-description">

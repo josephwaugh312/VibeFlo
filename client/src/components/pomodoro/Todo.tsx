@@ -1,15 +1,15 @@
 import React from 'react';
-import { Todo } from './TodoList';
+import { Todo as TodoItem } from './TodoList';
 
 interface TodoProps {
-  todo: Todo;
+  todo: TodoItem;
   isSelected: boolean;
   onToggleComplete: (id: string) => void;
   onChangeText: (id: string, newText: string) => void;
   onSelect: (id: string) => void;
 }
 
-const Todo: React.FC<TodoProps> = ({
+const TodoComponent: React.FC<TodoProps> = ({
   todo,
   isSelected,
   onToggleComplete,
@@ -54,4 +54,4 @@ const Todo: React.FC<TodoProps> = ({
   );
 };
 
-export default Todo; 
+export default TodoComponent; 

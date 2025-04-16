@@ -80,18 +80,35 @@ const apiService = (() => {
   // Token management
   const setToken = (token: string | null) => {
     if (token) {
-      localStorage.setItem('token', token);
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem('token', token);
+      }
     } else {
-      localStorage.removeItem('token');
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem('token');
+      }
       delete api.defaults.headers.common['Authorization'];
     }
   };
 
-  // Initialize with token from storage if present
-  const token = localStorage.getItem('token');
-  if (token) {
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  // Initialize with token from storage if present - use a lazy initialization
+  const initializeAuth = () => {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const token = localStorage.getItem('token');
+        if (token) {
+          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    } catch (e) {
+      console.error('Error accessing localStorage:', e);
+    }
+  };
+  
+  // Only call initializeAuth in browser environments, not during static imports
+  if (typeof window !== 'undefined') {
+    initializeAuth();
   }
   
   // Authentication API methods

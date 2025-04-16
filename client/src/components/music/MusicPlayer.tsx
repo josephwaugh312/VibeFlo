@@ -1,6 +1,7 @@
 import React, { FormEvent, useEffect } from 'react';
 import YouTube from 'react-youtube';
 import { useMusicPlayer } from '../../contexts/MusicPlayerContext';
+import { toast } from 'react-hot-toast';
 
 export interface Track {
   id: string;
@@ -10,6 +11,21 @@ export interface Track {
   artwork?: string;
   duration?: number;
   source: string;
+}
+
+// Define YouTube search result interface
+interface YouTubeSearchResult {
+  id: {
+    videoId: string;
+  };
+  snippet: {
+    title: string;
+    channelTitle: string;
+    thumbnails: {
+      default: { url: string; width?: number; height?: number };
+      high: { url: string; width?: number; height?: number };
+    };
+  };
 }
 
 interface MusicPlayerProps {}
@@ -63,6 +79,53 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
     };
   }, []);
 
+  // Check URL parameters on mount
+  useEffect(() => {
+    // Check if the URL has a musicPlayer=open parameter
+    const urlParams = new URLSearchParams(window.location.search);
+    const musicPlayerParam = urlParams.get('musicPlayer');
+    const keepOpenParam = urlParams.get('keepOpen');
+    
+    if (musicPlayerParam === 'open') {
+      toggleOpen();
+      
+      // If the keepOpen parameter is set, also update the state
+      if (keepOpenParam === 'true') {
+        // Ensure the player stays open
+        toggleMinimize(); // Toggle if it's currently minimized
+        localStorage.setItem('vibeflo_player_open', 'true');
+      }
+      
+      // Remove the parameters from the URL without reloading the page
+      const newUrl = window.location.pathname + 
+        (urlParams.toString() ? 
+          '?' + urlParams.toString().replace(/musicPlayer=open&?/, '')
+                              .replace(/keepOpen=true&?/, '')
+                              .replace(/refresh=\d+&?/, '')
+                              .replace(/&$/, '') 
+          : '');
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  }, [toggleOpen, toggleMinimize]);
+  
+  // Check and keep the player open if needed
+  useEffect(() => {
+    const checkPlayerOpenState = () => {
+      const shouldBeOpen = localStorage.getItem('vibeflo_player_open');
+      if (shouldBeOpen === 'true' && !isOpen) {
+        toggleOpen();
+        // Remove the flag after handling it
+        localStorage.removeItem('vibeflo_player_open');
+      }
+    };
+    
+    // Check immediately and then set up a short interval
+    checkPlayerOpenState();
+    const intervalId = setInterval(checkPlayerOpenState, 300);
+    
+    return () => clearInterval(intervalId);
+  }, [isOpen, toggleOpen]);
+
   // Extract YouTube ID from URL
   const extractYouTubeId = (url: string): string => {
     const match = url.match(/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/);
@@ -104,23 +167,79 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
     setSearchError(null);
   };
 
-  // Handle player ready event
+  // Handle player ready event with error checking
   const handlePlayerReady = (event: any) => {
-    // Store reference to player
-    playerRef.current = event.target;
-    globalPlayerInstance = event.target;
-    
-    // Update reference in context
-    setPlayerReference(event.target);
-    
-    // Set the volume
-    event.target.setVolume(volume);
-    
-    // If isPlaying is true, start playing
-    if (isPlaying) {
-      event.target.playVideo();
+    try {
+      // Store reference to player
+      playerRef.current = event.target;
+      globalPlayerInstance = event.target;
+      
+      // Log that the player is ready
+      console.log("YouTube player initialized successfully");
+      
+      // Update reference in context
+      setPlayerReference(event.target);
+      
+      // Set the volume
+      if (event.target && typeof event.target.setVolume === 'function') {
+        event.target.setVolume(volume);
+      }
+      
+      // If isPlaying is true, start playing with error checking
+      if (isPlaying && event.target && typeof event.target.playVideo === 'function') {
+        // Slight delay to ensure player is fully ready
+        setTimeout(() => {
+          try {
+            event.target.playVideo();
+            console.log("Player initialized and playing", currentTrack?.title);
+          } catch (err) {
+            console.error("Error starting playback in handlePlayerReady:", err);
+            // Retry once more after a longer delay
+            setTimeout(() => {
+              try {
+                if (event.target && typeof event.target.playVideo === 'function') {
+                  event.target.playVideo();
+                }
+              } catch (innerErr) {
+                console.error("Error on retry playback:", innerErr);
+              }
+            }, 1000);
+          }
+        }, 500);
+      }
+    } catch (err) {
+      console.error("Error in handlePlayerReady:", err);
     }
   };
+
+  // Play track when it changes
+  useEffect(() => {
+    if (currentTrack && isPlaying) {
+      // Slight delay to ensure YouTube API is ready
+      setTimeout(() => {
+        if (globalPlayerInstance && typeof globalPlayerInstance.playVideo === 'function') {
+          try {
+            globalPlayerInstance.playVideo();
+            console.log("Auto-playing track:", currentTrack.title);
+          } catch (err) {
+            console.error("Error playing track:", err);
+          }
+        } else {
+          console.log("YouTube player not ready yet, will try again");
+          // Try again after another short delay
+          setTimeout(() => {
+            if (globalPlayerInstance && typeof globalPlayerInstance.playVideo === 'function') {
+              try {
+                globalPlayerInstance.playVideo();
+              } catch (err) {
+                console.error("Error on retry:", err);
+              }
+            }
+          }, 1000);
+        }
+      }, 500);
+    }
+  }, [currentTrack, isPlaying]);
 
   return (
     <>
@@ -130,6 +249,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
           onClick={toggleOpen}
           className="fixed bottom-6 right-6 z-40 bg-purple-600 hover:bg-purple-700 text-white rounded-full p-3 shadow-lg transition-all duration-300"
           aria-label="Toggle Music Player"
+          data-testid="music-player-button"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -142,10 +262,11 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
         className={`fixed right-0 bottom-0 z-50 bg-gray-900 border-l border-t border-gray-700 shadow-lg transition-all duration-300 ease-in-out ${
           isOpen 
             ? isMinimized 
-              ? 'w-96 h-20' 
-              : 'w-96 h-[600px]' 
-            : 'translate-x-full w-96 h-[600px]'
+              ? 'w-full sm:w-96 h-20' 
+              : 'w-full sm:w-96 h-[90vh] sm:h-[600px]' 
+            : 'translate-x-full w-full sm:w-96 h-[90vh] sm:h-[600px]'
         }`}
+        data-testid="music-player-container"
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -189,7 +310,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                     className="w-10 h-10 rounded object-cover mr-2 flex-shrink-0"
                   />
                 )}
-                <div className="min-w-0 max-w-[180px]">
+                <div className="min-w-0 max-w-[180px] sm:max-w-[220px]">
                   <h4 className="text-white text-sm font-medium truncate">{currentTrack.title}</h4>
                   <p className="text-gray-400 text-xs truncate">{currentTrack.artist}</p>
                 </div>
@@ -197,7 +318,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
               <div className="flex items-center relative">
                 <button
                   onClick={() => setIsVolumeOpen(!isVolumeOpen)}
-                  className="text-gray-400 hover:text-white mx-1"
+                  className="text-gray-400 hover:text-white mx-1 hidden sm:block"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
@@ -233,6 +354,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   <button
                     onClick={pause}
                     className="text-white hover:text-gray-200 mx-1"
+                    data-testid="play-button"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -242,6 +364,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   <button
                     onClick={play}
                     className="text-white hover:text-gray-200 mx-1"
+                    data-testid="play-button"
                   >
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
@@ -262,67 +385,93 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
           )}
           
           {/* YouTube Player - always render but hide */}
-          {currentTrack?.source === 'youtube' && (
-            <div className="hidden">
+          <div style={{ display: 'none' }}>
+            {currentTrack && currentTrack.url && (
               <YouTube
                 videoId={extractYouTubeId(currentTrack.url)}
                 opts={{
                   height: '0',
                   width: '0',
                   playerVars: {
+                    // https://developers.google.com/youtube/player_parameters
                     autoplay: isPlaying ? 1 : 0,
                     controls: 0,
                     disablekb: 1,
-                    fs: 0,
-                    modestbranding: 1,
-                    playsinline: 1
-                  }
+                    enablejsapi: 1,
+                    iv_load_policy: 3,
+                    origin: window.location.origin,
+                    rel: 0,
+                  },
                 }}
                 onReady={handlePlayerReady}
-                onEnd={playNext}
-                onError={() => {
-                  console.error('YouTube player error');
-                  playNext();
+                onError={(error) => {
+                  console.error('YouTube player error:', error);
+                  // Try to recover from the error
+                  if (tracks.length > 1) {
+                    toast.error(`Playback error. Skipping to next track.`, { 
+                      duration: 1500 
+                    });
+                    setTimeout(() => playNext(), 500);
+                  } else {
+                    toast.error(`Cannot play this track. Please try another.`, { 
+                      duration: 3000 
+                    });
+                  }
+                }}
+                onStateChange={(event) => {
+                  try {
+                    // When the video ends, automatically play the next track
+                    if (event.data === 0) { // YouTube API's code for "ended"
+                      playNext();
+                    }
+                  } catch (err) {
+                    console.error("Error in onStateChange:", err);
+                  }
                 }}
               />
-            </div>
-          )}
+            )}
+          </div>
           
-          {/* Full player content - only render when not minimized */}
+          {/* Full view - with tabs */}
           {!isMinimized && (
             <>
               {/* Tabs */}
-              <div className="flex border-b border-gray-700">
-                <button
-                  className={`flex-1 py-2 text-sm font-medium ${
-                    currentTab === 'nowPlaying'
-                      ? 'text-purple-400 border-b-2 border-purple-400'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  onClick={() => setCurrentTab('nowPlaying')}
-                >
-                  Now Playing
-                </button>
-                <button
-                  className={`flex-1 py-2 text-sm font-medium ${
-                    currentTab === 'playlist'
-                      ? 'text-purple-400 border-b-2 border-purple-400'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  onClick={() => setCurrentTab('playlist')}
-                >
-                  Playlist ({tracks.length})
-                </button>
-                <button
-                  className={`flex-1 py-2 text-sm font-medium ${
-                    currentTab === 'search'
-                      ? 'text-purple-400 border-b-2 border-purple-400'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  onClick={() => setCurrentTab('search')}
-                >
-                  Search
-                </button>
+              <div className="border-b border-gray-700">
+                <div className="flex">
+                  <button
+                    onClick={() => setCurrentTab('nowPlaying')}
+                    className={`flex-1 py-2 text-center text-sm ${
+                      currentTab === 'nowPlaying' 
+                        ? 'text-white border-b-2 border-purple-500' 
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                    data-testid="tab-nowPlaying"
+                  >
+                    Now Playing
+                  </button>
+                  <button
+                    onClick={() => setCurrentTab('playlist')}
+                    className={`flex-1 py-2 text-center text-sm ${
+                      currentTab === 'playlist' 
+                        ? 'text-white border-b-2 border-purple-500' 
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                    data-testid="tab-playlist"
+                  >
+                    Playlist
+                  </button>
+                  <button
+                    onClick={() => setCurrentTab('search')}
+                    className={`flex-1 py-2 text-center text-sm ${
+                      currentTab === 'search' 
+                        ? 'text-white border-b-2 border-purple-500' 
+                        : 'text-gray-400 hover:text-white'
+                    }`}
+                    data-testid="tab-search"
+                  >
+                    Search
+                  </button>
+                </div>
               </div>
               
               {/* Content area */}
@@ -450,7 +599,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                       </div>
                     ) : (
                       <ul className="space-y-2">
-                        {tracks.map((track) => (
+                        {tracks.map((track: Track) => (
                           <li
                             key={track.id}
                             className={`flex items-center p-2 rounded ${
@@ -496,7 +645,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 
                 {/* Search Tab */}
                 {currentTab === 'search' && (
-                  <div className="p-4">
+                  <div className="p-4 overflow-y-auto">
                     <form onSubmit={handleSearchSubmit} className="mb-4">
                       <div className="flex">
                         <input
@@ -516,25 +665,25 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                       </div>
                     </form>
                     
-                    {isSearching ? (
+                    {searchResults.length === 0 && isSearching ? (
                       <div className="flex justify-center py-8">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500"></div>
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div>
                       </div>
                     ) : searchError ? (
-                      <div className="text-red-400 text-center py-8">
+                      <div className="text-center py-8 text-red-400">
                         <p>{searchError}</p>
                         <p className="text-sm mt-2">Please try again later</p>
                       </div>
                     ) : searchResults.length > 0 ? (
                       <ul className="space-y-3">
-                        {searchResults.map((result) => (
+                        {searchResults.map((result: YouTubeSearchResult) => (
                           <li key={result.id.videoId} className="flex items-start p-2 hover:bg-gray-800 rounded">
                             <img
                               src={result.snippet.thumbnails.default.url}
                               alt={result.snippet.title}
                               className="w-16 h-16 rounded object-cover mr-3 flex-shrink-0"
                             />
-                            <div className="flex-1 min-w-0 max-w-[220px]">
+                            <div className="flex-1 min-w-0 max-w-[160px] sm:max-w-[220px]">
                               <h4 className="text-white text-sm font-medium line-clamp-2">
                                 {result.snippet.title}
                               </h4>

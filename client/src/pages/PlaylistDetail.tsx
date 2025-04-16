@@ -445,6 +445,10 @@ const PlaylistDetail: React.FC = () => {
         return;
       }
       
+      // First clear any existing playlist to avoid mixing tracks
+      localStorage.removeItem('vibeflo_playlist');
+      localStorage.removeItem('vibeflo_current_track');
+      
       // Store the tracks in localStorage so the music player can access them
       localStorage.setItem('vibeflo_playlist', JSON.stringify(tracks));
       
@@ -454,11 +458,20 @@ const PlaylistDetail: React.FC = () => {
       // Force a refresh of the music player by setting a timestamp
       localStorage.setItem('vibeflo_playlist_updated', Date.now().toString());
       
+      // Force the music player to stay open
+      localStorage.setItem('vibeflo_player_open', 'true');
+      
+      // Create and dispatch a custom event to notify the music player
+      const playlistEvent = new CustomEvent('vibeflo_playlist_loaded', { 
+        detail: { tracks, currentTrack: tracks[0], keepOpen: true }
+      });
+      window.dispatchEvent(playlistEvent);
+      
       // Notify user
       toast.success('Playlist loaded to music player');
       
-      // Navigate to dashboard page and force a refresh to ensure the music player updates
-      navigate('/dashboard?refresh=' + Date.now());
+      // Simply mark loading as complete - no navigation needed
+      setIsLoadingToPlayer(false);
     } catch (error) {
       console.error('Error preparing playlist for music player:', error);
       toast.error('Failed to load playlist to music player');
@@ -613,7 +626,7 @@ const PlaylistDetail: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500" role="status" />
         </div>
       </div>
     );

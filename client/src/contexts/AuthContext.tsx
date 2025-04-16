@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import apiService, { authAPI } from '../services/api';
-import { api } from '../services/api';
 
 interface User {
   id: string;
@@ -12,6 +11,7 @@ interface User {
   avatarUrl?: string;
   created_at?: string;
   updated_at?: string;
+  is_admin?: boolean;
   // ... any other existing fields
 }
 
@@ -120,51 +120,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else {
           // For session-only persistence, we still set the token in API
           // but don't store it in localStorage
-          api.defaults.headers.common['Authorization'] = `Bearer ${response.token}`;
+          apiService.setToken(response.token);
         }
         
         setUser(response.user);
-        toast.success(`Welcome back, ${response.user.username}!`);
-      } else {
-        throw new Error('Login successful but no token received');
+        toast.success(`Welcome back, ${response.user.name}!`);
       }
-      
-      return response;
     } catch (error: any) {
-      console.error('Login error:', error);
-      
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Login failed. Please check your credentials.');
-      }
-      throw error;
+      console.error('Login failed:', error);
+      toast.error('Login failed. Please try again later.');
     } finally {
       setIsLoading(false);
     }
   };
 
   const register = async (name: string, username: string, email: string, password: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       const response = await authAPI.register(name, username, email, password);
-      
-      if (response.token) {
-        apiService.setToken(response.token);
-        setUser(response.user);
-        toast.success(`Welcome, ${response.user.username}!`);
-      } else {
-        throw new Error('Registration successful but no token received');
-      }
-      
+      toast.success('Registration successful! Please check your email for verification.');
       return response;
     } catch (error: any) {
-      console.error('Registration error:', error);
-      
-      if (error.response && error.response.data && error.response.data.message) {
+      console.error('Registration failed:', error);
+      if (error.response?.data?.message) {
         toast.error(error.response.data.message);
       } else {
-        toast.error('Registration failed. Please try again.');
+        toast.error('Registration failed. Please try again later.');
       }
       throw error;
     } finally {
@@ -173,100 +154,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateProfile = async (data: Partial<User>) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      console.log('AuthContext.updateProfile - data sent to API:', data);
-      
       const updatedUser = await authAPI.updateProfile(data);
-      console.log('AuthContext.updateProfile - response from API:', updatedUser);
-      
-      // Important: Ensure we update the current user with the new data
-      setUser(current => {
-        const newUserState = current ? { ...current, ...updatedUser } : updatedUser;
-        console.log('AuthContext.updateProfile - updating user state:', newUserState);
-        return newUserState;
-      });
-      
-      toast.success('Profile updated successfully!');
+      setUser(prev => prev ? { ...prev, ...updatedUser } : null);
+      toast.success('Profile updated successfully');
       return updatedUser;
     } catch (error: any) {
-      console.error('Profile update error:', error);
-      
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Failed to update profile. Please try again.');
-      }
+      console.error('Profile update failed:', error);
+      toast.error(error.response?.data?.message || 'Failed to update profile. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const changePassword = async (currentPassword: string, newPassword: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      await authAPI.changePassword(currentPassword, newPassword);
-      toast.success('Password changed successfully!');
+      const response = await authAPI.changePassword(currentPassword, newPassword);
+      toast.success('Password changed successfully');
+      return response;
     } catch (error: any) {
-      console.error('Password change error:', error);
-      
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Failed to change password. Please try again.');
-      }
+      console.error('Password change failed:', error);
+      toast.error(error.response?.data?.message || 'Failed to change password. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const deleteAccount = async (password: string) => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      await authAPI.deleteAccount(password);
+      const response = await authAPI.deleteAccount(password);
+      setUser(null);
       localStorage.removeItem('token');
       apiService.setToken(null);
-      setUser(null);
-      toast.success('Your account has been deleted.');
+      toast.success('Account deleted successfully');
+      return response;
     } catch (error: any) {
-      console.error('Account deletion error:', error);
-      
-      if (error.response && error.response.data && error.response.data.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Failed to delete account. Please try again.');
-      }
+      console.error('Account deletion failed:', error);
+      toast.error(error.response?.data?.message || 'Failed to delete account. Please try again.');
       throw error;
     } finally {
       setIsLoading(false);
     }
   };
-  
+
   const logout = () => {
+    setUser(null);
     localStorage.removeItem('token');
     apiService.setToken(null);
-    setUser(null);
     toast.success('Logged out successfully');
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isAuthenticated: !!user,
-        isLoading,
-        setUser,
-        login,
-        register,
-        updateProfile,
-        changePassword,
-        deleteAccount,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={{
+      user,
+      isAuthenticated: !!user,
+      isLoading,
+      setUser,
+      login,
+      register,
+      updateProfile,
+      changePassword,
+      deleteAccount,
+      logout,
+    }}>
       {children}
     </AuthContext.Provider>
   );
-}; 
+};

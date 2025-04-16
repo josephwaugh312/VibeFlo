@@ -1,10 +1,10 @@
 import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Todo } from './TodoList';
+import { Todo as TodoItem } from './TodoList';
 
 interface TodoProps {
-  todo: Todo;
+  todo: TodoItem;
   isSelected: boolean;
   onToggleComplete: (id: string) => void;
   onChangeText: (id: string, newText: string) => void;

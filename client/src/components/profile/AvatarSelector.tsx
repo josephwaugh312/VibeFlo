@@ -231,6 +231,7 @@ const AvatarSelector: React.FC<AvatarSelectorProps> = ({
           {avatarCategories[tabIndex].avatars.map((avatar) => (
             <Grid component="div" sx={{ gridColumn: 'span 3' }} key={avatar.id}>
               <Box 
+                data-testid="avatar-option"
                 onClick={() => handleSelectAvatar(avatar)}
                 sx={{ 
                   display: 'flex',

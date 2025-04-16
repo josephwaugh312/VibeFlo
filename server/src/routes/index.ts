@@ -7,6 +7,7 @@ import songRoutes from './song.routes';
 import settingsRoutes from './settings.routes';
 import themeRoutes from './theme.routes';
 import spotifyRoutes from './spotifyRoutes';
+import moderationRoutes from './moderation.routes';
 
 const router = express.Router();
 
@@ -19,5 +20,6 @@ router.use('/songs', songRoutes);
 router.use('/settings', settingsRoutes);
 router.use('/themes', themeRoutes);
 router.use('/spotify', spotifyRoutes);
+router.use('/moderation', moderationRoutes);
 
 export default router; 

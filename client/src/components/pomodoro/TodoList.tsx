@@ -174,28 +174,34 @@ const TodoList: React.FC<TodoListProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
-      <div className="bg-gray-800 text-white rounded-lg shadow-lg p-8 w-full max-w-3xl max-h-[85vh] overflow-y-auto mt-[-10px] relative">
-        <button 
-          onClick={onClose}
-          className="text-gray-300 hover:text-white absolute left-8 top-8"
-          aria-label="Close"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-
-        <button 
-          onClick={resetTodos}
-          className="text-red-400 hover:text-white absolute right-5 top-8 bg-transparent hover:bg-red-600 border border-red-500 rounded py-1 px-3 transition-colors text-sm font-medium"
-          aria-label="Reset Tasks"
-          title="Reset all tasks"
-        >
-          Reset
-        </button>
-        
-        <div className="flex justify-center items-center mb-8">
-          <h2 className="text-3xl font-bold text-center text-purple-400">Organize Your Day</h2>
+      <div className="bg-gray-800 text-white rounded-lg shadow-lg p-6 sm:p-8 w-full max-w-3xl sm:max-w-4xl max-h-[85vh] overflow-y-auto mt-[-10px] relative">
+        {/* Header with explicit spacing for mobile and desktop */}
+        <div className="mb-8 relative">
+          {/* Close button - fixed position */}
+          <button 
+            onClick={onClose}
+            className="absolute left-0 top-0 text-gray-300 hover:text-white"
+            aria-label="Close"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          {/* Reset button - fixed position */}
+          <button 
+            onClick={resetTodos}
+            className="absolute right-0 top-0 text-red-400 hover:text-white bg-transparent hover:bg-red-600 border border-red-500 rounded py-1 px-3 transition-colors text-sm font-medium"
+            aria-label="Reset Tasks"
+            title="Reset all tasks"
+          >
+            Reset
+          </button>
+          
+          {/* Title - centered with enough margin to avoid buttons */}
+          <h2 className="text-2xl sm:text-3xl font-bold text-center text-purple-400 mx-auto mt-12 sm:mt-8" style={{ maxWidth: '65%' }}>
+            Organize Your Day
+          </h2>
         </div>
         
         <div className="mb-10">

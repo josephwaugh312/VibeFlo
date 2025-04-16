@@ -1,93 +1,177 @@
-# VibeFlo - Pomodoro Timer App
+# VibeFlo
 
-VibeFlo is a full-stack web application for productivity using the Pomodoro Technique. It helps users manage their time effectively by breaking work into intervals, traditionally 25 minutes in length, separated by short breaks.
+VibeFlo is a full-stack productivity application that combines task management with music integration to enhance focus and workflow.
 
 ## Features
 
-- **Pomodoro Timer**: Customizable work and break intervals
-- **Task Management**: Track tasks you're working on during each session
-- **Statistics**: View your productivity metrics and history
-- **User Authentication**: Register, login, and password reset functionality
-- **Theme Customization**: Choose from various themes to personalize your experience
-- **Responsive Design**: Works on desktop and mobile devices
+- **User Authentication**: Secure login, registration, and profile management
+- **Task Management**: Create, organize, and track your todos
+- **Music Integration**: Play and control music while working
+- **Profile Customization**: Personalize your profile with avatars and themes
+- **Responsive Design**: Works seamlessly across devices
 
 ## Tech Stack
 
-- **Frontend**: React, TypeScript, Material UI, Tailwind CSS
-- **Backend**: Node.js, Express.js, TypeScript
-- **Database**: PostgreSQL
-- **Authentication**: JWT, bcrypt for password hashing
-- **State Management**: React Context
+### Frontend
+- React.js with TypeScript
+- Material-UI for component styling
+- Context API for state management
+- Axios for API requests
+- Jest and React Testing Library for testing
+
+### Backend
+- Node.js with Express.js
+- PostgreSQL database
+- JWT for authentication
+- Bcrypt for password hashing
+- Jest for testing
 
 ## Getting Started
 
 ### Prerequisites
-
-- Node.js (v14 or newer) and npm
-- PostgreSQL database
+- Node.js (v14 or higher)
+- PostgreSQL (v13 or higher)
+- npm or yarn
 
 ### Installation
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/josephwaugh312/VibeFlo.git
-   cd VibeFlo
-   ```
+1. Clone the repository
+```bash
+git clone https://github.com/yourusername/vibeflo.git
+cd vibeflo
+```
 
-2. Install server dependencies:
-   ```
-   cd server
-   npm install
-   ```
+2. Install dependencies for both client and server
+```bash
+# Install client dependencies
+cd client
+npm install
 
-3. Install client dependencies:
-   ```
-   cd ../client
-   npm install
-   ```
+# Install server dependencies
+cd ../server
+npm install
+```
 
-4. Set up your environment variables:
-   - Copy `.env.example` to `.env` in the server directory
-   - Update the values with your database credentials and API keys
-   ```
-   cp .env.example .env
-   ```
+3. Create a `.env` file in the server directory with the following variables:
+```
+NODE_ENV=development
+PORT=5000
+DATABASE_URL=postgresql://username:password@localhost:5432/vibeflo
+JWT_SECRET=your_jwt_secret
+EMAIL_SERVICE=smtp.example.com
+EMAIL_USER=your_email@example.com
+EMAIL_PASSWORD=your_email_password
+CLIENT_URL=http://localhost:3000
+```
 
-5. Set up the database:
-   - Create a PostgreSQL database named "vibeflo"
-   - Run the migrations to set up tables:
-     ```
-     npm run migrate
-     ```
+4. Create a PostgreSQL database
+```bash
+createdb vibeflo
+```
 
-### Running the App
+5. Run database migrations
+```bash
+cd server
+npm run migrate
+```
 
-1. Start the server (default port 5001):
-   ```
-   cd server
-   npm run dev
-   ```
+### Running the Application
 
-2. Start the client (default port 3000):
-   ```
-   cd client
-   npm start
-   ```
+1. Start the server
+```bash
+cd server
+npm run dev
+```
 
-3. Open your browser and go to `http://localhost:3000`
+2. Start the client (in another terminal)
+```bash
+cd client
+npm start
+```
 
-## Usage
+3. Open your browser and navigate to `http://localhost:3000`
 
-1. Register for an account or log in
-2. Set up your Pomodoro timer preferences in Settings
-3. Add tasks to your to-do list
-4. Start a Pomodoro session and select a task to work on
-5. View your progress in the Stats section
+## Development
+
+### Server Structure
+```
+server/
+├── src/
+│   ├── controllers/    # Request handlers
+│   ├── middleware/     # Express middleware
+│   ├── routes/         # API routes
+│   ├── services/       # Business logic
+│   ├── models/         # Database models
+│   ├── utils/          # Utility functions
+│   ├── tests/          # Test files
+│   └── app.ts          # Express application
+├── migrations/         # Database migrations
+└── package.json
+```
+
+### Client Structure
+```
+client/
+├── src/
+│   ├── components/     # React components
+│   ├── contexts/       # React contexts
+│   ├── hooks/          # Custom React hooks
+│   ├── pages/          # Page components
+│   ├── services/       # API services
+│   ├── utils/          # Utility functions
+│   ├── __tests__/      # Test files
+│   ├── App.tsx         # Root component
+│   └── index.tsx       # Entry point
+└── package.json
+```
+
+## Testing
+
+The VibeFlo project includes various types of tests:
+
+### Basic Unit Tests
+- Located in `server/src/tests/unit/`
+- Run with `npm run test:unit`
+- These tests verify the basic functionality of individual components
+
+### Integration Tests
+- Located in `server/src/tests/integration/`
+- Run with `npm run test:integration`
+- These tests verify the interaction between different components
+
+### All Tests
+- Run all tests with `npm test`
+
+### Database Setup
+For integration tests that require database access, you need to:
+1. Make sure PostgreSQL is running and accessible
+2. Configure your database connection in `.env.test`
+
+Note: Basic unit tests do not require a database connection.
+
+## Deployment
+
+The application is configured for deployment to various platforms:
+
+- Frontend: Vercel, Netlify, or AWS Amplify
+- Backend: Heroku, AWS Elastic Beanstalk, or Docker containers
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License. 
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [Material-UI](https://mui.com/)
+- [React](https://reactjs.org/)
+- [Express](https://expressjs.com/)
+- [PostgreSQL](https://www.postgresql.org/)
+- [Jest](https://jestjs.io/) 

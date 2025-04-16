@@ -19,20 +19,20 @@ import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
 
-// Map of icon identifiers to icon components
-const iconMap: { [key: string]: React.ReactNode } = {
-  'person': <PersonIcon />,
-  'emoji': <EmojiEmotionsIcon />,
-  'face': <FaceIcon />,
-  'pets': <Pets />,
-  'mood': <MoodIcon />,
-  'play': <PlayArrowIcon />,
-  'power': <PowerSettingsNewIcon />,
-  'headphones': <HeadphonesIcon />,
-  'sports': <SportsEsportsIcon />,
-  'music': <MusicNoteIcon />,
-  'diversity': <Diversity3Icon />,
-  'fire': <LocalFireDepartmentIcon />,
+// Map of icon identifiers to icon components (fixed to use component types, not JSX elements)
+const iconMap: { [key: string]: React.ComponentType } = {
+  'person': PersonIcon,
+  'emoji': EmojiEmotionsIcon,
+  'face': FaceIcon,
+  'pets': Pets,
+  'mood': MoodIcon,
+  'play': PlayArrowIcon,
+  'power': PowerSettingsNewIcon,
+  'headphones': HeadphonesIcon,
+  'sports': SportsEsportsIcon,
+  'music': MusicNoteIcon,
+  'diversity': Diversity3Icon,
+  'fire': LocalFireDepartmentIcon,
 };
 
 const formatDate = (dateString?: string): string => {
@@ -48,11 +48,12 @@ const formatDate = (dateString?: string): string => {
       return 'Unknown date';
     }
     
-    return date.toLocaleDateString('en-US', { 
+    // Format: "January 15, 2023"
+    return new Intl.DateTimeFormat('en-US', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric' 
-    });
+    }).format(date);
   } catch (error) {
     console.error('Error formatting date:', error);
     return 'Unknown date';
@@ -227,101 +228,106 @@ const Profile: React.FC = () => {
     }
   };
 
-  const getAvatarDisplayElement = () => {
-    // Early return if user is null
-    if (!user) {
-      return (
-        <Avatar
-          sx={{ 
-            width: 100, 
-            height: 100,
-            bgcolor: 'secondary.main',
-            fontSize: '2rem'
-          }}
-        />
-      );
-    }
-
-    console.log('Avatar URL in getAvatarDisplayElement:', formData.avatarUrl);
-    
-    if (formData.avatarUrl) {
-      if (formData.avatarUrl.startsWith('#')) {
-        // It's a color avatar
-        console.log('Rendering color avatar:', formData.avatarUrl);
+  // Render the avatar display element as a memoized component
+  const AvatarDisplay = React.useMemo(() => {
+    // Return a React component
+    return function AvatarDisplayComponent() {
+      // Early return if user is null
+      if (!user) {
         return (
           <Avatar
             sx={{ 
               width: 100, 
               height: 100,
-              bgcolor: formData.avatarUrl,
+              bgcolor: 'secondary.main',
               fontSize: '2rem'
-            }}
-          >
-            {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
-          </Avatar>
-        );
-      } else if (formData.avatarUrl.startsWith('icon:')) {
-        // It's an icon
-        const iconKey = formData.avatarUrl.substring(5); // Remove "icon:" prefix
-        console.log('Rendering icon avatar. Icon key:', iconKey, 'Icon exists:', !!iconMap[iconKey]);
-        return (
-          <Avatar
-            sx={{ 
-              width: 100, 
-              height: 100,
-              bgcolor: '#333',
-              color: 'white',
-              fontSize: '2rem'
-            }}
-          >
-            {iconMap[iconKey] || `?${iconKey}?`}
-          </Avatar>
-        );
-      } else if (formData.avatarUrl.startsWith('linear-gradient')) {
-        // It's a gradient
-        console.log('Rendering gradient avatar:', formData.avatarUrl);
-        return (
-          <Avatar
-            sx={{ 
-              width: 100, 
-              height: 100,
-              background: formData.avatarUrl,
-              fontSize: '2rem'
-            }}
-          >
-            {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
-          </Avatar>
-        );
-      } else {
-        // It's a regular URL avatar
-        console.log('Rendering URL avatar:', formData.avatarUrl);
-        return (
-          <Avatar
-            src={formData.avatarUrl}
-            sx={{ 
-              width: 100, 
-              height: 100,
             }}
           />
         );
       }
-    } else {
-      // Default: Show initials
-      console.log('Rendering default avatar (no avatarUrl)');
-      return (
-        <Avatar
-          sx={{ 
-            width: 100, 
-            height: 100,
-            bgcolor: 'secondary.main',
-            fontSize: '2rem'
-          }}
-        >
-          {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
-        </Avatar>
-      );
-    }
-  };
+
+      console.log('Avatar URL in getAvatarDisplayElement:', formData.avatarUrl);
+      
+      if (formData.avatarUrl) {
+        if (formData.avatarUrl.startsWith('#')) {
+          // It's a color avatar
+          console.log('Rendering color avatar:', formData.avatarUrl);
+          return (
+            <Avatar
+              sx={{ 
+                width: 100, 
+                height: 100,
+                bgcolor: formData.avatarUrl,
+                fontSize: '2rem'
+              }}
+            >
+              {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
+            </Avatar>
+          );
+        } else if (formData.avatarUrl.startsWith('icon:')) {
+          // It's an icon
+          const iconKey = formData.avatarUrl.substring(5); // Remove "icon:" prefix
+          console.log('Rendering icon avatar. Icon key:', iconKey, 'Icon exists:', !!iconMap[iconKey]);
+          const IconComponent = iconMap[iconKey];
+          return (
+            <Avatar
+              sx={{ 
+                width: 100, 
+                height: 100,
+                bgcolor: '#333',
+                color: 'white',
+                fontSize: '2rem'
+              }}
+            >
+              {IconComponent ? <IconComponent /> : `?${iconKey}?`}
+            </Avatar>
+          );
+        } else if (formData.avatarUrl.startsWith('linear-gradient')) {
+          // It's a gradient
+          console.log('Rendering gradient avatar:', formData.avatarUrl);
+          return (
+            <Avatar
+              sx={{ 
+                width: 100, 
+                height: 100,
+                background: formData.avatarUrl,
+                fontSize: '2rem'
+              }}
+            >
+              {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
+            </Avatar>
+          );
+        } else {
+          // It's a regular URL avatar
+          console.log('Rendering URL avatar:', formData.avatarUrl);
+          return (
+            <Avatar
+              src={formData.avatarUrl}
+              sx={{ 
+                width: 100, 
+                height: 100,
+              }}
+            />
+          );
+        }
+      } else {
+        // Default: Show initials
+        console.log('Rendering default avatar (no avatarUrl)');
+        return (
+          <Avatar
+            sx={{ 
+              width: 100, 
+              height: 100,
+              bgcolor: 'secondary.main',
+              fontSize: '2rem'
+            }}
+          >
+            {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
+          </Avatar>
+        );
+      }
+    };
+  }, [user, formData.avatarUrl]);
 
   if (isLoading) {
     return (
@@ -354,7 +360,7 @@ const Profile: React.FC = () => {
         <Grid container spacing={3} alignItems="center">
           <Grid component="div" sx={{ gridColumn: { xs: 'span 12', sm: 'span 3' }, display: 'flex', justifyContent: { xs: 'center', sm: 'flex-start' } }}>
             <Box position="relative">
-              {getAvatarDisplayElement()}
+              <AvatarDisplay />
               <IconButton 
                 size="small"
                 sx={{ 
@@ -370,6 +376,7 @@ const Profile: React.FC = () => {
                 }}
                 onClick={handleAvatarUpload}
                 disabled={!editMode}
+                data-testid="camera-icon-button"
               >
                 <CameraIcon fontSize="small" />
               </IconButton>
