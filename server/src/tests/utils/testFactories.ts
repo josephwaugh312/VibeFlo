@@ -2,10 +2,88 @@
  * Test factory functions to create consistent test data across test files
  */
 
+// User type
+interface TestUser {
+  id: number;
+  name: string;
+  username: string;
+  email: string;
+  bio?: string;
+  avatar_url?: string;
+  is_verified?: boolean;
+  failed_login_attempts?: number;
+  is_locked?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
+// Playlist type
+interface TestPlaylist {
+  id: number;
+  name: string;
+  description?: string;
+  user_id: number;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
+// Song type
+interface TestSong {
+  id: number;
+  title: string;
+  artist: string;
+  album?: string;
+  duration: number;
+  image_url?: string;
+  url?: string;
+  youtube_id?: string;
+  source?: string;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
+// Theme type
+interface TestTheme {
+  id: number;
+  name: string;
+  user_id: number;
+  colors: string;
+  is_public?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
+// Pomodoro session type
+interface TestPomodoroSession {
+  id: number;
+  user_id: number;
+  duration: number;
+  task?: string;
+  completed: boolean;
+  created_at?: string;
+  updated_at?: string;
+  [key: string]: any;
+}
+
+// Database response object
+interface DbResponse {
+  rows: any[];
+  rowCount: number;
+}
+
+// Database responses object
+interface DbResponses {
+  [key: string]: DbResponse | Function;
+}
+
 /**
  * Create a test user object with optional overrides
  */
-export const createTestUser = (overrides = {}) => {
+export const createTestUser = (overrides = {}): TestUser => {
   return {
     id: 1,
     name: 'Test User',
@@ -25,7 +103,7 @@ export const createTestUser = (overrides = {}) => {
 /**
  * Create a test playlist object with optional overrides
  */
-export const createTestPlaylist = (overrides = {}) => {
+export const createTestPlaylist = (overrides = {}): TestPlaylist => {
   return {
     id: 1,
     name: 'Test Playlist',
@@ -40,7 +118,7 @@ export const createTestPlaylist = (overrides = {}) => {
 /**
  * Create a test song object with optional overrides
  */
-export const createTestSong = (overrides = {}) => {
+export const createTestSong = (overrides = {}): TestSong => {
   return {
     id: 1,
     title: 'Test Song',
@@ -60,7 +138,7 @@ export const createTestSong = (overrides = {}) => {
 /**
  * Create a test theme object with optional overrides
  */
-export const createTestTheme = (overrides = {}) => {
+export const createTestTheme = (overrides = {}): TestTheme => {
   return {
     id: 1,
     name: 'Test Theme',
@@ -81,7 +159,7 @@ export const createTestTheme = (overrides = {}) => {
 /**
  * Create a test pomodoro session with optional overrides
  */
-export const createTestPomodoroSession = (overrides = {}) => {
+export const createTestPomodoroSession = (overrides = {}): TestPomodoroSession => {
   return {
     id: 1,
     user_id: 1,
@@ -97,13 +175,13 @@ export const createTestPomodoroSession = (overrides = {}) => {
 /**
  * Create a test database mock function with predefined responses
  */
-export const createDbMock = (responses) => {
-  return (pool) => {
+export const createDbMock = (responses: DbResponses) => {
+  return (pool: { query: jest.Mock }) => {
     // Reset the mock
     (pool.query).mockReset();
     
     // Create a query handler that returns appropriate responses based on the query
-    (pool.query).mockImplementation((query, params) => {
+    (pool.query).mockImplementation((query: string, params: any[]) => {
       // Return for BEGIN/COMMIT/ROLLBACK queries in transactions
       if (query === 'BEGIN' || query === 'COMMIT' || query === 'ROLLBACK') {
         return Promise.resolve({ rows: [], rowCount: 0 });
@@ -114,7 +192,7 @@ export const createDbMock = (responses) => {
         if (query.includes(key)) {
           // If the response is a function, call it with query and params
           if (typeof responses[key] === 'function') {
-            return Promise.resolve(responses[key](query, params));
+            return Promise.resolve((responses[key] as Function)(query, params));
           }
           
           // Otherwise return the fixed response
@@ -133,7 +211,7 @@ export const createDbMock = (responses) => {
  */
 export const standardDbResponses = {
   user: {
-    findById: (id = 1) => ({
+    findById: (id = 1): DbResponse => ({
       rows: [createTestUser({ id })],
       rowCount: 1
     }),
@@ -147,11 +225,11 @@ export const standardDbResponses = {
     }
   },
   playlist: {
-    findAll: (userId = 1, count = 2) => ({
+    findAll: (userId = 1, count = 2): DbResponse => ({
       rows: Array(count).fill(0).map((_, i) => createTestPlaylist({ id: i + 1, name: `Playlist ${i + 1}`, user_id: userId })),
       rowCount: count
     }),
-    findById: (id = 1) => ({
+    findById: (id = 1): DbResponse => ({
       rows: [createTestPlaylist({ id })],
       rowCount: 1
     }),
@@ -161,7 +239,7 @@ export const standardDbResponses = {
     }
   },
   song: {
-    findByPlaylistId: (playlistId = 1, count = 3) => ({
+    findByPlaylistId: (playlistId = 1, count = 3): DbResponse => ({
       rows: Array(count).fill(0).map((_, i) => createTestSong({ id: i + 1, title: `Song ${i + 1}` })),
       rowCount: count
     })

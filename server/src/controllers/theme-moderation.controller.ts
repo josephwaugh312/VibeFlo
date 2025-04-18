@@ -210,7 +210,7 @@ export const reportTheme = async (req: AuthRequest, res: Response) => {
 /**
  * Get reported themes
  */
-export const getReportedThemes = async (req: AuthRequest, res: Response) => {
+export const getReportedThemes = async (req: Request, res: Response) => {
   try {
     const query = `
       SELECT t.*, u.username, u.name as user_name, 
@@ -237,5 +237,78 @@ export const getReportedThemes = async (req: AuthRequest, res: Response) => {
   } catch (error) {
     console.error('Error getting reported themes:', error);
     res.status(500).json({ message: 'Server error getting reported themes' });
+  }
+};
+
+/**
+ * Review a reported theme (approve or reject)
+ */
+export const reviewTheme = async (req: Request, res: Response) => {
+  try {
+    const { themeId } = req.params;
+    const { approved } = req.body;
+    
+    let query;
+    if (approved) {
+      // Mark the theme as reviewed but keep it public
+      query = `
+        UPDATE themes 
+        SET 
+          needs_review = false,
+          last_review_date = CURRENT_TIMESTAMP,
+          reported_count = 0
+        WHERE id = $1
+      `;
+    } else {
+      // Mark the theme as rejected and make it private
+      query = `
+        UPDATE themes 
+        SET 
+          is_public = false,
+          moderation_status = 'rejected',
+          moderation_notes = 'Rejected after user reports',
+          needs_review = false,
+          last_review_date = CURRENT_TIMESTAMP,
+          reported_count = 0
+        WHERE id = $1
+      `;
+    }
+    
+    const result = await pool.query(query, [themeId]);
+    
+    // Update all associated reports as resolved
+    await pool.query(`
+      UPDATE theme_reports
+      SET resolved = true, status = 'resolved'
+      WHERE theme_id = $1
+    `, [themeId]);
+    
+    res.json({ message: 'Theme reviewed successfully' });
+  } catch (error) {
+    console.error('Error reviewing theme:', error);
+    res.status(500).json({ message: 'Error reviewing theme' });
+  }
+};
+
+/**
+ * Resolve a single report
+ */
+export const resolveReport = async (req: Request, res: Response) => {
+  try {
+    const { reportId } = req.params;
+    
+    const result = await pool.query(`
+      UPDATE theme_reports SET resolved = true, status = 'resolved'
+      WHERE id = $1
+    `, [reportId]);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Report not found' });
+    }
+    
+    res.json({ message: 'Report resolved successfully' });
+  } catch (error) {
+    console.error('Error resolving report:', error);
+    res.status(500).json({ message: 'Error resolving report' });
   }
 }; 

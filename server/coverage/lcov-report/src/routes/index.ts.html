@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/21</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/21</span>
+                <span class='fraction'>21/21</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -87,62 +87,62 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import express from 'express';</span>
-<span class="cstat-no" title="statement not covered" >import authRoutes from './auth.routes';</span>
-<span class="cstat-no" title="statement not covered" >import userRoutes from './user.routes';</span>
-<span class="cstat-no" title="statement not covered" >import pomodoroRoutes from './pomodoro.routes';</span>
-<span class="cstat-no" title="statement not covered" >import playlistRoutes from './playlist.routes';</span>
-<span class="cstat-no" title="statement not covered" >import songRoutes from './song.routes';</span>
-<span class="cstat-no" title="statement not covered" >import settingsRoutes from './settings.routes';</span>
-<span class="cstat-no" title="statement not covered" >import themeRoutes from './theme.routes';</span>
-<span class="cstat-no" title="statement not covered" >import spotifyRoutes from './spotifyRoutes';</span>
-<span class="cstat-no" title="statement not covered" >import moderationRoutes from './moderation.routes';</span>
+<span class="cline-any cline-yes">7x</span></td><td class="text"><pre class="prettyprint lang-js">import express from 'express';
+import authRoutes from './auth.routes';
+import userRoutes from './user.routes';
+import pomodoroRoutes from './pomodoro.routes';
+import playlistRoutes from './playlist.routes';
+import songRoutes from './song.routes';
+import settingsRoutes from './settings.routes';
+import themeRoutes from './theme.routes';
+import spotifyRoutes from './spotifyRoutes';
+import moderationRoutes from './moderation.routes';
 &nbsp;
-const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
+const router = express.Router();
 &nbsp;
 // Mount the different route modules
-<span class="cstat-no" title="statement not covered" >router.use('/auth', authRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/users', userRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/pomodoro', pomodoroRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/playlists', playlistRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/songs', songRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/settings', settingsRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/themes', themeRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/spotify', spotifyRoutes);</span>
-<span class="cstat-no" title="statement not covered" >router.use('/moderation', moderationRoutes);</span>
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
+router.use('/pomodoro', pomodoroRoutes);
+router.use('/playlists', playlistRoutes);
+router.use('/songs', songRoutes);
+router.use('/settings', settingsRoutes);
+router.use('/themes', themeRoutes);
+router.use('/spotify', spotifyRoutes);
+router.use('/moderation', moderationRoutes);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default router; </span></pre></td></tr></table></pre>
+export default router; </pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-14T23:38:29.812Z
+                at 2025-04-18T00:07:16.633Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

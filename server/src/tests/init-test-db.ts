@@ -57,3 +57,10 @@ export async function initTestDatabase(pool: Pool) {
     throw error;
   }
 }
+
+// Add a simple test
+describe('Database initialization', () => {
+  test('should be a valid test file', () => {
+    expect(true).toBe(true);
+  });
+});

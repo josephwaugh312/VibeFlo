@@ -1,3 +1,11 @@
+import { createMockKnex } from '../tests/mocks/db-adapter.mock';
+
+// Create and export a mock Knex instance
+export const db = createMockKnex();
+
+// Export default for default import uses
+export default db;
+
 // Create mock functions for Knex query builder
 const mockKnex = jest.fn(() => {
   return mockDb;
@@ -14,9 +22,6 @@ const mockDb = {
   del: jest.fn().mockReturnThis(),
   returning: jest.fn(),
 };
-
-// Mock the db object
-export const db = mockKnex;
 
 // Export individual mock methods for direct testing
 export const where = mockDb.where;

@@ -23,16 +23,16 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">11.53% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/78</span>
+                <span class='fraction'>9/78</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">7.69% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/39</span>
+                <span class='fraction'>3/39</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">11.53% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/78</span>
+                <span class='fraction'>9/78</span>
             </div>
         
             
@@ -290,20 +290,20 @@
 <a name='L225'></a><a href='#L225'>225</a>
 <a name='L226'></a><a href='#L226'>226</a>
 <a name='L227'></a><a href='#L227'>227</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -313,7 +313,7 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -515,18 +515,18 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { Request, Response } from 'express';
-<span class="cstat-no" title="statement not covered" >import axios from 'axios';</span>
-<span class="cstat-no" title="statement not covered" >import querystring from 'querystring';</span>
-<span class="cstat-no" title="statement not covered" >import { handleAsync } from '../utils/errorHandler';</span>
+<span class="cline-any cline-yes">7x</span></td><td class="text"><pre class="prettyprint lang-js">import { Request, Response } from 'express';
+import axios from 'axios';
+import querystring from 'querystring';
+import { handleAsync } from '../utils/errorHandler';
 &nbsp;
 // Spotify API credentials - these should be in environment variables
-const SPOTIFY_CLIENT_ID = <span class="cstat-no" title="statement not covered" >process.env.SPOTIFY_CLIENT_ID || '';</span>
-const SPOTIFY_CLIENT_SECRET = <span class="cstat-no" title="statement not covered" >process.env.SPOTIFY_CLIENT_SECRET || '';</span>
-const SPOTIFY_REDIRECT_URI = <span class="cstat-no" title="statement not covered" >process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/spotify-callback';</span>
+const SPOTIFY_CLIENT_ID = process.env.SPOTIFY_CLIENT_ID || <span class="branch-1 cbranch-no" title="branch not covered" >'';</span>
+const SPOTIFY_CLIENT_SECRET = process.env.SPOTIFY_CLIENT_SECRET || <span class="branch-1 cbranch-no" title="branch not covered" >'';</span>
+const SPOTIFY_REDIRECT_URI = process.env.SPOTIFY_REDIRECT_URI || <span class="branch-1 cbranch-no" title="branch not covered" >'http://localhost:3000/spotify-callback';</span>
 &nbsp;
 // Helper function to extract error details
-const getErrorDetails = <span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" >(e</span>rror: unknown): string =&gt; {</span>
+const getErrorDetails = <span class="fstat-no" title="function not covered" >(e</span>rror: unknown): string =&gt; {
 <span class="cstat-no" title="statement not covered" >  <span class="missing-if-branch" title="if path not taken" >I</span>if (error &amp;&amp; typeof error === 'object') {</span>
 <span class="cstat-no" title="statement not covered" >    <span class="missing-if-branch" title="if path not taken" >I</span>if ('response' in error &amp;&amp; error.response &amp;&amp; typeof error.response === 'object' &amp;&amp; 'data' in error.response) {</span>
 <span class="cstat-no" title="statement not covered" >      return String(error.response.data);</span>
@@ -539,7 +539,7 @@ const getErrorDetails = <span class="cstat-no" title="statement not covered" ><s
 };
 &nbsp;
 // Controller methods
-export const <span class="cstat-no" title="statement not covered" >spotifyController = {</span>
+export const spotifyController = {
   // Exchange authorization code for access and refresh tokens
   exchangeToken: handleAsync(<span class="fstat-no" title="function not covered" >async (r</span>eq: Request, res: Response) =&gt;<span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" > {</span></span>
     const { code } = <span class="cstat-no" title="statement not covered" >req.body;</span>
@@ -741,14 +741,14 @@ export const <span class="cstat-no" title="statement not covered" >spotifyContro
   })
 };
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default spotifyController; </span></pre></td></tr></table></pre>
+export default spotifyController; </pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-14T23:38:29.812Z
+                at 2025-04-18T00:07:16.633Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

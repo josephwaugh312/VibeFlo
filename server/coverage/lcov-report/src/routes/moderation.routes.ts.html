@@ -23,9 +23,9 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
@@ -44,9 +44,9 @@
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/11</span>
+                <span class='fraction'>11/11</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line high'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -87,10 +87,10 @@
 <a name='L22'></a><a href='#L22'>22</a>
 <a name='L23'></a><a href='#L23'>23</a>
 <a name='L24'></a><a href='#L24'>24</a>
-<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L25'></a><a href='#L25'>25</a></td><td class="line-coverage quiet"><span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -98,23 +98,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" >import express from 'express';</span>
-<span class="cstat-no" title="statement not covered" >import { protect } from '../middleware/auth.middleware';</span>
-<span class="cstat-no" title="statement not covered" >import { isAdmin } from '../middleware/admin.middleware';</span>
-<span class="cstat-no" title="statement not covered" >import { </span>
+<span class="cline-any cline-yes">7x</span></td><td class="text"><pre class="prettyprint lang-js">import express from 'express';
+import { protect } from '../middleware/auth.middleware';
+import { isAdmin } from '../middleware/admin.middleware';
+import { 
   getPendingThemes,
   approveTheme,
   rejectTheme,
@@ -122,27 +122,27 @@
   getReportedThemes
 } from '../controllers/theme-moderation.controller';
 &nbsp;
-const router = <span class="cstat-no" title="statement not covered" >express.Router();</span>
+const router = express.Router();
 &nbsp;
 // Public routes - none
 &nbsp;
 // Protected routes - require authentication
-<span class="cstat-no" title="statement not covered" >router.post('/themes/:themeId/report', protect, reportTheme);</span>
+router.post('/themes/:themeId/report', protect, reportTheme);
 &nbsp;
 // Admin routes - require admin privileges
-<span class="cstat-no" title="statement not covered" >router.get('/admin/themes/pending', protect, isAdmin, getPendingThemes);</span>
-<span class="cstat-no" title="statement not covered" >router.get('/admin/themes/reported', protect, isAdmin, getReportedThemes);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/admin/themes/:themeId/approve', protect, isAdmin, approveTheme);</span>
-<span class="cstat-no" title="statement not covered" >router.post('/admin/themes/:themeId/reject', protect, isAdmin, rejectTheme);</span>
+router.get('/admin/themes/pending', protect, isAdmin, getPendingThemes);
+router.get('/admin/themes/reported', protect, isAdmin, getReportedThemes);
+router.post('/admin/themes/:themeId/approve', protect, isAdmin, approveTheme);
+router.post('/admin/themes/:themeId/reject', protect, isAdmin, rejectTheme);
 &nbsp;
-<span class="cstat-no" title="statement not covered" >export default router; </span></pre></td></tr></table></pre>
+export default router; </pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
             </div><!-- /wrapper -->
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-04-14T23:38:29.812Z
+                at 2025-04-18T00:07:16.633Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

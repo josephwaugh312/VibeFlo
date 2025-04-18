@@ -1,15 +1,26 @@
 // Mock the database module
-jest.mock('../../db');
-
-// Import mocked db
-import { db, where, first, insert, update, join, select, returning } from '../../db';
+jest.mock('../../db', () => ({
+  db: jest.fn()
+}));
 
 // Import the theme service
 import * as themeService from '../../services/theme.service';
+import { db } from '../../db';
 
 describe('Theme Service', () => {
+  // Define mock functions for the query builder
+  const where = jest.fn().mockReturnThis();
+  const first = jest.fn();
+  const insert = jest.fn().mockReturnThis();
+  const update = jest.fn().mockReturnThis();
+  const join = jest.fn().mockReturnThis();
+  const select = jest.fn().mockReturnThis();
+  const returning = jest.fn();
+  
   beforeEach(() => {
     jest.clearAllMocks();
+    // @ts-ignore - Ignoring TypeScript error for Jest mock
+    db.mockReset();
   });
 
   describe('setUserTheme', () => {
@@ -28,7 +39,9 @@ describe('Theme Service', () => {
         update,
         returning,
       };
-      db.mockReturnValue(mockDbChain);
+      
+      // @ts-ignore - Ignoring TypeScript error for Jest mock
+      db.mockImplementation(() => mockDbChain);
       
       // Call the function
       const result = await themeService.setUserTheme(1, 4);
@@ -61,7 +74,9 @@ describe('Theme Service', () => {
         insert,
         returning,
       };
-      db.mockReturnValue(mockDbChain);
+      
+      // @ts-ignore - Ignoring TypeScript error for Jest mock
+      db.mockImplementation(() => mockDbChain);
       
       // Call the function
       const result = await themeService.setUserTheme(1, 4);
@@ -92,7 +107,9 @@ describe('Theme Service', () => {
         where,
         first,
       };
-      db.mockReturnValue(mockDbChain);
+      
+      // @ts-ignore - Ignoring TypeScript error for Jest mock
+      db.mockImplementation(() => mockDbChain);
       
       // Call the function
       const result = await themeService.setUserTheme(1, 999);
@@ -117,12 +134,14 @@ describe('Theme Service', () => {
     it('should return the user\'s theme preference when set', async () => {
       // Configure mocks
       // Return a theme from the user settings query
-      first.mockResolvedValueOnce({
+      const themeData = {
         id: 4,
         name: 'Minimalist',
         background: 'linear-gradient(to right, #000000, #434343)',
         text_color: '#ffffff'
-      });
+      };
+      
+      first.mockResolvedValueOnce(themeData);
       
       // Mock the database function calls to return mocked query builder
       const mockDbChain = {
@@ -131,18 +150,15 @@ describe('Theme Service', () => {
         select,
         first,
       };
-      db.mockReturnValue(mockDbChain);
+      
+      // @ts-ignore - Ignoring TypeScript error for Jest mock
+      db.mockImplementation(() => mockDbChain);
       
       // Call the function
       const result = await themeService.getUserTheme(1);
       
       // Verify the result
-      expect(result).toEqual({
-        id: 4,
-        name: 'Minimalist',
-        background: 'linear-gradient(to right, #000000, #434343)',
-        text_color: '#ffffff'
-      });
+      expect(result).toEqual(themeData);
       
       // Check that query was made correctly
       expect(db).toHaveBeenCalledWith('user_settings');
@@ -157,12 +173,14 @@ describe('Theme Service', () => {
       first.mockResolvedValueOnce(null);
       
       // Second query - default theme
-      first.mockResolvedValueOnce({
+      const defaultTheme = {
         id: 1,
         name: 'Forest',
         background: 'linear-gradient(to right, #0f9b0f, #000000)',
         text_color: '#ffffff'
-      });
+      };
+      
+      first.mockResolvedValueOnce(defaultTheme);
       
       // Mock the database function calls to return mocked query builder
       const mockDbChain = {
@@ -171,18 +189,15 @@ describe('Theme Service', () => {
         select,
         first,
       };
-      db.mockReturnValue(mockDbChain);
+      
+      // @ts-ignore - Ignoring TypeScript error for Jest mock
+      db.mockImplementation(() => mockDbChain);
       
       // Call the function
       const result = await themeService.getUserTheme(1);
       
       // Verify the result
-      expect(result).toEqual({
-        id: 1,
-        name: 'Forest',
-        background: 'linear-gradient(to right, #0f9b0f, #000000)',
-        text_color: '#ffffff'
-      });
+      expect(result).toEqual(defaultTheme);
       
       // Check that both queries were made
       expect(db).toHaveBeenCalledWith('user_settings');
