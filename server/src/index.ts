@@ -20,12 +20,25 @@ connectDB();
 
 // Middleware
 // Configure CORS with explicit settings
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://192.168.1.212:3000',
+  'https://vibeflo.onrender.com'
+];
+
+// Add CLIENT_URL to allowed origins if it's not already included
+if (clientUrl && !allowedOrigins.includes(clientUrl)) {
+  allowedOrigins.push(clientUrl);
+}
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://192.168.1.212:3000', 'https://vibeflo.onrender.com'], // Allow requests from client
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
+
 // Increase JSON payload limit to 10MB to handle image uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
