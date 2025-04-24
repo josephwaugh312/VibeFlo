@@ -6,6 +6,7 @@ import session from 'express-session';
 import dotenv from 'dotenv';
 import apiRoutes from './routes';
 import { errorMiddleware } from './utils/errorHandler';
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -64,15 +65,47 @@ app.use('/api', apiRoutes);
 
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
-  console.log('Running in production mode - serving static files and handling client-side routing');
+  console.log('Running in production mode - configuring static file serving');
   
-  // Serve static files from the React build folder
-  app.use(express.static(path.join(__dirname, '../../client/build')));
+  // Possible build paths (from most likely to least likely)
+  const possibleBuildPaths = [
+    path.join(__dirname, '../dist/client/build'),           // Render deployment path
+    path.join(__dirname, '../../client/build'),             // Standard path
+    path.join(__dirname, '../../../client/build'),          // One level up
+    path.join(__dirname, '../../../../client/build'),       // Two levels up
+    '/opt/render/project/src/client/build',                 // Specific Render path
+    path.join(process.cwd(), 'client/build'),               // Current working directory
+    path.join(process.cwd(), 'dist/client/build')           // Fallback path
+  ];
   
-  // Handle React routing, return all requests to React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../client/build', 'index.html'));
-  });
+  // Find the first path that exists
+  let buildPath = null;
+  for (const p of possibleBuildPaths) {
+    if (fs.existsSync(p)) {
+      buildPath = p;
+      console.log(`Found React build directory at: ${buildPath}`);
+      break;
+    }
+  }
+  
+  if (buildPath) {
+    // Serve static files from the found build folder
+    app.use(express.static(buildPath));
+    
+    // Handle React routing, return all requests to React app
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(buildPath, 'index.html'));
+    });
+  } else {
+    console.warn('React build directory not found. Static file serving is disabled.');
+    console.warn('Checked paths:');
+    possibleBuildPaths.forEach(p => console.warn(`- ${p}`));
+    
+    // Add a fallback route for the root
+    app.get('/', (req, res) => {
+      res.send('VibeFlo API is running (Client not available)');
+    });
+  }
 } else {
   // Root route for development
   app.get('/', (req, res) => {

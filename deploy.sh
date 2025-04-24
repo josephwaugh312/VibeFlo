@@ -15,13 +15,15 @@ cd ../server
 npm install
 npm run build
 
-# Copy client build to public folder for production
-echo "Setting up for production..."
-mkdir -p dist/public
-cp -r ../client/build/* dist/public/
+# Copy client build to server public directory for Render deployment
+echo "Copying client build to server for Render deployment..."
+mkdir -p dist/client
+cp -r ../client/build dist/client/
 
 echo "Deployment build complete!"
-echo "To run in production mode, set NODE_ENV=production and start the server"
+echo "To run in production mode:"
+echo "1. Set NODE_ENV=production"
+echo "2. Start the server with: npm start"
 echo "Example: NODE_ENV=production npm start"
 
 # Return to root directory
