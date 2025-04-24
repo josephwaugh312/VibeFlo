@@ -260,11 +260,20 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Handle the results based on what succeeded and what failed
       if (statsData) {
         // Ensure all activity objects are defined using a properly typed approach
+        const typedStatsData = statsData as PomodoroStats;
         const safeStats: PomodoroStats = {
-          ...statsData,
-          lastWeekActivity: statsData.lastWeekActivity || {},
-          last30DaysActivity: statsData.last30DaysActivity || {},
-          allTimeActivity: statsData.allTimeActivity || {},
+          totalSessions: typedStatsData.totalSessions,
+          completedSessions: typedStatsData.completedSessions,
+          totalFocusTime: typedStatsData.totalFocusTime,
+          lastWeekActivity: typedStatsData.lastWeekActivity || {},
+          last30DaysActivity: typedStatsData.last30DaysActivity || {},
+          allTimeActivity: typedStatsData.allTimeActivity || {},
+          averageSessionDuration: typedStatsData.averageSessionDuration,
+          mostProductiveDay: typedStatsData.mostProductiveDay,
+          averageDailySessions: typedStatsData.averageDailySessions,
+          completionTrend: typedStatsData.completionTrend,
+          currentStreak: typedStatsData.currentStreak,
+          activityHeatmap: typedStatsData.activityHeatmap
         };
         setStats(safeStats);
       }
@@ -372,12 +381,21 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // Optimistically update local stats
       if (stats) {
-        setStats({
-          ...stats,
+        const updatedStats: PomodoroStats = {
           totalSessions: stats.totalSessions + 1,
           completedSessions: sessionData.completed ? stats.completedSessions + 1 : stats.completedSessions,
           totalFocusTime: stats.totalFocusTime + sessionData.duration,
-        });
+          lastWeekActivity: stats.lastWeekActivity,
+          last30DaysActivity: stats.last30DaysActivity || {},
+          allTimeActivity: stats.allTimeActivity || {},
+          averageSessionDuration: stats.averageSessionDuration,
+          mostProductiveDay: stats.mostProductiveDay,
+          averageDailySessions: stats.averageDailySessions,
+          completionTrend: stats.completionTrend,
+          currentStreak: stats.currentStreak,
+          activityHeatmap: stats.activityHeatmap
+        };
+        setStats(updatedStats);
       }
       
       // Persist to server
@@ -434,11 +452,20 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (isMounted) {
             if (statsData) {
               // Ensure all activity objects are defined using a properly typed approach
+              const typedStatsData = statsData as PomodoroStats;
               const safeStats: PomodoroStats = {
-                ...statsData,
-                lastWeekActivity: statsData.lastWeekActivity || {},
-                last30DaysActivity: statsData.last30DaysActivity || {},
-                allTimeActivity: statsData.allTimeActivity || {},
+                totalSessions: typedStatsData.totalSessions,
+                completedSessions: typedStatsData.completedSessions,
+                totalFocusTime: typedStatsData.totalFocusTime,
+                lastWeekActivity: typedStatsData.lastWeekActivity || {},
+                last30DaysActivity: typedStatsData.last30DaysActivity || {},
+                allTimeActivity: typedStatsData.allTimeActivity || {},
+                averageSessionDuration: typedStatsData.averageSessionDuration,
+                mostProductiveDay: typedStatsData.mostProductiveDay,
+                averageDailySessions: typedStatsData.averageDailySessions,
+                completionTrend: typedStatsData.completionTrend,
+                currentStreak: typedStatsData.currentStreak,
+                activityHeatmap: typedStatsData.activityHeatmap
               };
               setStats(safeStats);
             }
