@@ -107,30 +107,21 @@ if (process.env.NODE_ENV === 'production') {
       res.sendFile(indexHtmlPath);
     });
     
-    // Handle React routing, return all requests to React app
-    // This must come AFTER the API routes but BEFORE error middleware
-    app.get('*', (req, res, next) => {
-      // Skip API routes - they are already handled
-      if (req.path.startsWith('/api/')) {
+    // Handle React routing - more aggressive approach
+    // Serve index.html for ANY route that isn't a static file or API route
+    app.use((req, res, next) => {
+      // Skip API routes and static file requests
+      if (req.path.startsWith('/api/') || req.path.includes('.')) {
         return next();
       }
       
-      console.log(`Serving React app for path: ${req.path}`);
+      console.log(`Serving React app for path: ${req.path} (catch-all middleware)`);
       const indexHtmlPath = path.join(buildPath, 'index.html');
       
-      // Check if the index.html file exists
       if (fs.existsSync(indexHtmlPath)) {
-        console.log(`Sending index.html for client-side routing: ${req.path}`);
         return res.sendFile(indexHtmlPath);
       } else {
         console.error(`ERROR: index.html not found at ${indexHtmlPath}`);
-        console.error(`Available files in ${buildPath}:`);
-        try {
-          const files = fs.readdirSync(buildPath);
-          console.error(files.join(', '));
-        } catch (err) {
-          console.error(`Error reading directory: ${err.message}`);
-        }
         return res.status(404).send('Client app not available - index.html not found');
       }
     });
