@@ -6,23 +6,23 @@ import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 const getApiBaseUrl = () => {
   // In production, use the production API endpoint
   if (process.env.NODE_ENV === 'production') {
-    return 'https://vibeflo-api.onrender.com/api';
+    return 'https://vibeflo-api.onrender.com';
   }
   
   // Check for an environment variable (useful for testing and CI/CD)
   if (process.env.REACT_APP_API_URL) {
-    return `${process.env.REACT_APP_API_URL}/api`;
+    return process.env.REACT_APP_API_URL;
   }
   
   // Default to localhost for development
-  return 'http://localhost:5001/api';
+  return 'http://localhost:5001';
 };
 
 // Create the API service with token management and interceptors
 const apiService = (() => {
   // Create the base axios instance
   const api: AxiosInstance = axios.create({
-    baseURL: getApiBaseUrl(),
+    baseURL: `${getApiBaseUrl()}/api`,
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
