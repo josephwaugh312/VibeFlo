@@ -26,13 +26,41 @@ export const errorMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('Global error handler:', err);
-  
+  // Extract error details
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
+  const errorCode = err.code || 'SERVER_ERROR';
   
-  res.status(statusCode).json({
+  // Log the error with context
+  console.error(`[ERROR] ${statusCode} ${errorCode}: ${message}`);
+  if (err.stack) {
+    console.error(`Stack trace: ${err.stack}`);
+  }
+  
+  // Build error response
+  const errorResponse = {
     error: message,
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack })
-  });
+    code: errorCode,
+    path: req.path,
+    ...(process.env.NODE_ENV !== 'production' && { 
+      stack: err.stack,
+      originalError: err.originalError ? {
+        message: err.originalError.message,
+        name: err.originalError.name
+      } : undefined
+    })
+  };
+  
+  // If this is an authentication error, add specific info to help debugging
+  if (statusCode === 401 || statusCode === 403) {
+    console.log(`Authentication error details:
+      Path: ${req.path}
+      Method: ${req.method}
+      Headers: ${JSON.stringify(req.headers.authorization ? 
+        { ...req.headers, authorization: 'Bearer [redacted]' } : 
+        req.headers)}
+    `);
+  }
+  
+  res.status(statusCode).json(errorResponse);
 }; 

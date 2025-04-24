@@ -25,12 +25,32 @@ export const generateToken = (user: User): string => {
 /**
  * Verify a JWT token
  * @param {String} token - JWT token to verify
- * @returns {Object|null} Decoded token payload or null
+ * @returns {Object} Decoded token payload or throws error with context
  */
 export const verifyToken = (token: string): any => {
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
-    return null;
+    // Create a more informative error
+    const authError: any = new Error(
+      error instanceof jwt.TokenExpiredError
+        ? 'Token expired'
+        : error instanceof jwt.JsonWebTokenError
+        ? 'Invalid token'
+        : 'Token verification failed'
+    );
+    
+    // Add specific error type information
+    authError.statusCode = 401;
+    authError.code = error instanceof jwt.TokenExpiredError
+      ? 'TOKEN_EXPIRED'
+      : error instanceof jwt.JsonWebTokenError
+      ? 'INVALID_TOKEN'
+      : 'VERIFICATION_FAILED';
+    
+    // Preserve original error for debugging
+    authError.originalError = error;
+    
+    throw authError;
   }
 }; 

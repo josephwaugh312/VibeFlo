@@ -9,6 +9,7 @@ import { Profile as FacebookProfile } from 'passport-facebook';
 import dotenv from 'dotenv';
 import { db } from '../db';
 import { User } from '../models/user.model';
+import { verifyToken } from '../utils/jwt';
 
 dotenv.config();
 
@@ -38,20 +39,41 @@ if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: process.env.JWT_SECRET || 'fallback_jwt_secret',
+  passReqToCallback: true,
 };
 
+// Update JWT Strategy to use custom JWT verification
 passport.use(
-  new JwtStrategy(jwtOptions, async (payload, done) => {
+  new JwtStrategy(jwtOptions, async (req, payload, done) => {
     try {
+      console.log('JWT Payload:', JSON.stringify(payload, null, 2));
+      
+      // Ensure payload has the expected structure
+      if (!payload || !payload.id) {
+        console.error('Invalid JWT payload structure:', payload);
+        const error: any = new Error('Invalid token payload structure');
+        error.statusCode = 401;
+        error.code = 'INVALID_PAYLOAD';
+        return done(error, false);
+      }
+      
       // Check if user exists in database
       const userResult = await db('users').where({ id: payload.id }).first();
       
-      if (userResult) {
-        return done(null, userResult);
+      if (!userResult) {
+        console.log(`User with ID ${payload.id} from token not found in database`);
+        const error: any = new Error('User not found');
+        error.statusCode = 401;
+        error.code = 'USER_NOT_FOUND';
+        return done(error, false);
       }
       
-      return done(null, false);
+      // Add JWT payload to user object for debugging
+      userResult._jwtPayload = payload;
+      
+      return done(null, userResult);
     } catch (error) {
+      console.error('JWT strategy error:', error);
       return done(error, false);
     }
   })
