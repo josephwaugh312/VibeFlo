@@ -13,11 +13,17 @@ interface AuthRequest extends Request {
 export const protect = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate('jwt', { session: false }, (err: any, user: any) => {
     if (err) {
-      return res.status(500).json({ message: 'Internal server error during authentication' });
+      // Create an error with status code for the error middleware to handle
+      const error: any = new Error('Internal server error during authentication');
+      error.statusCode = 500;
+      return next(error);
     }
 
     if (!user) {
-      return res.status(401).json({ message: 'Unauthorized - No valid token provided' });
+      // Create an error with status code for the error middleware to handle
+      const error: any = new Error('Unauthorized - No valid token provided');
+      error.statusCode = 401;
+      return next(error);
     }
 
     // Set the user object on the request
@@ -31,6 +37,11 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
  */
 export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate('jwt', { session: false }, (err: any, user: any) => {
+    if (err) {
+      // Log the error but don't block the request
+      console.error('Error in optional authentication:', err);
+    }
+    
     if (user) {
       (req as AuthRequest).user = user;
     }

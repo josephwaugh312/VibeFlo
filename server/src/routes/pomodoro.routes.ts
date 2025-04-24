@@ -411,187 +411,167 @@ router.get('/stats', protect, handleAsync(async (req: Request, res: Response) =>
  * @desc    Get all todo items for a user
  * @access  Private
  */
-router.get('/todos', protect, async (req: Request, res: Response) => {
-  try {
-    const authReq = req as AuthRequest;
-    const userId = authReq.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
-    }
-    
-    // Check if the user has any todos in the database
-    const todosResult = await pool.query(
-      'SELECT * FROM pomodoro_todos WHERE user_id = $1 ORDER BY position ASC',
-      [userId]
-    );
-    
-    // Map the database results to the expected format
-    const todos = todosResult.rows.map(todo => ({
-      id: todo.todo_id,
-      text: todo.text,
-      completed: todo.completed,
-      recordedInStats: todo.recorded_in_stats
-    }));
-    
-    res.json(todos);
-  } catch (error) {
-    console.error('Error fetching todos:', error);
-    res.status(500).json({ message: 'Server error' });
+router.get('/todos', protect, handleAsync(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
   }
-});
+  
+  // Check if the user has any todos in the database
+  const todosResult = await pool.query(
+    'SELECT * FROM pomodoro_todos WHERE user_id = $1 ORDER BY position ASC',
+    [userId]
+  );
+  
+  // Map the database results to the expected format
+  const todos = todosResult.rows.map(todo => ({
+    id: todo.todo_id,
+    text: todo.text,
+    completed: todo.completed,
+    recordedInStats: todo.recorded_in_stats
+  }));
+  
+  res.json(todos);
+}));
 
 /**
  * @route   POST /api/pomodoro/todos
  * @desc    Save todos for a user
  * @access  Private
  */
-router.post('/todos', protect, async (req: Request, res: Response) => {
-  try {
-    const authReq = req as AuthRequest;
-    const userId = authReq.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
-    }
-    
-    const { todos } = req.body;
-    
-    if (!todos || !Array.isArray(todos)) {
-      return res.status(400).json({ message: 'Invalid todos data' });
-    }
-    
-    // Start a transaction to ensure all todos are saved or none
-    const client = await pool.connect();
-    
-    try {
-      await client.query('BEGIN');
-      
-      // Delete all existing todos for this user
-      await client.query('DELETE FROM pomodoro_todos WHERE user_id = $1', [userId]);
-      
-      // Insert the new todos
-      for (let i = 0; i < todos.length; i++) {
-        const todo = todos[i];
-        await client.query(
-          'INSERT INTO pomodoro_todos (user_id, todo_id, text, completed, recorded_in_stats, position) VALUES ($1, $2, $3, $4, $5, $6)',
-          [userId, todo.id, todo.text, todo.completed, todo.recordedInStats || false, i]
-        );
-      }
-      
-      await client.query('COMMIT');
-      
-      res.status(201).json(todos);
-    } catch (error) {
-      await client.query('ROLLBACK');
-      throw error;
-    } finally {
-      client.release();
-    }
-  } catch (error) {
-    console.error('Error saving todos:', error);
-    res.status(500).json({ message: 'Server error' });
+router.post('/todos', protect, handleAsync(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
   }
-});
+  
+  const { todos } = req.body;
+  
+  if (!todos || !Array.isArray(todos)) {
+    return res.status(400).json({ message: 'Invalid todos data' });
+  }
+  
+  // Start a transaction to ensure all todos are saved or none
+  const client = await pool.connect();
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Delete all existing todos for this user
+    await client.query('DELETE FROM pomodoro_todos WHERE user_id = $1', [userId]);
+    
+    // Insert the new todos
+    for (let i = 0; i < todos.length; i++) {
+      const todo = todos[i];
+      await client.query(
+        'INSERT INTO pomodoro_todos (user_id, todo_id, text, completed, recorded_in_stats, position) VALUES ($1, $2, $3, $4, $5, $6)',
+        [userId, todo.id, todo.text, todo.completed, todo.recordedInStats || false, i]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    res.status(201).json(todos);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}));
 
 /**
  * @route   PUT /api/pomodoro/todos/:id
  * @desc    Update a specific todo
  * @access  Private
  */
-router.put('/todos/:id', protect, async (req: Request, res: Response) => {
-  try {
-    const authReq = req as AuthRequest;
-    const userId = authReq.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
-    }
-    
-    const todoId = req.params.id;
-    const { text, completed, recordedInStats } = req.body;
-    
-    // Verify that the todo belongs to the user
-    const todoCheck = await pool.query(
-      'SELECT * FROM pomodoro_todos WHERE todo_id = $1 AND user_id = $2',
-      [todoId, userId]
-    );
-    
-    if (todoCheck.rows.length === 0) {
-      return res.status(404).json({ message: 'Todo not found or not owned by user' });
-    }
-    
-    // Update todo
-    const updatedTodo = await pool.query(
-      'UPDATE pomodoro_todos SET text = $1, completed = $2, recorded_in_stats = $3 WHERE todo_id = $4 AND user_id = $5 RETURNING *',
-      [
-        text !== undefined ? text : todoCheck.rows[0].text,
-        completed !== undefined ? completed : todoCheck.rows[0].completed,
-        recordedInStats !== undefined ? recordedInStats : todoCheck.rows[0].recorded_in_stats,
-        todoId,
-        userId
-      ]
-    );
-    
-    res.json({
-      id: updatedTodo.rows[0].todo_id,
-      text: updatedTodo.rows[0].text,
-      completed: updatedTodo.rows[0].completed,
-      recordedInStats: updatedTodo.rows[0].recorded_in_stats
-    });
-  } catch (error) {
-    console.error('Error updating todo:', error);
-    res.status(500).json({ message: 'Server error' });
+router.put('/todos/:id', protect, handleAsync(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
   }
-});
+  
+  const todoId = req.params.id;
+  const { text, completed, recordedInStats } = req.body;
+  
+  // Verify that the todo belongs to the user
+  const todoCheck = await pool.query(
+    'SELECT * FROM pomodoro_todos WHERE todo_id = $1 AND user_id = $2',
+    [todoId, userId]
+  );
+  
+  if (todoCheck.rows.length === 0) {
+    return res.status(404).json({ message: 'Todo not found or not owned by user' });
+  }
+  
+  // Update todo
+  const updatedTodo = await pool.query(
+    'UPDATE pomodoro_todos SET text = $1, completed = $2, recorded_in_stats = $3 WHERE todo_id = $4 AND user_id = $5 RETURNING *',
+    [
+      text !== undefined ? text : todoCheck.rows[0].text,
+      completed !== undefined ? completed : todoCheck.rows[0].completed,
+      recordedInStats !== undefined ? recordedInStats : todoCheck.rows[0].recorded_in_stats,
+      todoId,
+      userId
+    ]
+  );
+  
+  res.json({
+    id: updatedTodo.rows[0].todo_id,
+    text: updatedTodo.rows[0].text,
+    completed: updatedTodo.rows[0].completed,
+    recordedInStats: updatedTodo.rows[0].recorded_in_stats
+  });
+}));
 
 /**
  * @route   DELETE /api/pomodoro/todos/:id
  * @desc    Delete a specific todo
  * @access  Private
  */
-router.delete('/todos/:id', protect, async (req: Request, res: Response) => {
-  try {
-    const authReq = req as AuthRequest;
-    const userId = authReq.user?.id;
-    
-    if (!userId) {
-      return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
-    }
-    
-    const todoId = req.params.id;
-    
-    // Verify that the todo belongs to the user
-    const todoCheck = await pool.query(
-      'SELECT * FROM pomodoro_todos WHERE todo_id = $1 AND user_id = $2',
-      [todoId, userId]
-    );
-    
-    if (todoCheck.rows.length === 0) {
-      return res.status(404).json({ message: 'Todo not found or not owned by user' });
-    }
-    
-    // Delete todo
-    await pool.query('DELETE FROM pomodoro_todos WHERE todo_id = $1 AND user_id = $2', [todoId, userId]);
-    
-    // Update the positions of remaining todos
-    await pool.query(`
-      WITH ranked AS (
-        SELECT todo_id, ROW_NUMBER() OVER (ORDER BY position) - 1 as new_position
-        FROM pomodoro_todos
-        WHERE user_id = $1
-      )
-      UPDATE pomodoro_todos
-      SET position = ranked.new_position
-      FROM ranked
-      WHERE pomodoro_todos.todo_id = ranked.todo_id AND user_id = $1
-    `, [userId]);
-    
-    res.json({ message: 'Todo deleted successfully' });
-  } catch (error) {
-    console.error('Error deleting todo:', error);
-    res.status(500).json({ message: 'Server error' });
+router.delete('/todos/:id', protect, handleAsync(async (req: Request, res: Response) => {
+  const authReq = req as AuthRequest;
+  const userId = authReq.user?.id;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'Unauthorized - User ID is missing' });
   }
-});
+  
+  const todoId = req.params.id;
+  
+  // Verify that the todo belongs to the user
+  const todoCheck = await pool.query(
+    'SELECT * FROM pomodoro_todos WHERE todo_id = $1 AND user_id = $2',
+    [todoId, userId]
+  );
+  
+  if (todoCheck.rows.length === 0) {
+    return res.status(404).json({ message: 'Todo not found or not owned by user' });
+  }
+  
+  // Delete todo
+  await pool.query('DELETE FROM pomodoro_todos WHERE todo_id = $1 AND user_id = $2', [todoId, userId]);
+  
+  // Update the positions of remaining todos
+  await pool.query(`
+    WITH ranked AS (
+      SELECT todo_id, ROW_NUMBER() OVER (ORDER BY position) - 1 as new_position
+      FROM pomodoro_todos
+      WHERE user_id = $1
+    )
+    UPDATE pomodoro_todos
+    SET position = ranked.new_position
+    FROM ranked
+    WHERE pomodoro_todos.todo_id = ranked.todo_id AND user_id = $1
+  `, [userId]);
+  
+  res.json({ message: 'Todo deleted successfully' });
+}));
 
 export default router; 
