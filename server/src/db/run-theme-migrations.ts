@@ -15,48 +15,58 @@ const pool = new Pool({
 const standardThemes = [
   {
     name: 'Deep Purple',
+    description: 'The default VibeFlo theme with a vibrant purple palette',
     background_color: '#FFFFFF',
     text_color: '#333333',
     primary_color: '#6200EE',
     secondary_color: '#03DAC6',
     accent_color: '#BB86FC',
-    is_dark: false
+    is_dark: false,
+    is_public: true
   },
   {
     name: 'Dark Theme',
+    description: 'A sleek dark theme to reduce eye strain',
     background_color: '#121212',
     text_color: '#E1E1E1',
     primary_color: '#BB86FC',
     secondary_color: '#03DAC6',
     accent_color: '#CF6679',
-    is_dark: true
+    is_dark: true,
+    is_public: true
   },
   {
     name: 'Ocean Blue',
+    description: 'A calming blue theme inspired by the ocean',
     background_color: '#FFFFFF',
     text_color: '#333333',
     primary_color: '#1976D2',
     secondary_color: '#26A69A',
     accent_color: '#82B1FF',
-    is_dark: false
+    is_dark: false,
+    is_public: true
   },
   {
     name: 'Forest Green',
+    description: 'A refreshing green theme inspired by nature',
     background_color: '#FFFFFF',
     text_color: '#333333',
     primary_color: '#2E7D32',
     secondary_color: '#00897B',
     accent_color: '#66BB6A',
-    is_dark: false
+    is_dark: false,
+    is_public: true
   },
   {
     name: 'Sunset Orange',
+    description: 'A warm orange theme inspired by sunset colors',
     background_color: '#FFFFFF',
     text_color: '#333333',
     primary_color: '#F57C00',
     secondary_color: '#26A69A',
     accent_color: '#FFAB40',
-    is_dark: false
+    is_dark: false,
+    is_public: true
   }
 ];
 
@@ -90,6 +100,7 @@ async function runThemeMigrations() {
           id SERIAL PRIMARY KEY,
           user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
           name VARCHAR(255) NOT NULL,
+          description TEXT,
           background_color VARCHAR(50) NOT NULL,
           text_color VARCHAR(50) NOT NULL,
           primary_color VARCHAR(50) NOT NULL,
@@ -97,6 +108,7 @@ async function runThemeMigrations() {
           accent_color VARCHAR(50) NOT NULL,
           is_default BOOLEAN DEFAULT false,
           is_dark BOOLEAN DEFAULT false,
+          is_public BOOLEAN DEFAULT false,
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
@@ -104,8 +116,10 @@ async function runThemeMigrations() {
       
       console.log('custom_themes table created successfully');
     } else {
+      // Check for missing columns and add them if they don't exist
+      
       // Check if is_default column exists
-      const columnCheck = await client.query(`
+      const defaultColumnCheck = await client.query(`
         SELECT EXISTS (
           SELECT FROM information_schema.columns 
           WHERE table_schema = 'public'
@@ -114,16 +128,51 @@ async function runThemeMigrations() {
         );
       `);
       
-      if (!columnCheck.rows[0].exists) {
+      if (!defaultColumnCheck.rows[0].exists) {
         console.log('Adding is_default column to custom_themes table...');
-        
-        // Add the is_default column if it doesn't exist
         await client.query(`
           ALTER TABLE custom_themes
           ADD COLUMN is_default BOOLEAN DEFAULT false;
         `);
-        
         console.log('is_default column added successfully');
+      }
+      
+      // Check if is_public column exists
+      const publicColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'custom_themes'
+          AND column_name = 'is_public'
+        );
+      `);
+      
+      if (!publicColumnCheck.rows[0].exists) {
+        console.log('Adding is_public column to custom_themes table...');
+        await client.query(`
+          ALTER TABLE custom_themes
+          ADD COLUMN is_public BOOLEAN DEFAULT false;
+        `);
+        console.log('is_public column added successfully');
+      }
+      
+      // Check if description column exists
+      const descriptionColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'custom_themes'
+          AND column_name = 'description'
+        );
+      `);
+      
+      if (!descriptionColumnCheck.rows[0].exists) {
+        console.log('Adding description column to custom_themes table...');
+        await client.query(`
+          ALTER TABLE custom_themes
+          ADD COLUMN description TEXT;
+        `);
+        console.log('description column added successfully');
       }
     }
     
@@ -152,21 +201,23 @@ async function runThemeMigrations() {
           
           await client.query(`
             INSERT INTO custom_themes (
-              user_id, name, background_color, text_color, primary_color, 
-              secondary_color, accent_color, is_default, is_dark
+              user_id, name, description, background_color, text_color, primary_color, 
+              secondary_color, accent_color, is_default, is_dark, is_public
             ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
             )
           `, [
             user.id, 
-            theme.name, 
+            theme.name,
+            theme.description,
             theme.background_color, 
             theme.text_color, 
             theme.primary_color,
             theme.secondary_color, 
             theme.accent_color, 
             isDefault, 
-            theme.is_dark
+            theme.is_dark,
+            theme.is_public
           ]);
         }
         
