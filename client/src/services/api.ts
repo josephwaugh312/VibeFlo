@@ -1,5 +1,6 @@
 import axios, { AxiosInstance } from 'axios';
 import { Track } from '../components/music/MusicPlayer';
+import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 
 // Get the API base URL based on environment
 const getApiBaseUrl = () => {
@@ -308,7 +309,7 @@ const apiService = (() => {
   const pomodoro = {
     getAllSessions: async () => {
       const response = await api.get('/pomodoro/sessions');
-      return response.data;
+      return response.data as PomodoroSession[];
     },
     
     createSession: async (sessionData: any) => {
@@ -328,7 +329,7 @@ const apiService = (() => {
     
     getStats: async () => {
       const response = await api.get('/pomodoro/stats');
-      return response.data;
+      return response.data as PomodoroStats;
     },
 
     // Todo items API methods

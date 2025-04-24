@@ -259,11 +259,14 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // Handle the results based on what succeeded and what failed
       if (statsData) {
-        // Ensure all activity objects are defined
-        statsData.lastWeekActivity = statsData.lastWeekActivity || {};
-        statsData.last30DaysActivity = statsData.last30DaysActivity || {};
-        statsData.allTimeActivity = statsData.allTimeActivity || {};
-        setStats(statsData);
+        // Ensure all activity objects are defined using a properly typed approach
+        const safeStats: PomodoroStats = {
+          ...statsData,
+          lastWeekActivity: statsData.lastWeekActivity || {},
+          last30DaysActivity: statsData.last30DaysActivity || {},
+          allTimeActivity: statsData.allTimeActivity || {},
+        };
+        setStats(safeStats);
       }
       
       if (sessionsData) {
@@ -430,10 +433,14 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           
           if (isMounted) {
             if (statsData) {
-              statsData.lastWeekActivity = statsData.lastWeekActivity || {};
-              statsData.last30DaysActivity = statsData.last30DaysActivity || {};
-              statsData.allTimeActivity = statsData.allTimeActivity || {};
-              setStats(statsData);
+              // Ensure all activity objects are defined using a properly typed approach
+              const safeStats: PomodoroStats = {
+                ...statsData,
+                lastWeekActivity: statsData.lastWeekActivity || {},
+                last30DaysActivity: statsData.last30DaysActivity || {},
+                allTimeActivity: statsData.allTimeActivity || {},
+              };
+              setStats(safeStats);
             }
             
             if (sessionsData) {
