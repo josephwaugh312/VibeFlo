@@ -136,7 +136,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let sessionsError = null;
       
       try {
-        statsData = await pomodoroAPI.getStats();
+        statsData = await pomodoroAPI.getStats() as PomodoroStats;
         console.log("Stats API response:", statsData);
       } catch (err: any) {
         console.error('Error fetching stats:', err);
@@ -178,10 +178,11 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Handle the results based on what succeeded and what failed
       if (statsData) {
         // Ensure all activity objects are defined
-        statsData.lastWeekActivity = statsData.lastWeekActivity || {};
-        statsData.last30DaysActivity = statsData.last30DaysActivity || {};
-        statsData.allTimeActivity = statsData.allTimeActivity || {};
-        setStats(statsData);
+        const safeStatsData = statsData as PomodoroStats;
+        safeStatsData.lastWeekActivity = safeStatsData.lastWeekActivity || {};
+        safeStatsData.last30DaysActivity = safeStatsData.last30DaysActivity || {};
+        safeStatsData.allTimeActivity = safeStatsData.allTimeActivity || {};
+        setStats(safeStatsData);
       }
       
       if (sessionsData) {
@@ -276,7 +277,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           let sessionsError = null;
           
           try {
-            statsData = await pomodoroAPI.getStats();
+            statsData = await pomodoroAPI.getStats() as PomodoroStats;
             console.log("Fetching stats for user:", user?.username);
           } catch (err: any) {
             console.error('Error fetching initial stats:', err);
@@ -306,10 +307,11 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             // Handle the results based on what succeeded and what failed
             if (statsData) {
               // Ensure all activity objects are defined
-              statsData.lastWeekActivity = statsData.lastWeekActivity || {};
-              statsData.last30DaysActivity = statsData.last30DaysActivity || {};
-              statsData.allTimeActivity = statsData.allTimeActivity || {};
-              setStats(statsData);
+              const safeStatsData = statsData as PomodoroStats;
+              safeStatsData.lastWeekActivity = safeStatsData.lastWeekActivity || {};
+              safeStatsData.last30DaysActivity = safeStatsData.last30DaysActivity || {};
+              safeStatsData.allTimeActivity = safeStatsData.allTimeActivity || {};
+              setStats(safeStatsData);
             }
             
             if (sessionsData) {
