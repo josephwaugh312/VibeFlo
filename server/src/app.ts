@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import passport from 'passport';
 import apiRoutes from './routes';
+import { errorMiddleware } from './utils/errorHandler';
 
 // Initialize Express app
 export const app = express();
@@ -25,4 +26,7 @@ app.use('/api', apiRoutes);
 // Root route
 app.get('/', (req, res) => {
   res.send('VibeFlo API is running');
-}); 
+});
+
+// Error handling middleware - must be last
+app.use(errorMiddleware); 
