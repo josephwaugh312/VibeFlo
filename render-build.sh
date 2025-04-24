@@ -21,6 +21,15 @@ npm install ajv@^6.12.6 ajv-keywords@^3.5.2
 
 # Build the client
 npm run build
+
+# Verify client build was created
+if [ ! -f "build/index.html" ]; then
+  echo "ERROR: Client build failed - index.html not found!"
+  ls -la build/
+  exit 1
+fi
+
+echo "Client build successfully created"
 cd ..
 
 # Install dependencies and build server
@@ -33,5 +42,19 @@ npm run build
 echo "Copying client build to server dist directory..."
 mkdir -p dist/client
 cp -r ../client/build dist/client/
+
+# Verify the copy worked
+if [ ! -f "dist/client/build/index.html" ]; then
+  echo "ERROR: Client build files not properly copied!"
+  ls -la dist/client/
+  ls -la dist/client/build/ 2>/dev/null || echo "build directory doesn't exist"
+  exit 1
+fi
+
+echo "Client build files successfully copied to server/dist/client/build"
+
+# Print directory structure for debugging
+echo "Final directory structure:"
+find dist -type f | sort
 
 echo "Build completed successfully!" 
