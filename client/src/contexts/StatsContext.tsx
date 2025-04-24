@@ -21,6 +21,7 @@ export interface PomodoroStats {
   totalSessions: number;
   completedSessions: number;
   totalFocusTime: number;
+  totalFocusTimeMinutes?: number;
   lastWeekActivity: {
     [key: string]: {
       count: number;
@@ -41,6 +42,7 @@ export interface PomodoroStats {
   };
   // New detailed metrics
   averageSessionDuration?: number;
+  averageSessionDurationMinutes?: number;
   mostProductiveDay?: {
     day: string;
     minutes: number;
@@ -53,6 +55,11 @@ export interface PomodoroStats {
   };
   currentStreak?: number;
   activityHeatmap?: Array<{
+    date: string;
+    count: number;
+    minutes: number;
+  }>;
+  heatmapData?: Array<{
     date: string;
     count: number;
     minutes: number;
@@ -206,10 +213,12 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               totalSessions: 0,
               completedSessions: 0,
               totalFocusTime: 0,
+              totalFocusTimeMinutes: 0,
               lastWeekActivity: {},
               last30DaysActivity: {},
               allTimeActivity: {},
               averageSessionDuration: 0,
+              averageSessionDurationMinutes: 0,
               mostProductiveDay: null,
               averageDailySessions: "0",
               completionTrend: {
@@ -218,7 +227,8 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 percentChange: 0
               },
               currentStreak: 0,
-              activityHeatmap: []
+              activityHeatmap: [],
+              heatmapData: []
             };
             console.log("Created default empty stats");
           }
@@ -276,22 +286,26 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       // Handle the results based on what succeeded and what failed
       if (statsData) {
         // Ensure all activity objects are defined using a properly typed approach
-        const typedStatsData = statsData as PomodoroStats;
+        const typedStatsData = statsData as any; // Use 'any' temporarily to handle property name mismatch
         const safeStats: PomodoroStats = {
           totalSessions: typedStatsData.totalSessions,
           completedSessions: typedStatsData.completedSessions,
-          totalFocusTime: typedStatsData.totalFocusTime,
+          // Fix property name mismatch by checking for both properties
+          totalFocusTime: typedStatsData.totalFocusTime || typedStatsData.totalFocusTimeMinutes || 0,
           lastWeekActivity: typedStatsData.lastWeekActivity || {},
           last30DaysActivity: typedStatsData.last30DaysActivity || {},
           allTimeActivity: typedStatsData.allTimeActivity || {},
-          averageSessionDuration: typedStatsData.averageSessionDuration,
+          averageSessionDuration: typedStatsData.averageSessionDuration || typedStatsData.averageSessionDurationMinutes || 0,
           mostProductiveDay: typedStatsData.mostProductiveDay,
           averageDailySessions: typedStatsData.averageDailySessions,
           completionTrend: typedStatsData.completionTrend,
           currentStreak: typedStatsData.currentStreak,
-          activityHeatmap: typedStatsData.activityHeatmap
+          activityHeatmap: typedStatsData.activityHeatmap || typedStatsData.heatmapData
         };
         setStats(safeStats);
+        
+        // Log the updated stats for debugging
+        console.log("Processed stats with focus time:", safeStats.totalFocusTime);
       }
       
       if (sessionsData) {
@@ -420,15 +434,18 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           totalSessions: stats.totalSessions + 1,
           completedSessions: sessionData.completed ? stats.completedSessions + 1 : stats.completedSessions,
           totalFocusTime: stats.totalFocusTime + sessionData.duration,
+          totalFocusTimeMinutes: stats.totalFocusTimeMinutes,
           lastWeekActivity: stats.lastWeekActivity,
           last30DaysActivity: stats.last30DaysActivity || {},
           allTimeActivity: stats.allTimeActivity || {},
           averageSessionDuration: stats.averageSessionDuration,
+          averageSessionDurationMinutes: stats.averageSessionDurationMinutes,
           mostProductiveDay: stats.mostProductiveDay,
           averageDailySessions: stats.averageDailySessions,
           completionTrend: stats.completionTrend,
           currentStreak: stats.currentStreak,
-          activityHeatmap: stats.activityHeatmap
+          activityHeatmap: stats.activityHeatmap,
+          heatmapData: stats.heatmapData
         };
         setStats(updatedStats);
       }
@@ -491,16 +508,18 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
               const safeStats: PomodoroStats = {
                 totalSessions: typedStatsData.totalSessions,
                 completedSessions: typedStatsData.completedSessions,
-                totalFocusTime: typedStatsData.totalFocusTime,
+                totalFocusTime: typedStatsData.totalFocusTime || typedStatsData.totalFocusTimeMinutes || 0,
+                totalFocusTimeMinutes: typedStatsData.totalFocusTimeMinutes,
                 lastWeekActivity: typedStatsData.lastWeekActivity || {},
                 last30DaysActivity: typedStatsData.last30DaysActivity || {},
                 allTimeActivity: typedStatsData.allTimeActivity || {},
-                averageSessionDuration: typedStatsData.averageSessionDuration,
+                averageSessionDuration: typedStatsData.averageSessionDuration || typedStatsData.averageSessionDurationMinutes || 0,
+                averageSessionDurationMinutes: typedStatsData.averageSessionDurationMinutes,
                 mostProductiveDay: typedStatsData.mostProductiveDay,
                 averageDailySessions: typedStatsData.averageDailySessions,
                 completionTrend: typedStatsData.completionTrend,
                 currentStreak: typedStatsData.currentStreak,
-                activityHeatmap: typedStatsData.activityHeatmap
+                activityHeatmap: typedStatsData.activityHeatmap || typedStatsData.heatmapData
               };
               setStats(safeStats);
             }
