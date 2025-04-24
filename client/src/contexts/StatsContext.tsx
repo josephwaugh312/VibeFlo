@@ -157,7 +157,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let retryCount = 0;
       
       // Add retry count and back-off delay to prevent hammering the server
-      const getStatsWithRetry = async () => {
+      const getStatsWithRetry = async (): Promise<void> => {
         if (statsApiAttempted) return; // Only attempt once in this refresh cycle
         
         statsApiAttempted = true;
@@ -214,7 +214,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       };
       
       // Same pattern for sessions
-      const getSessionsWithRetry = async () => {
+      const getSessionsWithRetry = async (): Promise<void> => {
         if (sessionsApiAttempted) return; // Only attempt once in this refresh cycle
         
         sessionsApiAttempted = true;
