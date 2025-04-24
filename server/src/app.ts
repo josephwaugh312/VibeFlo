@@ -89,10 +89,26 @@ if (process.env.NODE_ENV === 'production') {
   }
   
   if (buildPath) {
+    // Log all paths being accessed for debugging
+    app.use((req, res, next) => {
+      console.log(`Request path: ${req.method} ${req.path}`);
+      next();
+    });
+    
     // Serve static files from the found build folder
     app.use(express.static(buildPath));
     
+    // API routes are already mounted at /api above
+    
+    // Explicitly handle the playlists route that was giving 404 errors
+    app.get('/playlists', (req, res) => {
+      console.log('Handling direct request to /playlists');
+      const indexHtmlPath = path.join(buildPath, 'index.html');
+      res.sendFile(indexHtmlPath);
+    });
+    
     // Handle React routing, return all requests to React app
+    // This must come AFTER the API routes but BEFORE error middleware
     app.get('*', (req, res, next) => {
       // Skip API routes - they are already handled
       if (req.path.startsWith('/api/')) {
@@ -104,9 +120,17 @@ if (process.env.NODE_ENV === 'production') {
       
       // Check if the index.html file exists
       if (fs.existsSync(indexHtmlPath)) {
+        console.log(`Sending index.html for client-side routing: ${req.path}`);
         return res.sendFile(indexHtmlPath);
       } else {
-        console.error(`Error: index.html not found at ${indexHtmlPath}`);
+        console.error(`ERROR: index.html not found at ${indexHtmlPath}`);
+        console.error(`Available files in ${buildPath}:`);
+        try {
+          const files = fs.readdirSync(buildPath);
+          console.error(files.join(', '));
+        } catch (err) {
+          console.error(`Error reading directory: ${err.message}`);
+        }
         return res.status(404).send('Client app not available - index.html not found');
       }
     });
