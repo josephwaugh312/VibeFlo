@@ -93,8 +93,22 @@ if (process.env.NODE_ENV === 'production') {
     app.use(express.static(buildPath));
     
     // Handle React routing, return all requests to React app
-    app.get('*', (req, res) => {
-      res.sendFile(path.join(buildPath, 'index.html'));
+    app.get('*', (req, res, next) => {
+      // Skip API routes - they are already handled
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      
+      console.log(`Serving React app for path: ${req.path}`);
+      const indexHtmlPath = path.join(buildPath, 'index.html');
+      
+      // Check if the index.html file exists
+      if (fs.existsSync(indexHtmlPath)) {
+        return res.sendFile(indexHtmlPath);
+      } else {
+        console.error(`Error: index.html not found at ${indexHtmlPath}`);
+        return res.status(404).send('Client app not available - index.html not found');
+      }
     });
   } else {
     console.warn('React build directory not found. Static file serving is disabled.');
