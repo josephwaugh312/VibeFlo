@@ -867,9 +867,13 @@ const Stats: React.FC = () => {
   }
 
   if (error) {
+    const isServerError = error.includes('500') || error.includes('server error');
     return (
       <div className="backdrop-blur-sm bg-white/30 p-6 rounded-lg text-center text-white">
-        <p className="text-xl">{error}</p>
+        <h2 className="text-xl font-bold mb-2">{isServerError ? 'Server Error' : 'Error Loading Stats'}</h2>
+        <p className="text-lg mb-4">{isServerError 
+          ? 'The stats server is currently experiencing issues. This is likely a temporary problem with our backend systems.' 
+          : error}</p>
         <button 
           onClick={() => refreshStats()} 
           className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
