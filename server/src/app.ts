@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import passport from 'passport';
+import path from 'path';
 import apiRoutes from './routes';
 import { errorMiddleware } from './utils/errorHandler';
 
@@ -23,10 +24,21 @@ app.use(passport.initialize());
 // Mount API routes
 app.use('/api', apiRoutes);
 
-// Root route
-app.get('/', (req, res) => {
-  res.send('VibeFlo API is running');
-});
+// Serve static files from the React app in production
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files
+  app.use(express.static(path.join(__dirname, '../../client/build')));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../client/build', 'index.html'));
+  });
+} else {
+  // Root route for development
+  app.get('/', (req, res) => {
+    res.send('VibeFlo API is running');
+  });
+}
 
 // Error handling middleware - must be last
 app.use(errorMiddleware); 
