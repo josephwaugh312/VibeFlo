@@ -4,8 +4,8 @@ import apiService from '../services/api';
 import toast from 'react-hot-toast';
 import { Track } from '../components/music/MusicPlayer';
 
-// YouTube API key - same one used in MusicPlayer
-const YOUTUBE_API_KEY = '***REMOVED***';
+// Get YouTube API key from environment variables 
+const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
 
 interface Song {
   id?: string | number;
@@ -265,6 +265,13 @@ const PlaylistDetail: React.FC = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
+    // Check if YouTube API key is available
+    if (!YOUTUBE_API_KEY) {
+      console.error('YouTube API key is missing. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
+      toast.error('YouTube API key is missing');
+      return;
+    }
+    
     // YouTube search
     setIsSearchingYoutube(true);
     try {
@@ -347,6 +354,13 @@ const PlaylistDetail: React.FC = () => {
   // Handle adding YouTube URL directly
   const handleAddYoutubeUrl = async () => {
     if (!id) return;
+    
+    // Check if YouTube API key is available
+    if (!YOUTUBE_API_KEY) {
+      console.error('YouTube API key is missing. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
+      toast.error('YouTube API key is missing');
+      return;
+    }
     
     try {
       setIsAddingYoutubeTrack(true);

@@ -86,8 +86,8 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   
   const playerRef = useRef<any>(null);
   
-  // YouTube API key
-  const YOUTUBE_API_KEY = '***REMOVED***';
+  // Get constants from environment variables
+  const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
   
   // Mock data for fallback when YouTube API fails
   const mockSearchResults = [
@@ -456,13 +456,26 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     e.preventDefault();
     setIsSearching(true);
     try {
+      if (!YOUTUBE_API_KEY) {
+        console.error('YouTube API key is missing. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
+        toast.error('YouTube API key is missing');
+        setSearchResults(mockSearchResults);
+        return;
+      }
+      
       // Assuming playlistAPI has a search method
       // If not, you'll need to implement it or modify this code
       const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(searchQuery)}&type=video&key=${YOUTUBE_API_KEY}`);
+      
+      if (!response.ok) {
+        throw new Error(`YouTube API error: ${response.status}`);
+      }
+      
       const data = await response.json();
       setSearchResults(data.items || []);
     } catch (err) {
       console.error('Error searching:', err);
+      toast.error('YouTube search failed. Showing sample results instead.');
       setSearchResults(mockSearchResults);
     } finally {
       setIsSearching(false);
