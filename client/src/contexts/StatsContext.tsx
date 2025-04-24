@@ -146,7 +146,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       // Track API calls separately to handle partial failures
       let statsData = null;
-      let sessionsData = null;
+      let sessionsData: any[] = [];
       let statsError = null;
       let sessionsError = null;
       let statsApiAttempted = false;
@@ -282,7 +282,8 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // Properly process the server response for sessions
         // Filter out any "unsaved" sessions that might have been added optimistically
         // but now we have the real data from the server
-        const realSessions = sessionsData.map((session: any) => {
+        const sessionArray = Array.isArray(sessionsData) ? sessionsData : [];
+        const realSessions = sessionArray.map((session: any) => {
           // Ensure each session has the required fields for the UI
           return {
             id: session.id,
@@ -471,7 +472,8 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             }
             
             if (sessionsData) {
-              setSessions(sessionsData);
+              const sessionArray = Array.isArray(sessionsData) ? sessionsData : [];
+              setSessions(sessionArray);
             }
             
             setLoading(false);
