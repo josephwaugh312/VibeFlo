@@ -1,11 +1,27 @@
 import axios, { AxiosInstance } from 'axios';
 import { Track } from '../components/music/MusicPlayer';
 
+// Get the API base URL based on environment
+const getApiBaseUrl = () => {
+  // In production, use the production API endpoint
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://vibeflo-api.onrender.com/api';
+  }
+  
+  // Check for an environment variable (useful for testing and CI/CD)
+  if (process.env.REACT_APP_API_URL) {
+    return `${process.env.REACT_APP_API_URL}/api`;
+  }
+  
+  // Default to localhost for development
+  return 'http://localhost:5001/api';
+};
+
 // Create the API service with token management and interceptors
 const apiService = (() => {
   // Create the base axios instance
   const api: AxiosInstance = axios.create({
-    baseURL: 'http://localhost:5001/api',
+    baseURL: getApiBaseUrl(),
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
