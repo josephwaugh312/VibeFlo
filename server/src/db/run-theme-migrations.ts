@@ -22,7 +22,8 @@ const standardThemes = [
     secondary_color: '#03DAC6',
     accent_color: '#BB86FC',
     is_dark: false,
-    is_public: true
+    is_public: true,
+    image_url: 'https://picsum.photos/id/1025/1200/800'
   },
   {
     name: 'Dark Theme',
@@ -33,7 +34,8 @@ const standardThemes = [
     secondary_color: '#03DAC6',
     accent_color: '#CF6679',
     is_dark: true,
-    is_public: true
+    is_public: true,
+    image_url: 'https://picsum.photos/id/1031/1200/800'
   },
   {
     name: 'Ocean Blue',
@@ -44,7 +46,8 @@ const standardThemes = [
     secondary_color: '#26A69A',
     accent_color: '#82B1FF',
     is_dark: false,
-    is_public: true
+    is_public: true,
+    image_url: 'https://picsum.photos/id/1002/1200/800'
   },
   {
     name: 'Forest Green',
@@ -55,7 +58,8 @@ const standardThemes = [
     secondary_color: '#00897B',
     accent_color: '#66BB6A',
     is_dark: false,
-    is_public: true
+    is_public: true,
+    image_url: 'https://picsum.photos/id/15/1200/800'
   },
   {
     name: 'Sunset Orange',
@@ -66,7 +70,8 @@ const standardThemes = [
     secondary_color: '#26A69A',
     accent_color: '#FFAB40',
     is_dark: false,
-    is_public: true
+    is_public: true,
+    image_url: 'https://picsum.photos/id/96/1200/800'
   }
 ];
 
@@ -80,6 +85,111 @@ async function runThemeMigrations() {
     // Start a transaction
     await client.query('BEGIN');
     
+    // Part 1: Handle the 'themes' table for standard themes
+    // Check if themes table exists
+    const themesTableCheck = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public'
+        AND table_name = 'themes'
+      );
+    `);
+    
+    const themesTableExists = themesTableCheck.rows[0].exists;
+    
+    if (!themesTableExists) {
+      console.log('Creating themes table for standard themes...');
+      
+      // Create themes table if it doesn't exist
+      await client.query(`
+        CREATE TABLE themes (
+          id SERIAL PRIMARY KEY,
+          name VARCHAR(255) NOT NULL,
+          description TEXT,
+          image_url TEXT NOT NULL,
+          background_color VARCHAR(50) DEFAULT '#FFFFFF',
+          text_color VARCHAR(50) DEFAULT '#333333',
+          primary_color VARCHAR(50) DEFAULT '#6200EE',
+          secondary_color VARCHAR(50) DEFAULT '#03DAC6',
+          accent_color VARCHAR(50) DEFAULT '#BB86FC',
+          is_default BOOLEAN DEFAULT false,
+          is_dark BOOLEAN DEFAULT false,
+          created_at TIMESTAMPTZ DEFAULT NOW(),
+          updated_at TIMESTAMPTZ DEFAULT NOW()
+        );
+      `);
+      
+      console.log('Themes table created successfully');
+      
+      // Populate the themes table with standard themes
+      console.log('Populating standard themes...');
+      for (let i = 0; i < standardThemes.length; i++) {
+        const theme = standardThemes[i];
+        const isDefault = i === 0; // First theme is default
+        
+        await client.query(`
+          INSERT INTO themes (
+            name, description, image_url, background_color, text_color, 
+            primary_color, secondary_color, accent_color, 
+            is_default, is_dark
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+          )
+        `, [
+          theme.name,
+          theme.description,
+          theme.image_url,
+          theme.background_color,
+          theme.text_color,
+          theme.primary_color,
+          theme.secondary_color,
+          theme.accent_color,
+          isDefault,
+          theme.is_dark
+        ]);
+      }
+      
+      console.log(`Populated ${standardThemes.length} standard themes`);
+    } else {
+      // Check if the standard themes table has any data
+      const themesCount = await client.query('SELECT COUNT(*) FROM themes');
+      if (parseInt(themesCount.rows[0].count) === 0) {
+        console.log('Themes table exists but is empty, populating standard themes...');
+        
+        // Populate the themes table with standard themes
+        for (let i = 0; i < standardThemes.length; i++) {
+          const theme = standardThemes[i];
+          const isDefault = i === 0; // First theme is default
+          
+          await client.query(`
+            INSERT INTO themes (
+              name, description, image_url, background_color, text_color, 
+              primary_color, secondary_color, accent_color, 
+              is_default, is_dark
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
+            )
+          `, [
+            theme.name,
+            theme.description,
+            theme.image_url,
+            theme.background_color,
+            theme.text_color,
+            theme.primary_color,
+            theme.secondary_color,
+            theme.accent_color,
+            isDefault,
+            theme.is_dark
+          ]);
+        }
+        
+        console.log(`Populated ${standardThemes.length} standard themes`);
+      } else {
+        console.log(`Themes table already exists with ${themesCount.rows[0].count} themes`);
+      }
+    }
+    
+    // Part 2: Handle the 'custom_themes' table for user themes
     // Check if custom_themes table exists
     const tableCheck = await client.query(`
       SELECT EXISTS (
@@ -109,6 +219,10 @@ async function runThemeMigrations() {
           is_default BOOLEAN DEFAULT false,
           is_dark BOOLEAN DEFAULT false,
           is_public BOOLEAN DEFAULT false,
+          image_url TEXT NOT NULL,
+          prompt TEXT,
+          moderation_status VARCHAR(50) DEFAULT 'pending',
+          moderation_notes TEXT,
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
@@ -174,6 +288,82 @@ async function runThemeMigrations() {
         `);
         console.log('description column added successfully');
       }
+      
+      // Check if moderation_status column exists
+      const moderationStatusColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'custom_themes'
+          AND column_name = 'moderation_status'
+        );
+      `);
+      
+      if (!moderationStatusColumnCheck.rows[0].exists) {
+        console.log('Adding moderation_status column to custom_themes table...');
+        await client.query(`
+          ALTER TABLE custom_themes
+          ADD COLUMN moderation_status VARCHAR(50) DEFAULT 'pending';
+        `);
+        console.log('moderation_status column added successfully');
+      }
+      
+      // Check if moderation_notes column exists
+      const moderationNotesColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'custom_themes'
+          AND column_name = 'moderation_notes'
+        );
+      `);
+      
+      if (!moderationNotesColumnCheck.rows[0].exists) {
+        console.log('Adding moderation_notes column to custom_themes table...');
+        await client.query(`
+          ALTER TABLE custom_themes
+          ADD COLUMN moderation_notes TEXT;
+        `);
+        console.log('moderation_notes column added successfully');
+      }
+      
+      // Check if image_url column exists
+      const imageUrlColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'custom_themes'
+          AND column_name = 'image_url'
+        );
+      `);
+      
+      if (!imageUrlColumnCheck.rows[0].exists) {
+        console.log('Adding image_url column to custom_themes table...');
+        await client.query(`
+          ALTER TABLE custom_themes
+          ADD COLUMN image_url TEXT;
+        `);
+        console.log('image_url column added successfully');
+      }
+      
+      // Check if prompt column exists
+      const promptColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'custom_themes'
+          AND column_name = 'prompt'
+        );
+      `);
+      
+      if (!promptColumnCheck.rows[0].exists) {
+        console.log('Adding prompt column to custom_themes table...');
+        await client.query(`
+          ALTER TABLE custom_themes
+          ADD COLUMN prompt TEXT;
+        `);
+        console.log('prompt column added successfully');
+      }
     }
     
     // Get all users
@@ -202,9 +392,10 @@ async function runThemeMigrations() {
           await client.query(`
             INSERT INTO custom_themes (
               user_id, name, description, background_color, text_color, primary_color, 
-              secondary_color, accent_color, is_default, is_dark, is_public
+              secondary_color, accent_color, is_default, is_dark, is_public, image_url,
+              moderation_status
             ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
             )
           `, [
             user.id, 
@@ -217,7 +408,9 @@ async function runThemeMigrations() {
             theme.accent_color, 
             isDefault, 
             theme.is_dark,
-            theme.is_public
+            theme.is_public,
+            theme.image_url,
+            'approved'
           ]);
         }
         
