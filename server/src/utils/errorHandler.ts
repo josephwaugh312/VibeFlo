@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { AppError } from './errors';
 
 // Type for async route handlers
 type AsyncRouteHandler = (
@@ -26,6 +27,9 @@ export const errorMiddleware = (
   res: Response,
   next: NextFunction
 ) => {
+  // Determine if this is an AppError or a regular Error
+  const isAppError = err instanceof AppError;
+  
   // Extract error details
   const statusCode = err.statusCode || 500;
   const message = err.message || 'Internal Server Error';
@@ -63,4 +67,24 @@ export const errorMiddleware = (
   }
   
   res.status(statusCode).json(errorResponse);
+};
+
+// Helper function to convert standard errors to AppErrors
+export const convertToAppError = (err: Error, statusCode = 500, errorCode = 'SERVER_ERROR'): AppError => {
+  // If it's already an AppError, return it
+  if (err instanceof AppError) {
+    return err;
+  }
+  
+  // Handle common error types and convert them to AppErrors
+  if (err.name === 'ValidationError') {
+    return AppError.validation(err.message, 'VALIDATION_ERROR', err);
+  }
+  
+  if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
+    return AppError.unauthorized(err.message, 'AUTH_ERROR', err);
+  }
+  
+  // Default case: convert to a generic AppError
+  return new AppError(err.message, statusCode, errorCode, err);
 }; 

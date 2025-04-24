@@ -6,6 +6,7 @@ import session from 'express-session';
 import dotenv from 'dotenv';
 import apiRoutes from './routes';
 import { errorMiddleware } from './utils/errorHandler';
+import { databaseErrorMiddleware } from './middleware/error.middleware';
 import fs from 'fs';
 
 // Load environment variables
@@ -142,31 +143,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Add API error handling middleware
-app.use('/api/*', (err: any, req: any, res: any, next: any) => {
-  console.error('API Error:', err);
-  
-  // Check for database relation errors
-  if (err.code === '42P01') { // relation does not exist
-    return res.status(500).json({
-      error: 'Database schema error: Missing table',
-      message: 'The application database schema needs to be updated. Please contact support.',
-      details: process.env.NODE_ENV !== 'production' ? err.message : undefined
-    });
-  }
-  
-  // Check for database column errors
-  if (err.code === '42703') { // column does not exist
-    return res.status(500).json({
-      error: 'Database schema error: Missing column',
-      message: 'The application database schema needs to be updated. Please contact support.',
-      details: process.env.NODE_ENV !== 'production' ? err.message : undefined
-    });
-  }
-  
-  // Forward to main error handler
-  next(err);
-});
+// Add Database Error handling middleware for API routes
+app.use('/api/*', databaseErrorMiddleware);
 
 // Error handling middleware should be last
 app.use(errorMiddleware);
