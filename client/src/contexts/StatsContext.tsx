@@ -114,26 +114,24 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   // Function to fetch both stats and sessions with debounce
   const refreshStats = useCallback(async () => {
-    // Skip if not authenticated
-    if (!isAuthenticated) {
-      console.log("Stats refresh skipped - user not authenticated");
-      setStats(null);
-      setSessions([]);
-      setLoading(false);
-      // Don't set error message if user is intentionally not logged in
+    // If not authenticated, don't refresh
+    if (!isAuthenticated || !user) {
+      console.log("Not authenticated or no user, skipping refresh");
       return;
     }
-
-    // If a refresh is already in progress, skip this call
+    
+    // If already refreshing, skip
     if (isRefreshing.current) {
-      console.log("Stats refresh already in progress, skipping");
+      console.log("Already refreshing, skipping");
       return;
     }
 
-    // Implement a minimum time between refreshes (2 seconds)
+    // If refreshed recently, skip unless forceRefresh is true
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime.current;
-    if (timeSinceLastRefresh < 2000 && lastRefreshTime.current > 0) {
+    
+    // Don't refresh more frequently than every 60 seconds unless forced
+    if (lastRefreshTime.current > 0 && timeSinceLastRefresh < 60000) {
       console.log(`Skipping refresh, last refresh was ${timeSinceLastRefresh}ms ago`);
       return;
     }
@@ -151,50 +149,113 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       let sessionsData = null;
       let statsError = null;
       let sessionsError = null;
+      let statsApiAttempted = false;
+      let sessionsApiAttempted = false;
       
-      try {
-        statsData = await pomodoroAPI.getStats();
-        console.log("Stats API response:", statsData);
-        // Set the last successful refresh time
-        lastRefreshTime.current = Date.now();
-      } catch (err: any) {
-        console.error('Error fetching stats:', err);
-        
-        // Don't treat 401 as an error that needs to be shown to the user
-        if (err.response?.status === 401) {
-          console.log("401 unauthorized - not setting error message");
-        } else {
-          statsError = err.message || 'Failed to load statistics data';
-        }
-        
-        // Try to use cached stats if available
-        if (stats) {
-          statsData = stats;
-          console.log("Using cached stats data");
-        }
-      }
+      // Maximum retry attempts
+      const maxRetries = 2;
+      let retryCount = 0;
       
-      try {
-        sessionsData = await pomodoroAPI.getAllSessions();
-        console.log("Sessions API response:", sessionsData);
-        // Set the last successful refresh time
-        lastRefreshTime.current = Date.now();
-      } catch (err: any) {
-        console.error('Error fetching sessions:', err);
+      // Add retry count and back-off delay to prevent hammering the server
+      const getStatsWithRetry = async () => {
+        if (statsApiAttempted) return; // Only attempt once in this refresh cycle
         
-        // Don't treat 401 as an error that needs to be shown to the user
-        if (err.response?.status === 401) {
-          console.log("401 unauthorized - not setting error message");
-        } else {
-          sessionsError = err.message || 'Failed to load session history';
+        statsApiAttempted = true;
+        try {
+          statsData = await pomodoroAPI.getStats();
+          console.log("Stats API response:", statsData);
+          // Set the last successful refresh time
+          lastRefreshTime.current = Date.now();
+        } catch (err: any) {
+          console.error('Error fetching stats:', err);
+          
+          // Don't treat 401 as an error that needs to be shown to the user
+          if (err.response?.status === 401) {
+            console.log("401 unauthorized - not setting error message");
+          } else if (err.response?.status === 500 && retryCount < maxRetries) {
+            // Only retry 500 errors, and limit retries
+            retryCount++;
+            console.log(`Server error, retry attempt ${retryCount}/${maxRetries}`);
+            // Exponential backoff
+            const backoffTime = 1000 * Math.pow(2, retryCount);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+            return getStatsWithRetry();
+          } else {
+            statsError = err.message || 'Failed to load statistics data';
+          }
+          
+          // Try to use cached stats if available
+          if (stats) {
+            statsData = stats;
+            console.log("Using cached stats data");
+          } else {
+            // Create default empty stats
+            statsData = {
+              totalSessions: 0,
+              completedSessions: 0,
+              totalFocusTime: 0,
+              lastWeekActivity: {},
+              last30DaysActivity: {},
+              allTimeActivity: {},
+              averageSessionDuration: 0,
+              mostProductiveDay: null,
+              averageDailySessions: "0",
+              completionTrend: {
+                currentWeek: 0,
+                previousWeek: 0,
+                percentChange: 0
+              },
+              currentStreak: 0,
+              activityHeatmap: []
+            };
+            console.log("Created default empty stats");
+          }
         }
+      };
+      
+      // Same pattern for sessions
+      const getSessionsWithRetry = async () => {
+        if (sessionsApiAttempted) return; // Only attempt once in this refresh cycle
         
-        // Try to use cached sessions if available
-        if (sessions.length > 0) {
-          sessionsData = sessions;
-          console.log("Using cached sessions data");
+        sessionsApiAttempted = true;
+        try {
+          sessionsData = await pomodoroAPI.getAllSessions();
+          console.log("Sessions API response:", sessionsData);
+          // Set the last successful refresh time
+          lastRefreshTime.current = Date.now();
+        } catch (err: any) {
+          console.error('Error fetching sessions:', err);
+          
+          // Don't treat 401 as an error that needs to be shown to the user
+          if (err.response?.status === 401) {
+            console.log("401 unauthorized - not setting error message");
+          } else if (err.response?.status === 500 && retryCount < maxRetries) {
+            // Only retry 500 errors, and limit retries
+            retryCount++;
+            console.log(`Server error, retry attempt ${retryCount}/${maxRetries}`);
+            // Exponential backoff
+            const backoffTime = 1000 * Math.pow(2, retryCount);
+            await new Promise(resolve => setTimeout(resolve, backoffTime));
+            return getSessionsWithRetry();
+          } else {
+            sessionsError = err.message || 'Failed to load session history';
+          }
+          
+          // Try to use cached sessions if available
+          if (sessions.length > 0) {
+            sessionsData = sessions;
+            console.log("Using cached sessions data");
+          } else {
+            // Create empty sessions array
+            sessionsData = [];
+            console.log("Using empty sessions array");
+          }
         }
-      }
+      };
+      
+      // Get stats and sessions
+      await getStatsWithRetry();
+      await getSessionsWithRetry();
       
       // Handle the results based on what succeeded and what failed
       if (statsData) {
