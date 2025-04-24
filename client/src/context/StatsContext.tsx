@@ -270,8 +270,8 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           setLoading(true);
           
           // Track API calls separately to handle partial failures
-          let statsData;
-          let sessionsData;
+          let statsData: PomodoroStats | null = null;
+          let sessionsData: PomodoroSession[] | null = null;
           let statsError = null;
           let sessionsError = null;
           
