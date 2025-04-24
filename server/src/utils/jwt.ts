@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { User } from '../types';
+import { AppError } from './errors';
 
 dotenv.config();
 
@@ -31,26 +32,13 @@ export const verifyToken = (token: string): any => {
   try {
     return jwt.verify(token, JWT_SECRET);
   } catch (error) {
-    // Create a more informative error
-    const authError: any = new Error(
-      error instanceof jwt.TokenExpiredError
-        ? 'Token expired'
-        : error instanceof jwt.JsonWebTokenError
-        ? 'Invalid token'
-        : 'Token verification failed'
-    );
-    
-    // Add specific error type information
-    authError.statusCode = 401;
-    authError.code = error instanceof jwt.TokenExpiredError
-      ? 'TOKEN_EXPIRED'
-      : error instanceof jwt.JsonWebTokenError
-      ? 'INVALID_TOKEN'
-      : 'VERIFICATION_FAILED';
-    
-    // Preserve original error for debugging
-    authError.originalError = error;
-    
-    throw authError;
+    // Use our AppError class for standardized error handling
+    if (error instanceof jwt.TokenExpiredError) {
+      throw AppError.unauthorized('Token expired', 'TOKEN_EXPIRED', error);
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      throw AppError.unauthorized('Invalid token', 'INVALID_TOKEN', error);
+    } else {
+      throw AppError.unauthorized('Token verification failed', 'VERIFICATION_FAILED', error as Error);
+    }
   }
 }; 

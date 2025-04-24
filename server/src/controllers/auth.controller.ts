@@ -6,6 +6,7 @@ import { User } from '../types';
 import crypto from 'crypto';
 import { sendVerificationEmail } from '../services/email.service';
 import { handleAsync } from '../utils/errorHandler';
+import { authErrors, validationErrors, resourceErrors } from '../utils/errorUtils';
 
 // Extend the Request type to include user
 interface AuthRequest extends Request {
@@ -19,13 +20,14 @@ export const register = handleAsync(async (req: Request, res: Response) => {
   const { name, username, email, password } = req.body;
 
   // Check if required fields are provided
-  if (!name || !username || !email || !password) {
-    return res.status(400).json({ message: 'Please provide name, username, email, and password' });
-  }
+  if (!name) throw validationErrors.required('Name');
+  if (!username) throw validationErrors.required('Username');
+  if (!email) throw validationErrors.required('Email');
+  if (!password) throw validationErrors.required('Password');
 
   // Validate password strength
   if (password.length < 8) {
-    return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    throw validationErrors.tooShort('Password', 8);
   }
 
   // Check for at least one uppercase letter, one lowercase letter, and one number
@@ -34,21 +36,22 @@ export const register = handleAsync(async (req: Request, res: Response) => {
   const hasNumber = /[0-9]/.test(password);
 
   if (!hasUppercase || !hasLowercase || !hasNumber) {
-    return res.status(400).json({ 
-      message: 'Password must include at least one uppercase letter, one lowercase letter, and one number' 
-    });
+    throw validationErrors.invalidFormat(
+      'Password', 
+      'that includes at least one uppercase letter, one lowercase letter, and one number'
+    );
   }
 
   // Check if user with this email already exists
   const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
   if (emailCheck.rows.length > 0) {
-    return res.status(400).json({ message: 'User with this email already exists' });
+    throw resourceErrors.alreadyExists('User', 'email', email);
   }
 
   // Check if user with this username already exists
   const usernameCheck = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
   if (usernameCheck.rows.length > 0) {
-    return res.status(400).json({ message: 'Username is already taken' });
+    throw resourceErrors.alreadyExists('User', 'username', username);
   }
 
   // Hash password
@@ -115,10 +118,8 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   console.log('Login attempt:', { login, passwordLength: password?.length });
 
-  if (!login || !password) {
-    console.log('Missing login or password');
-    return res.status(400).json({ message: 'Please provide both login and password' });
-  }
+  if (!login) throw validationErrors.required('Username or email');
+  if (!password) throw validationErrors.required('Password');
 
   const isEmail = login.includes('@');
   
@@ -142,7 +143,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     // Record the failed attempt
     await recordFailedLoginAttempt(login);
     console.log('User not found with login:', login);
-    return res.status(401).json({ message: 'Invalid credentials' });
+    throw authErrors.invalidCredentials();
   }
   
   const user = userResult.rows[0];
@@ -154,9 +155,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
       // Account is still locked
       const timeRemaining = Math.ceil((lockExpiryTime.getTime() - Date.now()) / (1000 * 60));
       console.log('Account is locked, time remaining:', timeRemaining, 'minutes');
-      return res.status(401).json({ 
-        message: `Account is temporarily locked. Please try again in ${timeRemaining} minute(s).`
-      });
+      throw authErrors.accountLocked(`Account is temporarily locked. Please try again in ${timeRemaining} minute(s).`);
     } else {
       // Lock has expired, reset the lock status
       console.log('Lock expired, resetting lock status');
@@ -166,8 +165,6 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   // Check if password matches
   console.log('Checking password with bcrypt...');
-  console.log('Password from request:', password);
-  console.log('Password hash from DB:', user.password);
   
   // Try bcrypt compare first
   let isMatch = false;
@@ -191,7 +188,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     // Record the failed attempt
     await recordFailedLoginAttempt(login);
     console.log('Password does not match');
-    return res.status(401).json({ message: 'Invalid credentials' });
+    throw authErrors.invalidCredentials();
   }
   
   // Reset failed login attempts on successful login
