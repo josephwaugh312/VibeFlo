@@ -58,11 +58,6 @@ module.exports = {
     { pattern: /^cursor-/ },
     { pattern: /^object-/ },
     { pattern: /^font-/ },
-    { pattern: /^outline-/ },
-    { pattern: /^hover:/ },
-    { pattern: /^focus:/ },
-    { pattern: /^active:/ },
-    { pattern: /^disabled:/ },
-    { pattern: /^dark:/ }
+    { pattern: /^outline-/ }
   ]
 } 
