@@ -130,10 +130,18 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const now = Date.now();
     const timeSinceLastRefresh = now - lastRefreshTime.current;
     
-    // Don't refresh more frequently than every 60 seconds unless forced
-    if (lastRefreshTime.current > 0 && timeSinceLastRefresh < 60000) {
-      console.log(`Skipping refresh, last refresh was ${timeSinceLastRefresh}ms ago`);
-      return;
+    // Increase throttling if we're getting server errors
+    // Don't refresh more frequently than every 60 seconds for normal operation
+    // But if we've had persistent server errors, throttle more aggressively
+    if (lastRefreshTime.current > 0) {
+      // Check if we've had a server error recently
+      const hasRecentServerError = error?.includes('500') || error?.includes('server error');
+      const minWaitTime = hasRecentServerError ? 120000 : 60000; // 2 minutes if server error, 1 minute otherwise
+      
+      if (timeSinceLastRefresh < minWaitTime) {
+        console.log(`Skipping refresh, last refresh was ${timeSinceLastRefresh}ms ago, minimum wait is ${minWaitTime}ms due to ${hasRecentServerError ? 'server errors' : 'normal throttling'}`);
+        return;
+      }
     }
 
     // Mark as refreshing to prevent concurrent calls
@@ -162,7 +170,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         
         statsApiAttempted = true;
         try {
-          statsData = await pomodoroAPI.getStats();
+          statsData = await pomodoroAPI.getStats() as PomodoroStats;
           console.log("Stats API response:", statsData);
           // Set the last successful refresh time
           lastRefreshTime.current = Date.now();
@@ -172,6 +180,10 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // Don't treat 401 as an error that needs to be shown to the user
           if (err.response?.status === 401) {
             console.log("401 unauthorized - not setting error message");
+          } else if (err.response?.status === 500) {
+            // Don't retry on 500 server errors - server likely has an issue
+            statsError = `Server error (500): The API is currently experiencing issues`;
+            console.log("Server error (500) - not retrying");
           } else if (err.response?.status === 500 && retryCount < maxRetries) {
             // Only retry 500 errors, and limit retries
             retryCount++;
@@ -229,6 +241,10 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           // Don't treat 401 as an error that needs to be shown to the user
           if (err.response?.status === 401) {
             console.log("401 unauthorized - not setting error message");
+          } else if (err.response?.status === 500) {
+            // Don't retry on 500 server errors - server likely has an issue
+            sessionsError = `Server error (500): The API is currently experiencing issues`;
+            console.log("Server error (500) - not retrying");
           } else if (err.response?.status === 500 && retryCount < maxRetries) {
             // Only retry 500 errors, and limit retries
             retryCount++;
@@ -341,6 +357,24 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
     
+    // Add a stronger throttling mechanism
+    const now = Date.now();
+    if (lastRefreshTime.current > 0) {
+      const timeSinceLastRefresh = now - lastRefreshTime.current;
+      
+      // If we've refreshed in the last 10 seconds and had an error, wait at least 30 seconds
+      if (timeSinceLastRefresh < 10000 && error) {
+        console.log(`Skipping refresh due to recent error, last refresh was ${timeSinceLastRefresh/1000}s ago`);
+        return;
+      }
+      
+      // If we've refreshed in the last 30 seconds, wait
+      if (timeSinceLastRefresh < 30000) {
+        console.log(`Skipping refresh, last refresh was ${timeSinceLastRefresh/1000}s ago`);
+        return;
+      }
+    }
+    
     console.log("Debounced refresh called");
     try {
       // Directly call refreshStats - we've already built-in throttling in the refreshStats function
@@ -348,7 +382,7 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     } catch (error) {
       console.error("Error in debouncedRefreshStats:", error);
     }
-  }, [refreshStats, isAuthenticated]);
+  }, [refreshStats, isAuthenticated, error]);
 
   // Function to add a new session and refresh stats
   const addSession = useCallback(async (sessionData: Omit<PomodoroSession, 'id' | 'created_at'>) => {
