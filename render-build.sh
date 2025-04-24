@@ -53,6 +53,10 @@ fi
 
 echo "Client build files successfully copied to server/dist/client/build"
 
+# Run database migrations
+echo "Running database migrations..."
+NODE_ENV=production npx ts-node src/db/run-theme-migrations.ts
+
 # Print directory structure for debugging
 echo "Final directory structure:"
 find dist -type f | sort

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VibeFlo - Service Issue</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 2rem;
+      margin: 1rem;
+      max-width: 500px;
+    }
+    h1 {
+      color: #6200ee;
+      margin-top: 0;
+    }
+    .logo {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #6200ee;
+      margin-bottom: 1rem;
+    }
+    .actions {
+      margin-top: 2rem;
+    }
+    button {
+      background-color: #6200ee;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 4px;
+      font-size: 1rem;
+      cursor: pointer;
+      margin: 0.5rem;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #7722ff;
+    }
+    .error-details {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      background-color: #f8f8f8;
+      border-radius: 4px;
+      text-align: left;
+      font-family: monospace;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">VibeFlo</div>
+    <h1>Service Temporarily Unavailable</h1>
+    <p>We're experiencing some technical issues with our database. Our team has been notified and is working to resolve this as quickly as possible.</p>
+    
+    <div class="actions">
+      <button onclick="window.location.href='/'">Go to Home</button>
+      <button onclick="window.location.reload()">Try Again</button>
+    </div>
+    
+    <div class="error-details" id="errorDetails">
+      <p id="errorMessage">Error details will appear here if available.</p>
+    </div>
+  </div>
+
+  <script>
+    // Check if there's an error message in the URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorCode = urlParams.get('code');
+    const errorMessage = urlParams.get('message');
+    
+    if (errorCode && errorMessage) {
+      document.getElementById('errorMessage').innerText = `Error ${errorCode}: ${errorMessage}`;
+    } else {
+      document.getElementById('errorDetails').style.display = 'none';
+    }
+  </script>
+</body>
+</html> 
