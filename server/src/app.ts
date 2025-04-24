@@ -2,15 +2,39 @@ import express from 'express';
 import cors from 'cors';
 import passport from 'passport';
 import path from 'path';
+import session from 'express-session';
+import dotenv from 'dotenv';
 import apiRoutes from './routes';
 import { errorMiddleware } from './utils/errorHandler';
 
-// Initialize Express app
-export const app = express();
+// Load environment variables
+dotenv.config();
 
-// Middleware
+// Import database connections - both the pg Pool and Knex instance are used in different parts of the app
+import './config/db'; // This imports the pg Pool
+import './db'; // This imports the Knex configuration
+
+// Import passport configuration
+import './config/passport';
+
+// Initialize Express app
+const app = express();
+
+// Configure CORS with explicit settings
+const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
+const allowedOrigins = [
+  'http://localhost:3000', 
+  'http://192.168.1.212:3000',
+  'https://vibeflo.onrender.com'
+];
+
+// Add CLIENT_URL to allowed origins if it's not already included
+if (clientUrl && !allowedOrigins.includes(clientUrl)) {
+  allowedOrigins.push(clientUrl);
+}
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://192.168.1.212:3000', 'https://vibeflo.onrender.com'], // Allow requests from client
+  origin: allowedOrigins,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -19,16 +43,32 @@ app.use(cors({
 // Increase JSON payload limit to 10MB to handle image uploads
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Session middleware - required for Passport OAuth flows
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'vibeflo_session_secret',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
 app.use(passport.initialize());
+app.use(passport.session()); // This line is necessary for persistent login sessions
 
 // Mount API routes
 app.use('/api', apiRoutes);
 
 // Serve static files from the React app in production
 if (process.env.NODE_ENV === 'production') {
-  // Serve static files
+  console.log('Running in production mode - serving static files and handling client-side routing');
+  
+  // Serve static files from the React build folder
   app.use(express.static(path.join(__dirname, '../../client/build')));
-
+  
   // Handle React routing, return all requests to React app
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../../client/build', 'index.html'));
@@ -40,5 +80,8 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-// Error handling middleware - must be last
-app.use(errorMiddleware); 
+// Error handling middleware should be last
+app.use(errorMiddleware);
+
+// Export the app for use in index.ts
+export { app }; 
