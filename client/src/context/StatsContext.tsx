@@ -130,8 +130,8 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       console.log("Fetching stats for user:", user?.username);
       
       // Track API calls separately to handle partial failures
-      let statsData;
-      let sessionsData;
+      let statsData: PomodoroStats | null = null;
+      let sessionsData: PomodoroSession[] | null = null;
       let statsError = null;
       let sessionsError = null;
       
