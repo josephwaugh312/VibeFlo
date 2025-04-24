@@ -1,82 +1,69 @@
-import express from 'express';
-import cors from 'cors';
 import dotenv from 'dotenv';
-import passport from 'passport';
-import session from 'express-session';
+import { Pool } from 'pg';
+import { app } from './app';
 import { connectDB } from './config/db';
-
-// Import combined router
-import apiRoutes from './routes';
 
 // Load environment variables
 dotenv.config();
 
-// Initialize Express app
-const app = express();
+// Environment variables
 const PORT = process.env.PORT || 5000;
+const DATABASE_URL = process.env.DATABASE_URL;
 
-// Connect to PostgreSQL
-connectDB();
-
-// Middleware
-// Configure CORS with explicit settings
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
-const allowedOrigins = [
-  'http://localhost:3000', 
-  'http://192.168.1.212:3000',
-  'https://vibeflo.onrender.com'
-];
-
-// Add CLIENT_URL to allowed origins if it's not already included
-if (clientUrl && !allowedOrigins.includes(clientUrl)) {
-  allowedOrigins.push(clientUrl);
+// Validate required environment variables
+if (!DATABASE_URL) {
+  console.error('DATABASE_URL environment variable is required');
+  process.exit(1);
 }
 
-app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
-}));
+// Global pool that can be used in your APIs
+export const pool = new Pool({
+  connectionString: DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { 
+    rejectUnauthorized: false 
+  } : false
+});
 
-// Increase JSON payload limit to 10MB to handle image uploads
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Connect to database and start server
+async function startServer() {
+  try {
+    // Connect to PostgreSQL using the config
+    const dbConnected = await connectDB();
+    
+    if (!dbConnected) {
+      console.error('Failed to connect to the database');
+      process.exit(1);
+    }
 
-// Session middleware - required for Passport OAuth flows
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'vibeflo_session_secret',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    // Start the Express server
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`API URL: http://localhost:${PORT}/api`);
+      
+      if (process.env.NODE_ENV === 'production') {
+        console.log('Running in production mode');
+      } else {
+        console.log('Running in development mode');
+      }
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
   }
-}));
+}
 
-// Initialize Passport
-app.use(passport.initialize());
-app.use(passport.session()); // This line is necessary for persistent login sessions
-
-// Initialize passport strategies
-import './config/passport';
-
-// Mount API routes
-app.use('/api', apiRoutes);
-
-// Root route
-app.get('/', (req, res) => {
-  res.send('VibeFlo API is running');
+// Handle shutdown gracefully
+process.on('SIGINT', async () => {
+  try {
+    await pool.end();
+    console.log('Pool has ended');
+    process.exit(0);
+  } catch (err) {
+    console.error('Error during disconnection', err);
+    process.exit(1);
+  }
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
-
-// Error handling
-process.on('unhandledRejection', (err: Error) => {
-  console.log(`Error: ${err.message}`);
-  // Close server & exit process
-  process.exit(1);
-}); 
+// Start the server
+startServer(); 
