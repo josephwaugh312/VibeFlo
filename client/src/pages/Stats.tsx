@@ -10,6 +10,34 @@ type TabType = 'overview' | 'trends' | 'details';
 // Define time range types
 type TimeRangeType = '7days' | '30days' | 'all';
 
+// Define chart data structure
+interface ChartDataItem {
+  day: string;
+  fullDay: string;
+  dayIndex: number;
+  sessions: number;
+  focusMinutes: number;
+  dummy: boolean;
+  dateString?: string;
+}
+
+// Define performance metrics structure
+interface PerformanceMetrics {
+  currentStreak: number;
+  longestSession: number;
+  mostProductiveDay: {
+    day: string;
+    minutes: number;
+  };
+  completionRate: number;
+}
+
+// Define activity data structure
+interface ActivityData {
+  count: number;
+  totalMinutes: number;
+}
+
 const Stats: React.FC = () => {
   // State for active tab
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -81,7 +109,7 @@ const Stats: React.FC = () => {
   }, [stats, sessions]);
 
   // Prepare data for charts based on selected time range
-  const prepareSessionData = useCallback(() => {
+  const prepareSessionData = useCallback((): ChartDataItem[] => {
     if (!stats && (!sessions || sessions.length === 0)) {
       // Return placeholder data when no stats or sessions exist
       const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -156,7 +184,7 @@ const Stats: React.FC = () => {
         acc[dayName].focusMinutes += session.duration || 0;
         
         return acc;
-      }, {} as Record<string, any>);
+      }, {} as Record<string, ChartDataItem>);
       
       // Convert to array and sort by day of week for consistent display
       let chartData = Object.values(sessionsByDay).sort((a, b) => a.dayIndex - b.dayIndex);
@@ -235,7 +263,7 @@ const Stats: React.FC = () => {
   }, [timeRange, stats, sessions]);
 
   // Calculate performance metrics
-  const calculatePerformanceMetrics = () => {
+  const calculatePerformanceMetrics = (): PerformanceMetrics => {
     if (!sessions || sessions.length === 0) {
       console.log("No sessions available for performance metrics");
       return {
@@ -297,16 +325,17 @@ const Stats: React.FC = () => {
     );
     console.log("Longest session duration:", longestSession, "minutes");
     
-    // Find most productive day
+    // Group sessions by day of week to find most productive day
     const sessionsByDay = sortedSessions.reduce((acc, session) => {
       const date = new Date(session.created_at);
-      const day = date.toLocaleDateString('en-US', { weekday: 'long' });
+      const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
       
-      if (!acc[day]) {
-        acc[day] = 0;
+      if (!acc[dayName]) {
+        acc[dayName] = 0;
       }
       
-      acc[day] += session.duration;
+      acc[dayName] += session.duration || 0;
+      
       return acc;
     }, {} as Record<string, number>);
     
@@ -385,7 +414,7 @@ const Stats: React.FC = () => {
     }
     
     // If sessions data is available but lastWeekActivity is not, use sessions to create the table
-    if ((!stats.lastWeekActivity || Object.keys(stats.lastWeekActivity).length === 0) && sessions && sessions.length > 0) {
+    if ((!stats.lastWeekActivity || Object.keys(stats.lastWeekActivity || {}).length === 0) && sessions && sessions.length > 0) {
       console.log("Using sessions data to create weekly activity table");
       
       // Group sessions by day for last 7 days
@@ -420,7 +449,7 @@ const Stats: React.FC = () => {
         acc[dayName].totalMinutes += session.duration;
         
         return acc;
-      }, {} as Record<string, {count: number, totalMinutes: number}>);
+      }, {} as Record<string, ActivityData>);
       
       return (
         <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg mb-8">
@@ -572,7 +601,7 @@ const Stats: React.FC = () => {
                   </svg>
                 </span>
               </div>
-              <p className="text-2xl font-bold text-white">{stats?.currentStreak || metrics.currentStreak} days</p>
+              <p className="text-2xl font-bold text-white">{stats?.currentStreak ?? metrics.currentStreak} days</p>
               <p className="text-xs text-white/70 mt-1">Consecutive days with completed sessions</p>
             </div>
             
