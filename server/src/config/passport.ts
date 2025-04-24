@@ -39,7 +39,7 @@ if (!FACEBOOK_APP_ID || !FACEBOOK_APP_SECRET) {
 const jwtOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: process.env.JWT_SECRET || 'fallback_jwt_secret',
-  passReqToCallback: true,
+  passReqToCallback: true as true,
 };
 
 // Update JWT Strategy to use custom JWT verification
