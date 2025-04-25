@@ -6,7 +6,7 @@ import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 const getApiBaseUrl = () => {
   // In production, use the production API endpoint
   if (process.env.NODE_ENV === 'production') {
-    return 'https://vibeflo-api.onrender.com';
+    return 'https://vibeflo.app';
   }
   
   // Check for an environment variable (useful for testing and CI/CD)
