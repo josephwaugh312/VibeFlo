@@ -3,6 +3,10 @@
 
 echo "Starting VibeFlo Render deployment..."
 
+# Detect if this is a client-only build based on environment variable
+IS_CLIENT_ONLY=${IS_CLIENT_ONLY:-false}
+echo "Build type: ${IS_CLIENT_ONLY}"
+
 # Install dependencies and build client with specific dependency adjustments
 echo "Building React client..."
 cd client
@@ -31,6 +35,12 @@ fi
 
 echo "Client build successfully created"
 cd ..
+
+# For client-only build, we're done
+if [ "$IS_CLIENT_ONLY" = "true" ]; then
+  echo "Client-only build completed. Skipping server and database operations."
+  exit 0
+fi
 
 # Install dependencies and build server
 echo "Building server..."
@@ -81,12 +91,17 @@ run_db_operation() {
   return 1
 }
 
-# Run database migrations and fixes with error handling
-run_db_operation "fix for themes table columns" "ts-node src/db/fix-themes-columns.ts"
-run_db_operation "database migrations" "ts-node src/db/run-theme-migrations.ts"
-run_db_operation "fix for themes image_url column" "ts-node src/db/fix-themes-image-url.ts"
-run_db_operation "fix for custom_themes table" "ts-node src/db/fix-custom-themes.ts"
-run_db_operation "standard themes population" "ts-node src/db/populate-standard-themes.ts"
+# Check if DATABASE_URL is set
+if [ -z "$DATABASE_URL" ]; then
+  echo "WARNING: DATABASE_URL is not set. Skipping database operations."
+else
+  # Run database migrations and fixes with error handling
+  run_db_operation "fix for themes table columns" "ts-node src/db/fix-themes-columns.ts"
+  run_db_operation "database migrations" "ts-node src/db/run-theme-migrations.ts"
+  run_db_operation "fix for themes image_url column" "ts-node src/db/fix-themes-image-url.ts"
+  run_db_operation "fix for custom_themes table" "ts-node src/db/fix-custom-themes.ts"
+  run_db_operation "standard themes population" "ts-node src/db/populate-standard-themes.ts"
+fi
 
 # Print directory structure for debugging
 echo "Final directory structure:"
