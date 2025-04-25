@@ -103,7 +103,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1472978346569-9fa8c9de4b3f?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
+    image_url: 'https://images.pexels.com/photos/36717/amazing-animal-beautiful-beautifull.jpg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   },
   {
     id: 'f48a7dc2-3b8a-49e7-b8c8-6a32d1e0c1b9',
@@ -145,7 +145,7 @@ const standardThemes = [
     is_dark: true,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
+    image_url: 'https://images.pexels.com/photos/1933239/pexels-photo-1933239.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'
   },
   {
     id: 'e2d3c4b5-a6b7-c8d9-e0f1-a2b3c4d5e6f7',
@@ -204,12 +204,35 @@ async function populateStandardThemes() {
           is_default BOOLEAN DEFAULT false,
           is_dark BOOLEAN DEFAULT false,
           is_public BOOLEAN DEFAULT true,
+          is_standard BOOLEAN DEFAULT false,
           image_url TEXT,
           created_at TIMESTAMPTZ DEFAULT NOW(),
           updated_at TIMESTAMPTZ DEFAULT NOW()
         );
       `);
       console.log('Themes table created successfully');
+    } else {
+      // Check if is_standard column exists
+      console.log('Checking if is_standard column exists...');
+      const columnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'themes'
+          AND column_name = 'is_standard'
+        );
+      `);
+      
+      if (!columnCheck.rows[0].exists) {
+        console.log('Adding is_standard column to themes table...');
+        await client.query(`
+          ALTER TABLE themes 
+          ADD COLUMN is_standard BOOLEAN DEFAULT false;
+        `);
+        console.log('is_standard column added successfully');
+      } else {
+        console.log('is_standard column already exists');
+      }
     }
     
     // Check for uuid extension
@@ -225,38 +248,25 @@ async function populateStandardThemes() {
       await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
     }
     
+    // Log all column names from themes table for debugging
+    console.log('Getting column names from themes table...');
+    const columnInfo = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_schema = 'public'
+      AND table_name = 'themes'
+      ORDER BY ordinal_position;
+    `);
+    
+    console.log('Available columns in themes table:');
+    if (columnInfo.rows.length > 0) {
+      columnInfo.rows.forEach(row => console.log(`- ${row.column_name}`));
+    } else {
+      console.log('No columns found in themes table (unexpected)');
+    }
+    
     // Skip deletion and just use UPSERT to insert/update themes
     console.log('Upserting standard themes...');
-    
-    // Before upserting, let's mark standard themes
-    await client.query(`
-      UPDATE themes SET is_standard = true WHERE id IN (
-        'd8a7c463-e2a0-4b15-9c1b-cb1d4e59d933',
-        'fd8b7d61-fec0-48e6-a2da-52a1b5c9887c',
-        '550e8400-e29b-41d4-a716-446655440000',
-        'a3e0f1d8-5c22-4b23-9c5a-b1d1c1a9b7a2',
-        'e4b0c7d2-267a-4c46-860a-e6c48cc0d4e0',
-        'b5f87e7c-f98a-4a5e-8f8a-7e5b8be2b35d',
-        'f48a7dc2-3b8a-49e7-b8c8-6a32d1e0c1b9',
-        'c9d5a8f1-2b7c-4e9c-b1a3-9e5c8d7f6a2e',
-        'd7e6f5c4-3b2a-1c9d-8e7f-6a5b4c3d2e1f',
-        'e2d3c4b5-a6b7-c8d9-e0f1-a2b3c4d5e6f7'
-      );
-    `).catch(err => {
-      // It's okay if this fails, the column might not exist yet
-      console.log('Note: is_standard column might not exist yet, will be created with themes');
-    });
-    
-    // First, let's try to add is_standard column if it doesn't exist
-    try {
-      await client.query(`
-        ALTER TABLE themes 
-        ADD COLUMN IF NOT EXISTS is_standard BOOLEAN DEFAULT false;
-      `);
-      console.log('Ensured is_standard column exists');
-    } catch (err) {
-      console.log('Could not add is_standard column, might already exist');
-    }
     
     // Insert standard themes with fixed UUIDs
     for (const theme of standardThemes) {
@@ -269,22 +279,6 @@ async function populateStandardThemes() {
         console.log(`Theme with ID ${theme.id} exists, updating...`);
       } else {
         console.log(`Theme with ID ${theme.id} does not exist, inserting...`);
-      }
-      
-      // Log all column names from themes table for debugging
-      console.log('Getting column names from themes table...');
-      const columnInfo = await client.query(`
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-        AND table_name = 'themes'
-        ORDER BY ordinal_position;
-      `);
-      console.log('Available columns in themes table:');
-      if (columnInfo.rows.length > 0) {
-        columnInfo.rows.forEach(row => console.log(`- ${row.column_name}`));
-      } else {
-        console.log('No columns found in themes table (unexpected)');
       }
       
       await client.query(`

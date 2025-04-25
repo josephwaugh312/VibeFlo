@@ -164,10 +164,36 @@ const ThemeSelector: React.FC = () => {
             </Typography>
             <Button
               variant="contained"
-              color="primary"
-              startIcon={<Add />}
               onClick={handleOpenCreateDialog}
+              sx={{
+                background: 'linear-gradient(135deg, #8e44ad 0%, #3498db 100%)',
+                py: 1.5,
+                px: 4,
+                fontSize: '1rem',
+                fontWeight: 'medium',
+                borderRadius: '12px',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1.5,
+                transition: 'all 0.3s ease',
+                '&:hover': {
+                  transform: 'translateY(-5px)',
+                  boxShadow: '0 12px 20px rgba(0, 0, 0, 0.4)',
+                }
+              }}
             >
+              <Box sx={{ 
+                width: 36, 
+                height: 36, 
+                borderRadius: '50%', 
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Add sx={{ fontSize: 24 }} />
+              </Box>
               Create New Theme
             </Button>
           </Box>
