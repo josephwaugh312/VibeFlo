@@ -12,6 +12,7 @@
     "migrate:theme-moderation": "ts-node src/db/run-theme-moderation-migration.ts",
     "migrate:pomodoro": "ts-node src/db/run-pomodoro-migration.ts",
     "migrate:themes": "ts-node src/db/run-theme-migrations.ts",
+    "fix:themes-image-url": "ts-node src/db/fix-themes-image-url.ts",
     "check:users": "ts-node src/scripts/check-users.ts",
     "create:testuser": "ts-node src/scripts/create-test-user.ts",
     "test": "jest",
