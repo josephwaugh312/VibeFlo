@@ -247,7 +247,7 @@ const Login: React.FC = () => {
           <div className="mt-6 grid grid-cols-3 gap-3">
             {/* Google Login */}
             <a
-              href={`${API_BASE_URL}/api/auth/google`}
+              href={`https://vibeflo-api.onrender.com/api/auth/google`}
               className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-white text-sm font-medium text-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               data-cy="google-login"
             >
@@ -271,7 +271,7 @@ const Login: React.FC = () => {
 
             {/* GitHub Login */}
             <a
-              href={`${API_BASE_URL}/api/auth/github`}
+              href={`https://vibeflo-api.onrender.com/api/auth/github`}
               className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-[#24292e] text-sm font-medium text-white hover:bg-[#2c3339] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               data-cy="github-login"
             >
