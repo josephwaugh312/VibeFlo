@@ -97,7 +97,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET) {
   passport.use(new GoogleStrategy({
     clientID: GOOGLE_CLIENT_ID,
     clientSecret: GOOGLE_CLIENT_SECRET,
-    callbackURL: process.env.GOOGLE_CALLBACK_URL || 'http://localhost:5001/api/auth/google/callback',
+    callbackURL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
     scope: ['profile', 'email']
   }, async (accessToken: string, refreshToken: string, profile: GoogleProfile, done: (error: any, user?: any) => void) => {
     try {
@@ -151,7 +151,7 @@ if (GITHUB_CLIENT_ID && GITHUB_CLIENT_SECRET) {
   passport.use(new GitHubStrategy({
     clientID: GITHUB_CLIENT_ID,
     clientSecret: GITHUB_CLIENT_SECRET,
-    callbackURL: process.env.GITHUB_CALLBACK_URL || 'http://localhost:5001/api/auth/github/callback',
+    callbackURL: process.env.GITHUB_CALLBACK_URL || '/api/auth/github/callback',
     scope: ['user:email']
   }, async (accessToken: string, refreshToken: string, profile: GitHubProfile, done: (error: any, user?: any) => void) => {
     try {
@@ -205,7 +205,7 @@ if (FACEBOOK_APP_ID && FACEBOOK_APP_SECRET) {
   passport.use(new FacebookStrategy({
     clientID: FACEBOOK_APP_ID,
     clientSecret: FACEBOOK_APP_SECRET,
-    callbackURL: process.env.FACEBOOK_CALLBACK_URL || 'http://localhost:5001/api/auth/facebook/callback',
+    callbackURL: process.env.FACEBOOK_CALLBACK_URL || '/api/auth/facebook/callback',
     profileFields: ['id', 'emails', 'name', 'picture.type(large)']
   }, async (accessToken: string, refreshToken: string, profile: FacebookProfile, done: (error: any, user?: any) => void) => {
     try {
