@@ -57,6 +57,10 @@ echo "Client build files successfully copied to server/dist/client/build"
 echo "Running database migrations..."
 NODE_ENV=production npx ts-node src/db/run-theme-migrations.ts
 
+# Run the fix for image_url column
+echo "Running fix for themes image_url column..."
+NODE_ENV=production npx ts-node src/db/fix-themes-image-url.ts
+
 # Print directory structure for debugging
 echo "Final directory structure:"
 find dist -type f | sort
