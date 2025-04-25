@@ -33,7 +33,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8YWJzdHJhY3R8ZW58MHx8MHx8&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'fd8b7d61-fec0-48e6-a2da-52a1b5c9887c',
@@ -47,7 +47,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8Mnx8Y2l0eXxlbnwwfHwwfHw%3D&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440000',
@@ -61,7 +61,7 @@ const standardThemes = [
     is_dark: false,
     is_default: true,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'a3e0f1d8-5c22-4b23-9c5a-b1d1c1a9b7a2',
@@ -75,7 +75,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Zm9yZXN0JTIwYmFja2dyb3VuZHxlbnwwfHwwfHx8MA%3D%3D&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'e4b0c7d2-267a-4c46-860a-e6c48cc0d4e0',
@@ -89,7 +89,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1557683316-973673baf926?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JhZGllbnQlMjBiYWNrZ3JvdW5kfGVufDB8fDB8fHww&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1557683316-973673baf926?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'b5f87e7c-f98a-4a5e-8f8a-7e5b8be2b35d',
@@ -103,7 +103,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1472978346569-9fa8c9de4b3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1472978346569-9fa8c9de4b3f?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'f48a7dc2-3b8a-49e7-b8c8-6a32d1e0c1b9',
@@ -117,7 +117,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'c9d5a8f1-2b7c-4e9c-b1a3-9e5c8d7f6a2e',
@@ -131,7 +131,7 @@ const standardThemes = [
     is_dark: false,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'd7e6f5c4-3b2a-1c9d-8e7f-6a5b4c3d2e1f',
@@ -145,7 +145,7 @@ const standardThemes = [
     is_dark: true,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1464143797991-13548c082f2b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1483347756197-71ef80e95f73?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
   {
     id: 'e2d3c4b5-a6b7-c8d9-e0f1-a2b3c4d5e6f7',
@@ -159,7 +159,7 @@ const standardThemes = [
     is_dark: true,
     is_default: false,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1520034475321-cbe63696469a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1520034475321-cbe63696469a?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   }
 ];
 
@@ -228,6 +228,36 @@ async function populateStandardThemes() {
     // Skip deletion and just use UPSERT to insert/update themes
     console.log('Upserting standard themes...');
     
+    // Before upserting, let's mark standard themes
+    await client.query(`
+      UPDATE themes SET is_standard = true WHERE id IN (
+        'd8a7c463-e2a0-4b15-9c1b-cb1d4e59d933',
+        'fd8b7d61-fec0-48e6-a2da-52a1b5c9887c',
+        '550e8400-e29b-41d4-a716-446655440000',
+        'a3e0f1d8-5c22-4b23-9c5a-b1d1c1a9b7a2',
+        'e4b0c7d2-267a-4c46-860a-e6c48cc0d4e0',
+        'b5f87e7c-f98a-4a5e-8f8a-7e5b8be2b35d',
+        'f48a7dc2-3b8a-49e7-b8c8-6a32d1e0c1b9',
+        'c9d5a8f1-2b7c-4e9c-b1a3-9e5c8d7f6a2e',
+        'd7e6f5c4-3b2a-1c9d-8e7f-6a5b4c3d2e1f',
+        'e2d3c4b5-a6b7-c8d9-e0f1-a2b3c4d5e6f7'
+      );
+    `).catch(err => {
+      // It's okay if this fails, the column might not exist yet
+      console.log('Note: is_standard column might not exist yet, will be created with themes');
+    });
+    
+    // First, let's try to add is_standard column if it doesn't exist
+    try {
+      await client.query(`
+        ALTER TABLE themes 
+        ADD COLUMN IF NOT EXISTS is_standard BOOLEAN DEFAULT false;
+      `);
+      console.log('Ensured is_standard column exists');
+    } catch (err) {
+      console.log('Could not add is_standard column, might already exist');
+    }
+    
     // Insert standard themes with fixed UUIDs
     for (const theme of standardThemes) {
       console.log(`Upserting theme: ${theme.name} with ID: ${theme.id}`);
@@ -260,9 +290,10 @@ async function populateStandardThemes() {
       await client.query(`
         INSERT INTO themes (
           id, name, description, background_color, text_color, primary_color, 
-          secondary_color, accent_color, is_default, is_dark, is_public, image_url
+          secondary_color, accent_color, is_default, is_dark, is_public, image_url, 
+          is_standard
         ) VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true
         ) ON CONFLICT (id) DO UPDATE SET
           name = EXCLUDED.name,
           description = EXCLUDED.description,
@@ -275,6 +306,7 @@ async function populateStandardThemes() {
           is_dark = EXCLUDED.is_dark,
           is_public = EXCLUDED.is_public,
           image_url = EXCLUDED.image_url,
+          is_standard = true,
           updated_at = NOW()
       `, [
         theme.id,
