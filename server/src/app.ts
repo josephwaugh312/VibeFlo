@@ -27,7 +27,9 @@ const clientUrl = process.env.CLIENT_URL || 'http://localhost:3000';
 const allowedOrigins = [
   'http://localhost:3000', 
   'http://192.168.1.212:3000',
-  'https://vibeflo.onrender.com'
+  'https://vibeflo.onrender.com',
+  'https://vibeflo.app',
+  'https://www.vibeflo.app'
 ];
 
 // Add CLIENT_URL to allowed origins if it's not already included
