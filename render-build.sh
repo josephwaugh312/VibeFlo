@@ -65,6 +65,10 @@ NODE_ENV=production npx ts-node src/db/fix-themes-image-url.ts
 echo "Running fix for custom_themes table..."
 NODE_ENV=production npx ts-node src/db/fix-custom-themes.ts
 
+# Populate standard themes with fixed UUIDs
+echo "Populating standard themes with fixed UUIDs..."
+NODE_ENV=production npx ts-node src/db/populate-standard-themes.ts
+
 # Print directory structure for debugging
 echo "Final directory structure:"
 find dist -type f | sort
