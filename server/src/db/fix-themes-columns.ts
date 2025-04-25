@@ -64,7 +64,8 @@ async function fixThemesColumns() {
         { name: 'secondary_color', type: 'VARCHAR(50)', default: "'#03DAC6'" },
         { name: 'accent_color', type: 'VARCHAR(50)', default: "'#BB86FC'" },
         { name: 'is_dark', type: 'BOOLEAN', default: 'false' },
-        { name: 'is_public', type: 'BOOLEAN', default: 'true' }
+        { name: 'is_public', type: 'BOOLEAN', default: 'true' },
+        { name: 'is_default', type: 'BOOLEAN', default: 'false' }
       ];
       
       for (const column of columnsToCheck) {
