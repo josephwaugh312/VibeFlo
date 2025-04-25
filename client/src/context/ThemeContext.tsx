@@ -17,6 +17,7 @@ interface Theme {
   background_url?: string;
   is_default?: boolean;
   is_premium?: boolean;
+  is_standard?: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -171,9 +172,27 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (response.data && Array.isArray(response.data)) {
         console.log('Themes fetched successfully:', response.data.length, 'themes');
         
+        // Filter standard themes (those with is_standard=true or in standard themes IDs)
+        const standardThemeIds = [
+          'd8a7c463-e2a0-4b15-9c1b-cb1d4e59d933',
+          'fd8b7d61-fec0-48e6-a2da-52a1b5c9887c',
+          '550e8400-e29b-41d4-a716-446655440000',
+          'a3e0f1d8-5c22-4b23-9c5a-b1d1c1a9b7a2',
+          'e4b0c7d2-267a-4c46-860a-e6c48cc0d4e0',
+          'b5f87e7c-f98a-4a5e-8f8a-7e5b8be2b35d',
+          'f48a7dc2-3b8a-49e7-b8c8-6a32d1e0c1b9',
+          'c9d5a8f1-2b7c-4e9c-b1a3-9e5c8d7f6a2e',
+          'd7e6f5c4-3b2a-1c9d-8e7f-6a5b4c3d2e1f',
+          'e2d3c4b5-a6b7-c8d9-e0f1-a2b3c4d5e6f7'
+        ];
+        
+        const standardThemes = response.data.filter((theme: Theme) => 
+          theme.is_standard === true || standardThemeIds.includes(theme.id)
+        );
+        
         // Ensure we always have at least the default theme
-        const themes = response.data.length > 0 
-          ? response.data 
+        const themes = standardThemes.length > 0 
+          ? standardThemes 
           : [defaultTheme];
         
         setAvailableThemes(themes);
@@ -198,7 +217,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (!currentTheme) {
         setCurrentTheme(defaultTheme);
-        applyBackground(defaultTheme);
       }
     } finally {
       setLoadingThemes(false);
@@ -207,34 +225,28 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Function to fetch custom themes belonging to the user
   const fetchCustomThemes = async () => {
-    // Only attempt if we have a token
-    const token = localStorage.getItem('token');
-    if (!token) {
-      console.log('No token found, skipping custom theme fetch');
-      return;
-    }
-
     try {
-      // Get the server URL
       const serverUrl = getServerUrl();
       if (!serverUrl) {
-        console.warn('Server URL is not defined, skipping custom theme fetch');
+        console.warn('REACT_APP_SERVER_URL is not defined, cannot fetch custom themes');
+        setCustomThemes([]);
         return;
       }
       
-      console.log('Fetching custom themes...');
-      const response = await axios.get(`${serverUrl}/api/themes/custom/user`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
+      const response = await axios.get(`${serverUrl}/api/themes/custom`);
       if (response.data && Array.isArray(response.data)) {
-        console.log('Custom themes fetched:', response.data.length);
-        setCustomThemes(response.data);
+        console.log('Custom themes fetched successfully:', response.data.length, 'custom themes');
+        
+        // Filter out any standard themes that might have been returned
+        const nonStandardThemes = response.data.filter((theme: CustomTheme) => 
+          !theme.is_standard === true
+        );
+        
+        setCustomThemes(nonStandardThemes);
       }
     } catch (error) {
       console.error('Error fetching custom themes:', error);
+      setCustomThemes([]);
     }
   };
 
