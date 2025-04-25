@@ -13,6 +13,7 @@
     "migrate:pomodoro": "ts-node src/db/run-pomodoro-migration.ts",
     "migrate:themes": "ts-node src/db/run-theme-migrations.ts",
     "fix:themes-image-url": "ts-node src/db/fix-themes-image-url.ts",
+    "fix:custom-themes": "ts-node src/db/fix-custom-themes.ts",
     "check:users": "ts-node src/scripts/check-users.ts",
     "create:testuser": "ts-node src/scripts/create-test-user.ts",
     "test": "jest",
