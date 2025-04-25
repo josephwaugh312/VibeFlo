@@ -16,12 +16,18 @@ if (!DATABASE_URL) {
   process.exit(1);
 }
 
-// Global pool that can be used in your APIs
+// Log database connection details (masking sensitive parts)
+const maskedUrl = DATABASE_URL.replace(/\/\/([^:]+):([^@]+)@/, '//********:********@');
+console.log(`Index.ts using database URL: ${maskedUrl}`);
+console.log(`Index.ts environment: ${process.env.NODE_ENV || 'development'}`);
+
+// Global pool that can be used in your APIs - using the same SSL settings as in config/db.ts
+const isProduction = process.env.NODE_ENV === 'production';
 export const pool = new Pool({
   connectionString: DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { 
+  ssl: isProduction ? { 
     rejectUnauthorized: false 
-  } : false
+  } : undefined
 });
 
 // Connect to database and start server
