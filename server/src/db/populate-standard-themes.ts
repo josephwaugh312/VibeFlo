@@ -61,7 +61,7 @@ const standardThemes = [
     is_dark: false,
     is_default: true,
     is_public: true,
-    image_url: 'https://images.unsplash.com/photo-1541629908-9d9ea3ffa97a?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxzZWFyY2h8M3x8bWluaW1hbHxlbnwwfHwwfHw%3D&w=1000&q=80'
+    image_url: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
   },
   {
     id: 'a3e0f1d8-5c22-4b23-9c5a-b1d1c1a9b7a2',
@@ -90,6 +90,76 @@ const standardThemes = [
     is_default: false,
     is_public: true,
     image_url: 'https://images.unsplash.com/photo-1557683316-973673baf926?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z3JhZGllbnQlMjBiYWNrZ3JvdW5kfGVufDB8fDB8fHww&w=1000&q=80'
+  },
+  {
+    id: 'b5f87e7c-f98a-4a5e-8f8a-7e5b8be2b35d',
+    name: 'Sunset Orange',
+    description: 'A beautiful sunset scene with warm orange tones',
+    background_color: '#FFFFFF',
+    text_color: '#333333',
+    primary_color: '#FF5722',
+    secondary_color: '#FF9800',
+    accent_color: '#FFEB3B',
+    is_dark: false,
+    is_default: false,
+    is_public: true,
+    image_url: 'https://images.unsplash.com/photo-1472978346569-9fa8c9de4b3f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+  },
+  {
+    id: 'f48a7dc2-3b8a-49e7-b8c8-6a32d1e0c1b9',
+    name: 'Ocean Blue',
+    description: 'A calming blue theme inspired by the ocean',
+    background_color: '#FFFFFF',
+    text_color: '#333333',
+    primary_color: '#039BE5',
+    secondary_color: '#0288D1',
+    accent_color: '#00BCD4',
+    is_dark: false,
+    is_default: false,
+    is_public: true,
+    image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+  },
+  {
+    id: 'c9d5a8f1-2b7c-4e9c-b1a3-9e5c8d7f6a2e',
+    name: 'Mountain Peaks',
+    description: 'Majestic mountain peaks with stunning views',
+    background_color: '#FFFFFF',
+    text_color: '#333333',
+    primary_color: '#3F51B5',
+    secondary_color: '#5C6BC0',
+    accent_color: '#7986CB',
+    is_dark: false,
+    is_default: false,
+    is_public: true,
+    image_url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+  },
+  {
+    id: 'd7e6f5c4-3b2a-1c9d-8e7f-6a5b4c3d2e1f',
+    name: 'Northern Lights',
+    description: 'Vibrant aurora borealis dancing across the night sky',
+    background_color: '#000000',
+    text_color: '#FFFFFF',
+    primary_color: '#9C27B0',
+    secondary_color: '#4A148C',
+    accent_color: '#7B1FA2',
+    is_dark: true,
+    is_default: false,
+    is_public: true,
+    image_url: 'https://images.unsplash.com/photo-1464143797991-13548c082f2b?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
+  },
+  {
+    id: 'e2d3c4b5-a6b7-c8d9-e0f1-a2b3c4d5e6f7',
+    name: 'Dark Elegance',
+    description: 'A sleek dark theme with elegant aesthetics',
+    background_color: '#121212',
+    text_color: '#FFFFFF',
+    primary_color: '#BB86FC',
+    secondary_color: '#03DAC6',
+    accent_color: '#CF6679',
+    is_dark: true,
+    is_default: false,
+    is_public: true,
+    image_url: 'https://images.unsplash.com/photo-1520034475321-cbe63696469a?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80'
   }
 ];
 

@@ -24,6 +24,9 @@ interface CustomTheme extends Theme {
   prompt?: string;
 }
 
+// Fallback image as a data URI for broken images
+const FALLBACK_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800"%3E%3Cdefs%3E%3ClinearGradient id="grad" x1="0%25" y1="0%25" x2="100%25" y2="100%25"%3E%3Cstop offset="0%25" style="stop-color:%238e44ad;stop-opacity:1" /%3E%3Cstop offset="100%25" style="stop-color:%233498db;stop-opacity:1" /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width="800" height="800" fill="url(%23grad)"%3E%3C/rect%3E%3Cpath d="M0 0L800 800" stroke="%23ffffff20" stroke-width="15"%3E%3C/path%3E%3Cpath d="M800 0L0 800" stroke="%23ffffff20" stroke-width="15"%3E%3C/path%3E%3C/svg%3E';
+
 const ThemeSelector: React.FC = () => {
   // Use the theme context instead of local state
   const { 
@@ -249,9 +252,9 @@ const ThemeSelector: React.FC = () => {
                     loading={tabValue === 0 ? "eager" : "lazy"}
                     decoding="async"
                     onError={(e) => {
-                      // Fallback for broken images
+                      // Fallback for broken images using a data URI instead of external placeholder
                       const target = e.target as HTMLImageElement;
-                      target.src = 'https://via.placeholder.com/300x180?text=No+Image';
+                      target.src = FALLBACK_IMAGE;
                       setImagesLoaded(prev => ({...prev, [theme.id]: true}));
                     }}
                     sx={{
