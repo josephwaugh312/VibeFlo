@@ -162,40 +162,84 @@ const ThemeSelector: React.FC = () => {
             <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
               You don't have any custom themes yet
             </Typography>
-            <Button
-              variant="contained"
-              onClick={handleOpenCreateDialog}
-              sx={{
-                background: 'linear-gradient(135deg, #8e44ad 0%, #3498db 100%)',
-                py: 1.5,
-                px: 4,
-                fontSize: '1rem',
-                fontWeight: 'medium',
+            <Card 
+              sx={{ 
+                height: '280px', 
+                position: 'relative',
+                overflow: 'hidden',
                 borderRadius: '12px',
-                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 1.5,
                 transition: 'all 0.3s ease',
+                background: 'linear-gradient(135deg, rgba(66, 66, 74, 0.4) 0%, rgba(25, 25, 25, 0.6) 100%)',
+                backdropFilter: 'blur(10px)',
+                border: '1px dashed rgba(255, 255, 255, 0.3)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+                mx: 'auto',
+                maxWidth: '350px',
                 '&:hover': {
-                  transform: 'translateY(-5px)',
-                  boxShadow: '0 12px 20px rgba(0, 0, 0, 0.4)',
+                  transform: 'translateY(-8px) scale(1.02)',
+                  boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
+                  '& .create-icon-circle': {
+                    transform: 'scale(1.1)',
+                    background: 'rgba(103, 58, 183, 0.9)',
+                  },
+                  '& .create-text': {
+                    color: '#fff',
+                    transform: 'translateY(5px)'
+                  }
                 }
               }}
+              onClick={handleOpenCreateDialog}
             >
-              <Box sx={{ 
-                width: 36, 
-                height: 36, 
-                borderRadius: '50%', 
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Add sx={{ fontSize: 24 }} />
+              <Box 
+                className="create-icon-circle" 
+                sx={{ 
+                  width: 80, 
+                  height: 80, 
+                  borderRadius: '50%', 
+                  backgroundColor: 'rgba(103, 58, 183, 0.7)',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                  mb: 3,
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                <Add sx={{ fontSize: 48, color: 'white' }} />
               </Box>
-              Create New Theme
-            </Button>
+              
+              <Typography 
+                className="create-text"
+                variant="h6"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.9)',
+                  fontWeight: 'medium',
+                  transition: 'all 0.3s ease',
+                  textAlign: 'center'
+                }}
+              >
+                Create New Theme
+              </Typography>
+              
+              <Typography 
+                className="create-text"
+                variant="body2"
+                sx={{
+                  color: 'rgba(255, 255, 255, 0.7)',
+                  mt: 1,
+                  maxWidth: '80%',
+                  textAlign: 'center',
+                  transition: 'all 0.3s ease'
+                }}
+              >
+                Design your own custom background
+              </Typography>
+            </Card>
           </Box>
         );
       }
@@ -403,6 +447,8 @@ const ThemeSelector: React.FC = () => {
                 alignItems: 'center',
                 cursor: 'pointer',
                 boxShadow: '0 8px 16px rgba(0, 0, 0, 0.2)',
+                mx: 'auto',
+                maxWidth: '350px',
                 '&:hover': {
                   transform: 'translateY(-8px) scale(1.02)',
                   boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
