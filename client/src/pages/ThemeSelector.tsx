@@ -159,7 +159,7 @@ const ThemeSelector: React.FC = () => {
       if (tabValue === 1) {
         return (
           <Box textAlign="center" my={4}>
-            <Typography variant="h6" color="text.secondary" sx={{ mb: 2 }}>
+            <Typography variant="h6" color="white" sx={{ mb: 2 }}>
               You don't have any custom themes yet
             </Typography>
             <Card 
