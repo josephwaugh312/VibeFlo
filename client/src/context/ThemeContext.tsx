@@ -225,6 +225,14 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Function to fetch custom themes belonging to the user
   const fetchCustomThemes = async () => {
+    // Only attempt if we have a token
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.log('No token found, skipping custom theme fetch');
+      setCustomThemes([]);
+      return;
+    }
+
     try {
       const serverUrl = getServerUrl();
       if (!serverUrl) {
@@ -233,13 +241,19 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
       
-      const response = await axios.get(`${serverUrl}/api/themes/custom`);
+      console.log('Fetching custom themes for user...');
+      const response = await axios.get(`${serverUrl}/api/themes/custom/user`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
       if (response.data && Array.isArray(response.data)) {
         console.log('Custom themes fetched successfully:', response.data.length, 'custom themes');
         
         // Filter out any standard themes that might have been returned
         const nonStandardThemes = response.data.filter((theme: CustomTheme) => 
-          !theme.is_standard === true
+          theme.is_standard !== true
         );
         
         setCustomThemes(nonStandardThemes);
