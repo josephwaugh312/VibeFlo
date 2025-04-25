@@ -59,7 +59,7 @@ const standardThemes = [
     secondary_color: '#757575',
     accent_color: '#FF4081',
     is_dark: false,
-    is_default: true,
+    is_default: false,
     is_public: true,
     image_url: 'https://images.unsplash.com/photo-1519638399535-1b036603ac77?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },
@@ -87,7 +87,7 @@ const standardThemes = [
     secondary_color: '#E91E63',
     accent_color: '#00BCD4',
     is_dark: false,
-    is_default: false,
+    is_default: true,
     is_public: true,
     image_url: 'https://images.unsplash.com/photo-1557683316-973673baf926?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
   },

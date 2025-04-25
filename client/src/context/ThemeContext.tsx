@@ -20,6 +20,12 @@ interface Theme {
   is_standard?: boolean;
   created_at?: string;
   updated_at?: string;
+  background_color?: string;
+  text_color?: string;
+  primary_color?: string;
+  secondary_color?: string;
+  accent_color?: string;
+  is_dark?: boolean;
 }
 
 interface CustomTheme extends Theme {
@@ -50,11 +56,17 @@ interface ThemeContextType {
 
 // Create a default theme
 const defaultTheme: Theme = {
-  id: 'default-abstract-theme',
-  name: 'Abstract',
-  description: 'Colorful abstract patterns',
-  image_url: FALLBACK_IMAGE,
-  is_default: true
+  id: 'e4b0c7d2-267a-4c46-860a-e6c48cc0d4e0',
+  name: 'Minimalist',
+  description: 'Clean, minimalist background with subtle geometric patterns',
+  background_color: '#FFFFFF',
+  text_color: '#333333',
+  primary_color: '#9C27B0',
+  secondary_color: '#E91E63',
+  accent_color: '#00BCD4',
+  is_dark: false,
+  is_default: true,
+  image_url: 'https://images.unsplash.com/photo-1557683316-973673baf926?ixlib=rb-4.0.3&q=85&fm=jpg&crop=entropy&cs=srgb&w=1200'
 };
 
 // Apply background utility function
