@@ -53,21 +53,40 @@ fi
 
 echo "Client build files successfully copied to server/dist/client/build"
 
-# Run database migrations
-echo "Running database migrations..."
-NODE_ENV=production npx ts-node src/db/run-theme-migrations.ts
+# Function to run database operation with error handling
+run_db_operation() {
+  local operation_name=$1
+  local command=$2
+  
+  echo "Running $operation_name..."
+  
+  # Retry logic with 3 attempts
+  for i in {1..3}; do
+    echo "Attempt $i for $operation_name"
+    NODE_ENV=production npx $command
+    
+    if [ $? -eq 0 ]; then
+      echo "$operation_name completed successfully"
+      return 0
+    else
+      echo "$operation_name failed on attempt $i"
+      if [ $i -lt 3 ]; then
+        echo "Waiting 5 seconds before retry..."
+        sleep 5
+      fi
+    fi
+  done
+  
+  echo "WARNING: $operation_name failed after 3 attempts, but continuing deployment"
+  return 1
+}
 
-# Run the fix for image_url column
-echo "Running fix for themes image_url column..."
-NODE_ENV=production npx ts-node src/db/fix-themes-image-url.ts
-
-# Run the fix for custom_themes table
-echo "Running fix for custom_themes table..."
-NODE_ENV=production npx ts-node src/db/fix-custom-themes.ts
-
-# Populate standard themes with fixed UUIDs
-echo "Populating standard themes with fixed UUIDs..."
-NODE_ENV=production npx ts-node src/db/populate-standard-themes.ts
+# Run database migrations and fixes with error handling
+run_db_operation "fix for themes table columns" "ts-node src/db/fix-themes-columns.ts"
+run_db_operation "database migrations" "ts-node src/db/run-theme-migrations.ts"
+run_db_operation "fix for themes image_url column" "ts-node src/db/fix-themes-image-url.ts"
+run_db_operation "fix for custom_themes table" "ts-node src/db/fix-custom-themes.ts"
+run_db_operation "standard themes population" "ts-node src/db/populate-standard-themes.ts"
 
 # Print directory structure for debugging
 echo "Final directory structure:"

@@ -141,13 +141,22 @@ async function populateStandardThemes() {
       await client.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";');
     }
     
-    // Delete existing standard themes to avoid conflicts
-    console.log('Removing existing standard themes...');
-    await client.query('DELETE FROM themes WHERE id = ANY($1)', [standardThemes.map(t => t.id)]);
+    // Skip deletion and just use UPSERT to insert/update themes
+    console.log('Upserting standard themes...');
     
     // Insert standard themes with fixed UUIDs
     for (const theme of standardThemes) {
-      console.log(`Inserting theme: ${theme.name} with ID: ${theme.id}`);
+      console.log(`Upserting theme: ${theme.name} with ID: ${theme.id}`);
+      
+      // Check if theme exists
+      const themeExists = await client.query('SELECT id FROM themes WHERE id = $1', [theme.id]);
+      
+      if (themeExists.rows.length > 0) {
+        console.log(`Theme with ID ${theme.id} exists, updating...`);
+      } else {
+        console.log(`Theme with ID ${theme.id} does not exist, inserting...`);
+      }
+      
       await client.query(`
         INSERT INTO themes (
           id, name, description, background_color, text_color, primary_color, 
