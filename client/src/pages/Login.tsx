@@ -39,7 +39,7 @@ const Login: React.FC = () => {
   const { login } = useAuth();
 
   // Get the API base URL from environment or use default
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -91,8 +91,21 @@ const Login: React.FC = () => {
       // Use the login function from AuthContext directly with rememberMe
       await login(loginIdentifier, password, rememberMe);
       console.log('Login successful, navigating to dashboard');
-      // Redirect to dashboard
-      navigate('/dashboard');
+      
+      // Debug current path
+      console.log('Current path before navigation:', window.location.pathname);
+      
+      // Redirect to dashboard with replace to avoid navigation issues
+      navigate('/dashboard', { replace: true });
+      
+      // Debug after navigation attempt
+      console.log('Navigation attempted. If you see this, navigation function executed');
+      
+      // Force a complete page reload as a backup measure
+      setTimeout(() => {
+        console.log('Forcing a redirect to dashboard via location.href as fallback');
+        window.location.href = '/dashboard';
+      }, 500);
     } catch (err: any) {
       console.error('Login error:', err);
       console.error('Response data:', err.response?.data);
@@ -234,7 +247,7 @@ const Login: React.FC = () => {
           <div className="mt-6 grid grid-cols-3 gap-3">
             {/* Google Login */}
             <a
-              href={`${API_BASE_URL}/auth/google`}
+              href={`${API_BASE_URL}/api/auth/google`}
               className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-white text-sm font-medium text-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               data-cy="google-login"
             >
@@ -258,7 +271,7 @@ const Login: React.FC = () => {
 
             {/* GitHub Login */}
             <a
-              href={`${API_BASE_URL}/auth/github`}
+              href={`${API_BASE_URL}/api/auth/github`}
               className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-[#24292e] text-sm font-medium text-white hover:bg-[#2c3339] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               data-cy="github-login"
             >
