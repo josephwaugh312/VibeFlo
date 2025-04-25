@@ -4,6 +4,14 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
+console.log('Starting standard themes population script...');
+console.log(`Environment mode: ${process.env.NODE_ENV || 'not set'}`);
+
+// Log database connection details (masking sensitive parts)
+const connectionUrl = process.env.DATABASE_URL || 'not set';
+const maskedUrl = connectionUrl.replace(/\/\/([^:]+):([^@]+)@/, '//********:********@');
+console.log(`Attempting to connect to database with URL: ${maskedUrl}`);
+console.log(`SSL enabled for database connection: ${isProduction ? 'yes' : 'no'}`);
 
 // Create a pool instance
 const pool = new Pool({
@@ -89,15 +97,20 @@ const standardThemes = [
  * Populate standard themes with fixed UUIDs
  */
 async function populateStandardThemes() {
-  const client = await pool.connect();
+  console.log('Acquiring database client from pool...');
+  let client;
   
   try {
+    client = await pool.connect();
+    console.log('Successfully connected to database!');
+    
     console.log('Starting population of standard themes with fixed UUIDs...');
     
     // Start a transaction
     await client.query('BEGIN');
     
     // Check if themes table exists
+    console.log('Checking if themes table exists...');
     const themesTableCheck = await client.query(`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -130,6 +143,7 @@ async function populateStandardThemes() {
     }
     
     // Check for uuid extension
+    console.log('Checking for uuid-ossp extension...');
     const uuidExtensionCheck = await client.query(`
       SELECT EXISTS (
         SELECT 1 FROM pg_extension WHERE extname = 'uuid-ossp'
@@ -155,6 +169,22 @@ async function populateStandardThemes() {
         console.log(`Theme with ID ${theme.id} exists, updating...`);
       } else {
         console.log(`Theme with ID ${theme.id} does not exist, inserting...`);
+      }
+      
+      // Log all column names from themes table for debugging
+      console.log('Getting column names from themes table...');
+      const columnInfo = await client.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+        AND table_name = 'themes'
+        ORDER BY ordinal_position;
+      `);
+      console.log('Available columns in themes table:');
+      if (columnInfo.rows.length > 0) {
+        columnInfo.rows.forEach(row => console.log(`- ${row.column_name}`));
+      } else {
+        console.log('No columns found in themes table (unexpected)');
       }
       
       await client.query(`
@@ -190,6 +220,7 @@ async function populateStandardThemes() {
         theme.is_public,
         theme.image_url
       ]);
+      console.log(`Theme ${theme.name} upserted successfully`);
     }
     
     // Commit the transaction
@@ -198,11 +229,18 @@ async function populateStandardThemes() {
     
   } catch (err) {
     // Rollback the transaction in case of error
-    await client.query('ROLLBACK');
+    console.error('Error during database operations:', err);
+    if (client) {
+      console.log('Rolling back transaction due to error');
+      await client.query('ROLLBACK');
+    }
     console.error('Error populating standard themes:', err);
     throw err;
   } finally {
-    client.release();
+    if (client) {
+      console.log('Releasing database client back to pool');
+      client.release();
+    }
   }
 }
 
@@ -214,5 +252,14 @@ populateStandardThemes()
   })
   .catch(err => {
     console.error('Failed to populate standard themes:', err);
+    // Log more details about the error
+    if (err.code === 'ECONNREFUSED') {
+      console.error('Connection refused. Check if the database server is running and accessible.');
+      console.error(`Attempted connection to: ${err.address}:${err.port}`);
+    } else if (err.code === 'ETIMEDOUT') {
+      console.error('Connection timed out. Network issue or firewall problem.');
+    } else if (err.code === 'ENOTFOUND') {
+      console.error('Host not found. Check the hostname in your connection string.');
+    }
     process.exit(1);
   }); 
