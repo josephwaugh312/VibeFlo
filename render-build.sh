@@ -61,6 +61,10 @@ NODE_ENV=production npx ts-node src/db/run-theme-migrations.ts
 echo "Running fix for themes image_url column..."
 NODE_ENV=production npx ts-node src/db/fix-themes-image-url.ts
 
+# Run the fix for custom_themes table
+echo "Running fix for custom_themes table..."
+NODE_ENV=production npx ts-node src/db/fix-custom-themes.ts
+
 # Print directory structure for debugging
 echo "Final directory structure:"
 find dist -type f | sort

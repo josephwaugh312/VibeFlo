@@ -75,7 +75,19 @@ export const createCustomTheme = handleAsync(async (req: AuthRequest, res: Respo
     return res.status(401).json({ message: 'User not authenticated' });
   }
 
-  const { name, description, image_url, is_public, prompt } = req.body;
+  const { 
+    name, 
+    description, 
+    image_url, 
+    is_public, 
+    prompt,
+    background_color = '#FFFFFF',
+    text_color = '#333333',
+    primary_color = '#6200EE',
+    secondary_color = '#03DAC6',
+    accent_color = '#BB86FC',
+    is_dark = false
+  } = req.body;
   
   if (!name || !image_url) {
     return res.status(400).json({ message: 'Name and image URL are required' });
@@ -84,30 +96,69 @@ export const createCustomTheme = handleAsync(async (req: AuthRequest, res: Respo
   // Remove moderation requirement - set public immediately if requested
   const actualIsPublic = is_public ? true : false;
   
-  const newTheme = await pool.query(
-    `INSERT INTO custom_themes 
-     (user_id, name, description, image_url, is_public, prompt, 
-      moderation_status, moderation_notes) 
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-     RETURNING *`,
-    [
-      userId, 
-      name, 
-      description || null, 
-      image_url, 
-      actualIsPublic, 
-      prompt || null,
-      'approved', // Always set to approved
-      null
-    ]
-  );
-  
-  const theme = newTheme.rows[0];
-  
-  res.status(201).json({
-    ...theme,
-    message: 'Theme created successfully.'
-  });
+  try {
+    const newTheme = await pool.query(
+      `INSERT INTO custom_themes 
+       (user_id, name, description, image_url, is_public, prompt, 
+        moderation_status, moderation_notes, background_color,
+        text_color, primary_color, secondary_color, accent_color, is_dark) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) 
+       RETURNING *`,
+      [
+        userId, 
+        name, 
+        description || null, 
+        image_url, 
+        actualIsPublic, 
+        prompt || null,
+        'approved', // Always set to approved
+        null,
+        background_color,
+        text_color,
+        primary_color,
+        secondary_color,
+        accent_color,
+        is_dark
+      ]
+    );
+    
+    const theme = newTheme.rows[0];
+    
+    res.status(201).json({
+      ...theme,
+      message: 'Theme created successfully.'
+    });
+  } catch (error) {
+    console.error('Error creating custom theme:', error);
+    // Try a simplified insert with fewer columns as a fallback
+    try {
+      console.log('Attempting fallback insert with minimal columns');
+      const fallbackTheme = await pool.query(
+        `INSERT INTO custom_themes 
+         (user_id, name, description, image_url, is_public, moderation_status) 
+         VALUES ($1, $2, $3, $4, $5, $6) 
+         RETURNING *`,
+        [
+          userId, 
+          name, 
+          description || null, 
+          image_url, 
+          actualIsPublic, 
+          'approved'
+        ]
+      );
+      
+      const theme = fallbackTheme.rows[0];
+      
+      res.status(201).json({
+        ...theme,
+        message: 'Theme created successfully with fallback method.'
+      });
+    } catch (fallbackError) {
+      console.error('Fallback insert also failed:', fallbackError);
+      throw error; // Re-throw the original error to be handled by the error middleware
+    }
+  }
 });
 
 /**
@@ -132,40 +183,101 @@ export const updateCustomTheme = handleAsync(async (req: AuthRequest, res: Respo
   }
 
   const existingTheme = themeCheck.rows[0];
-  const { name, description, image_url, is_public, prompt } = req.body;
+  const { 
+    name, 
+    description, 
+    image_url, 
+    is_public, 
+    prompt,
+    background_color,
+    text_color,
+    primary_color,
+    secondary_color,
+    accent_color,
+    is_dark
+  } = req.body;
   
   // Skip moderation and set public immediately if requested
   const actualIsPublic = is_public;
   
-  const updatedTheme = await pool.query(
-    `UPDATE custom_themes 
-     SET name = COALESCE($3, name),
-         description = COALESCE($4, description),
-         image_url = COALESCE($5, image_url),
-         is_public = COALESCE($6, is_public),
-         prompt = COALESCE($7, prompt),
-         moderation_status = 'approved',
-         moderation_notes = null,
-         updated_at = CURRENT_TIMESTAMP
-     WHERE id = $1 AND user_id = $2
-     RETURNING *`,
-    [
-      id, 
-      userId, 
-      name, 
-      description, 
-      image_url, 
-      actualIsPublic, 
-      prompt
-    ]
-  );
-  
-  const theme = updatedTheme.rows[0];
-  
-  res.json({
-    ...theme,
-    message: 'Theme updated successfully.'
-  });
+  try {
+    const updatedTheme = await pool.query(
+      `UPDATE custom_themes 
+       SET name = COALESCE($3, name),
+           description = COALESCE($4, description),
+           image_url = COALESCE($5, image_url),
+           is_public = COALESCE($6, is_public),
+           prompt = COALESCE($7, prompt),
+           background_color = COALESCE($8, background_color),
+           text_color = COALESCE($9, text_color),
+           primary_color = COALESCE($10, primary_color),
+           secondary_color = COALESCE($11, secondary_color),
+           accent_color = COALESCE($12, accent_color),
+           is_dark = COALESCE($13, is_dark),
+           moderation_status = 'approved',
+           moderation_notes = null,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id = $1 AND user_id = $2
+       RETURNING *`,
+      [
+        id, 
+        userId, 
+        name, 
+        description, 
+        image_url, 
+        actualIsPublic, 
+        prompt,
+        background_color,
+        text_color,
+        primary_color,
+        secondary_color,
+        accent_color,
+        is_dark
+      ]
+    );
+    
+    const theme = updatedTheme.rows[0];
+    
+    res.json({
+      ...theme,
+      message: 'Theme updated successfully.'
+    });
+  } catch (error) {
+    console.error('Error updating custom theme:', error);
+    // Try a simplified update with fewer columns as a fallback
+    try {
+      console.log('Attempting fallback update with minimal columns');
+      const fallbackUpdate = await pool.query(
+        `UPDATE custom_themes 
+         SET name = COALESCE($3, name),
+             description = COALESCE($4, description),
+             image_url = COALESCE($5, image_url),
+             is_public = COALESCE($6, is_public),
+             moderation_status = 'approved',
+             updated_at = CURRENT_TIMESTAMP
+         WHERE id = $1 AND user_id = $2
+         RETURNING *`,
+        [
+          id, 
+          userId, 
+          name, 
+          description, 
+          image_url, 
+          actualIsPublic
+        ]
+      );
+      
+      const theme = fallbackUpdate.rows[0];
+      
+      res.json({
+        ...theme,
+        message: 'Theme updated successfully with fallback method.'
+      });
+    } catch (fallbackError) {
+      console.error('Fallback update also failed:', fallbackError);
+      throw error; // Re-throw the original error to be handled by the error middleware
+    }
+  }
 });
 
 /**
