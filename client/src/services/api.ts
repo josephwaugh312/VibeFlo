@@ -2,19 +2,26 @@ import axios, { AxiosInstance } from 'axios';
 import { Track } from '../components/music/MusicPlayer';
 import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 
-// Get the API base URL based on environment
-const getApiBaseUrl = () => {
-  // In production, use the production API endpoint
-  if (process.env.NODE_ENV === 'production') {
-    return 'https://vibeflo.app';
-  }
+// Function to get the API base URL
+export const getApiBaseUrl = (): string => {
+  console.log("Getting API base URL");
   
-  // Check for an environment variable (useful for testing and CI/CD)
+  // For production deployment
   if (process.env.REACT_APP_API_URL) {
+    console.log("Using REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
     return process.env.REACT_APP_API_URL;
   }
   
-  // Default to localhost for development
+  // For Render deployment
+  if (window.location.hostname === 'vibeflo.app' || 
+      window.location.hostname.includes('vibeflo') || 
+      window.location.hostname.includes('render.com')) {
+    console.log("Using Render API URL");
+    return 'https://vibeflo-api.onrender.com';
+  }
+  
+  // For local development
+  console.log("Using localhost API URL");
   return 'http://localhost:5001';
 };
 
@@ -22,7 +29,7 @@ const getApiBaseUrl = () => {
 const apiService = (() => {
   // Create the base axios instance
   const api: AxiosInstance = axios.create({
-    baseURL: `${getApiBaseUrl()}/api`,
+    baseURL: getApiBaseUrl(),
     timeout: 10000,
     headers: {
       'Content-Type': 'application/json',
