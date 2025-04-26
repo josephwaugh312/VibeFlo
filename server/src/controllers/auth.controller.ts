@@ -4,9 +4,9 @@ import pool from '../config/db';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { User } from '../types';
 import crypto from 'crypto';
-import { sendVerificationEmail } from '../services/email.service';
 import { handleAsync } from '../utils/errorHandler';
 import { authErrors, validationErrors, resourceErrors } from '../utils/errorUtils';
+import emailService from '../services/email.service';
 
 // Extend the Request type to include user
 interface AuthRequest extends Request {
@@ -82,7 +82,11 @@ export const register = handleAsync(async (req: Request, res: Response) => {
 
   // Try to send verification email but don't block registration if it fails
   try {
-    await sendVerificationEmail(email, verificationUrl);
+    await emailService.sendVerificationEmail(
+      user.email,
+      user.name || user.username || 'User',
+      verificationToken
+    );
     console.log(`Verification email sent to ${email}`);
   } catch (emailError) {
     console.error('Error sending verification email:', emailError);
@@ -544,7 +548,11 @@ export const resendVerificationEmail = handleAsync(async (req: Request, res: Res
   const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
 
   // Send verification email
-  await sendVerificationEmail(email, verificationUrl);
+  await emailService.sendVerificationEmail(
+    user.email,
+    user.name || user.username || 'User',
+    verificationToken
+  );
 
   res.status(200).json({ message: 'Verification email sent successfully' });
 }); 

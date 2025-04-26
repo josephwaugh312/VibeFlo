@@ -1,10 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { User } from '../types';
+import jwt from 'jsonwebtoken';
+import db from '../config/db';
 
 // Extend the Request type to include user
 interface AuthRequest extends Request {
   user?: User;
+}
+
+// Interface for decoded token
+interface DecodedToken {
+  id: string;
+  iat: number;
+  exp: number;
 }
 
 /**
@@ -68,4 +77,50 @@ export const optionalAuth = (req: Request, res: Response, next: NextFunction) =>
     }
     next();
   })(req, res, next);
+};
+
+// Auth middleware to verify JWT token
+export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'Authentication required. Please log in.' });
+    }
+    
+    const token = authHeader.split(' ')[1];
+    
+    if (!token) {
+      return res.status(401).json({ message: 'Authentication token missing. Please log in.' });
+    }
+    
+    // Verify and decode token
+    const decoded = jwt.verify(
+      token, 
+      process.env.JWT_SECRET || 'your-secret-key'
+    ) as DecodedToken;
+    
+    // Check if user exists in the database
+    const user = await db('users').where({ id: decoded.id }).first();
+    
+    if (!user) {
+      return res.status(401).json({ message: 'User not found. Please register or log in.' });
+    }
+    
+    // Add user to request for use in following middleware
+    req.user = user;
+    
+    next();
+  } catch (error) {
+    if (error instanceof jwt.JsonWebTokenError) {
+      return res.status(401).json({ message: 'Invalid token. Please log in again.' });
+    }
+    
+    if (error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ message: 'Token has expired. Please log in again.' });
+    }
+    
+    console.error('Authentication error:', error);
+    res.status(500).json({ message: 'Server error during authentication.' });
+  }
 }; 
