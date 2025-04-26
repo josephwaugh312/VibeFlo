@@ -17,12 +17,12 @@ export const getApiBaseUrl = (): string => {
       window.location.hostname.includes('vibeflo') || 
       window.location.hostname.includes('render.com')) {
     console.log("Using Render API URL");
-    return 'https://vibeflo-api.onrender.com';
+    return 'https://vibeflo-api.onrender.com/api';
   }
   
   // For local development
   console.log("Using localhost API URL");
-  return 'http://localhost:5001';
+  return 'http://localhost:5001/api';
 };
 
 // Create the API service with token management and interceptors
