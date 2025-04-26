@@ -102,6 +102,7 @@ else
   run_db_operation "fix for custom_themes table" "ts-node src/db/fix-custom-themes.ts"
   run_db_operation "fix for OAuth columns" "ts-node src/db/fix-oauth-columns.ts"
   run_db_operation "standard themes population" "ts-node src/db/populate-standard-themes.ts"
+  run_db_operation "cleanup invalid themes" "ts-node src/db/cleanup-invalid-themes.ts"
 fi
 
 # Print directory structure for debugging
