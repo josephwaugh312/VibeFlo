@@ -1,98 +1,184 @@
-import nodemailer from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a transporter using Gmail SMTP
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+// Configure SendGrid with API key from environment variables
+const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
+const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@vibeflo.app';
+const CLIENT_URL = process.env.CLIENT_URL || 'https://vibeflo.app';
 
-// Determine if we're in development mode - either explicitly set or default to true when NODE_ENV is development
-const isDevelopment = process.env.SKIP_EMAILS === 'true' || process.env.NODE_ENV === 'development';
+// Initialize SendGrid if API key is available
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log('SendGrid configured successfully');
+} else {
+  console.warn('SendGrid API key not found. Email functionality will not work.');
+}
 
-export const sendVerificationEmail = async (email: string, verificationUrl: string) => {
-  try {
-    // In development, just log the URL instead of sending an email
-    if (isDevelopment) {
-      console.log('\n==== DEVELOPMENT MODE: Email not sent ====');
-      console.log(`Verification URL for ${email}: ${verificationUrl}`);
-      console.log('Copy this URL to verify the account');
-      console.log('=======================================\n');
-      return; // Skip actual email sending
-    }
+/**
+ * Base email service providing methods for sending various types of emails
+ */
+class EmailService {
+  /**
+   * Send a verification email to a newly registered user
+   * @param to Email address of the recipient
+   * @param name Name of the recipient
+   * @param token Verification token
+   */
+  async sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
+    try {
+      if (!SENDGRID_API_KEY) {
+        console.warn('Skipping verification email - SendGrid API key not configured');
+        // Still log the token for testing environments
+        console.log(`[DEV] Verification token for ${to}: ${token}`);
+        console.log(`[DEV] Verification link: ${CLIENT_URL}/verify/${token}`);
+        return;
+      }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Verify your VibeFlo account',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #7C3AED;">Welcome to VibeFlo!</h2>
-          <p>Thank you for creating an account. Please verify your email address by clicking the button below:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationUrl}" 
-               style="background-color: #7C3AED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-              Verify Email
-            </a>
+      const verificationLink = `${CLIENT_URL}/verify/${token}`;
+      
+      // Create the email
+      const msg = {
+        to,
+        from: FROM_EMAIL,
+        subject: 'Verify your VibeFlo account',
+        text: `Hi ${name},\n\nWelcome to VibeFlo! Please verify your email address by clicking the link below:\n\n${verificationLink}\n\nThis link will expire in 24 hours.\n\nThank you,\nThe VibeFlo Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h1 style="color: #6d28d9;">VibeFlo</h1>
+            </div>
+            <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-top: 0;">Welcome to VibeFlo!</h2>
+              <p>Hi ${name},</p>
+              <p>Thanks for signing up! To get started, please verify your email address.</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${verificationLink}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Verify Email Address</a>
+              </div>
+              <p style="color: #666; font-size: 14px;">This link will expire in 24 hours.</p>
+              <p>If you didn't create an account with VibeFlo, you can ignore this email.</p>
+              <p>Thank you,<br>The VibeFlo Team</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+              <p>&copy; ${new Date().getFullYear()} VibeFlo. All rights reserved.</p>
+            </div>
           </div>
-          <p>Or copy and paste this link into your browser:</p>
-          <p style="word-break: break-all;">${verificationUrl}</p>
-          <p>This link will expire in 24 hours.</p>
-          <p>If you didn't create this account, you can safely ignore this email.</p>
-        </div>
-      `
-    };
+        `
+      };
 
-    await transporter.sendMail(mailOptions);
-    console.log(`Verification email sent to ${email}`);
-  } catch (error) {
-    console.error('Error sending verification email:', error);
-    throw error;
-  }
-};
-
-export const sendPasswordResetEmail = async (email: string, resetUrl: string) => {
-  try {
-    // In development, just log the URL instead of sending an email
-    if (isDevelopment) {
-      console.log('\n==== DEVELOPMENT MODE: Email not sent ====');
-      console.log(`Password reset URL for ${email}: ${resetUrl}`);
-      console.log('Copy this URL to reset the password');
-      console.log('=======================================\n');
-      return; // Skip actual email sending
+      // Send the email
+      await sgMail.send(msg);
+      console.log(`Verification email sent to ${to}`);
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      throw new Error('Failed to send verification email');
     }
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Reset your VibeFlo password',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #7C3AED;">Password Reset Request</h2>
-          <p>You requested to reset your password. Click the button below to proceed:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${resetUrl}" 
-               style="background-color: #7C3AED; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block;">
-              Reset Password
-            </a>
-          </div>
-          <p>Or copy and paste this link into your browser:</p>
-          <p style="word-break: break-all;">${resetUrl}</p>
-          <p>This link will expire in 1 hour.</p>
-          <p>If you didn't request this password reset, you can safely ignore this email.</p>
-        </div>
-      `
-    };
-
-    await transporter.sendMail(mailOptions);
-    console.log(`Password reset email sent to ${email}`);
-  } catch (error) {
-    console.error('Error sending password reset email:', error);
-    throw error;
   }
-}; 
+
+  /**
+   * Send a password reset email
+   * @param to Email address of the recipient
+   * @param name Name of the recipient
+   * @param token Password reset token
+   */
+  async sendPasswordResetEmail(to: string, name: string, token: string): Promise<void> {
+    try {
+      if (!SENDGRID_API_KEY) {
+        console.warn('Skipping password reset email - SendGrid API key not configured');
+        // Still log the token for testing environments
+        console.log(`[DEV] Password reset token for ${to}: ${token}`);
+        console.log(`[DEV] Password reset link: ${CLIENT_URL}/reset-password/${token}`);
+        return;
+      }
+
+      const resetLink = `${CLIENT_URL}/reset-password/${token}`;
+      
+      // Create the email
+      const msg = {
+        to,
+        from: FROM_EMAIL,
+        subject: 'Reset your VibeFlo password',
+        text: `Hi ${name},\n\nWe received a request to reset your VibeFlo password. Click the link below to set a new password:\n\n${resetLink}\n\nThis link will expire in 1 hour.\n\nIf you didn't request a password reset, you can ignore this email.\n\nThank you,\nThe VibeFlo Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h1 style="color: #6d28d9;">VibeFlo</h1>
+            </div>
+            <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-top: 0;">Reset Your Password</h2>
+              <p>Hi ${name},</p>
+              <p>We received a request to reset your VibeFlo password. Click the button below to set a new password:</p>
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${resetLink}" style="background-color: #6d28d9; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; display: inline-block; font-weight: bold;">Reset Password</a>
+              </div>
+              <p style="color: #666; font-size: 14px;">This link will expire in 1 hour.</p>
+              <p>If you didn't request a password reset, you can ignore this email.</p>
+              <p>Thank you,<br>The VibeFlo Team</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+              <p>&copy; ${new Date().getFullYear()} VibeFlo. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      };
+
+      // Send the email
+      await sgMail.send(msg);
+      console.log(`Password reset email sent to ${to}`);
+    } catch (error) {
+      console.error('Error sending password reset email:', error);
+      throw new Error('Failed to send password reset email');
+    }
+  }
+
+  /**
+   * Send a notification email for various purposes
+   * @param to Email address of the recipient
+   * @param name Name of the recipient 
+   * @param subject Email subject
+   * @param message Email message
+   */
+  async sendNotificationEmail(to: string, name: string, subject: string, message: string): Promise<void> {
+    try {
+      if (!SENDGRID_API_KEY) {
+        console.warn('Skipping notification email - SendGrid API key not configured');
+        console.log(`[DEV] Notification to ${to}: ${subject} - ${message}`);
+        return;
+      }
+
+      // Create the email
+      const msg = {
+        to,
+        from: FROM_EMAIL,
+        subject,
+        text: `Hi ${name},\n\n${message}\n\nThank you,\nThe VibeFlo Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+            <div style="text-align: center; margin-bottom: 20px;">
+              <h1 style="color: #6d28d9;">VibeFlo</h1>
+            </div>
+            <div style="background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+              <h2 style="color: #333; margin-top: 0;">${subject}</h2>
+              <p>Hi ${name},</p>
+              <p>${message}</p>
+              <p>Thank you,<br>The VibeFlo Team</p>
+            </div>
+            <div style="text-align: center; margin-top: 20px; color: #888; font-size: 12px;">
+              <p>&copy; ${new Date().getFullYear()} VibeFlo. All rights reserved.</p>
+            </div>
+          </div>
+        `
+      };
+
+      // Send the email
+      await sgMail.send(msg);
+      console.log(`Notification email sent to ${to}`);
+    } catch (error) {
+      console.error('Error sending notification email:', error);
+      throw new Error('Failed to send notification email');
+    }
+  }
+}
+
+export default new EmailService(); 
