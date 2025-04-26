@@ -100,6 +100,7 @@ else
   run_db_operation "database migrations" "ts-node src/db/run-theme-migrations.ts"
   run_db_operation "fix for themes image_url column" "ts-node src/db/fix-themes-image-url.ts"
   run_db_operation "fix for custom_themes table" "ts-node src/db/fix-custom-themes.ts"
+  run_db_operation "fix for OAuth columns" "ts-node src/db/fix-oauth-columns.ts"
   run_db_operation "standard themes population" "ts-node src/db/populate-standard-themes.ts"
 fi
 
