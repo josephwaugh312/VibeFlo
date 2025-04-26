@@ -88,6 +88,7 @@ const Login: React.FC = () => {
     console.log('Login attempt with:', { loginIdentifier, rememberMe });
 
     try {
+      console.log('About to call login API...');
       // Use the login function from AuthContext directly with rememberMe
       await login(loginIdentifier, password, rememberMe);
       console.log('Login successful, navigating to dashboard');
@@ -95,20 +96,18 @@ const Login: React.FC = () => {
       // Debug current path
       console.log('Current path before navigation:', window.location.pathname);
       
-      // Redirect to dashboard with replace to avoid navigation issues
-      navigate('/dashboard', { replace: true });
+      // Try to force a page reload to dashboard
+      window.location.href = '/dashboard';
       
-      // Debug after navigation attempt
-      console.log('Navigation attempted. If you see this, navigation function executed');
-      
-      // Force a complete page reload as a backup measure
-      setTimeout(() => {
-        console.log('Forcing a redirect to dashboard via location.href as fallback');
-        window.location.href = '/dashboard';
-      }, 500);
+      // The code below won't execute if the location changes
+      console.log('If you see this, the location change did not happen immediately');
     } catch (err: any) {
-      console.error('Login error:', err);
-      console.error('Response data:', err.response?.data);
+      console.error('Login error details:', {
+        status: err.response?.status,
+        statusText: err.response?.statusText,
+        data: err.response?.data,
+        message: err.message
+      });
       
       if (err.response?.status === 429) {
         // Extract lockout end time from error message
