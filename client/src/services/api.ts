@@ -152,6 +152,11 @@ const apiService = (() => {
       return response.data;
     },
     
+    checkVerificationStatus: async () => {
+      const response = await api.get('/auth/verification-status');
+      return response.data;
+    },
+    
     updateProfile: async (userData: any) => {
       try {
         console.log('API service - updateProfile raw data:', userData);
@@ -431,12 +436,11 @@ const apiService = (() => {
   };
 })();
 
-// Export individual APIs
+// Create an export of the auth API for direct import
 export const authAPI = apiService.auth;
-export const playlistAPI = apiService.playlists;
-export const settingsAPI = apiService.settings;
+export const playlistsAPI = apiService.playlists;
 export const pomodoroAPI = apiService.pomodoro;
-export const themeAPI = apiService.themes;
-export const api = apiService.api;
+export const themesAPI = apiService.themes;
 
+// Default export of the full service
 export default apiService; 
