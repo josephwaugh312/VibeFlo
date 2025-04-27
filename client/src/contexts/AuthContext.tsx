@@ -19,12 +19,19 @@ interface User {
   // ... any other existing fields
 }
 
+interface LoginResponse {
+  success: boolean;
+  needsVerification?: boolean;
+  email?: string;
+  message?: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   setUser: (user: User | null) => void;
-  login: (identifier: string, password: string, rememberMe: boolean) => Promise<void>;
+  login: (identifier: string, password: string, rememberMe: boolean) => Promise<LoginResponse>;
   register: (name: string, username: string, email: string, password: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<User>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -37,7 +44,7 @@ const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
   isLoading: true,
   setUser: () => {},
-  login: async () => {},
+  login: async () => ({ success: false }),
   register: async () => {},
   updateProfile: async () => ({} as User),
   changePassword: async () => {},
