@@ -160,4 +160,45 @@ router.get('/github/callback',
   }
 );
 
+/**
+ * @route   GET /api/auth/verification-status
+ * @desc    Check if user's email is verified
+ * @access  Private
+ */
+router.get('/verification-status', authenticateToken, authController.checkVerificationStatus);
+
+/**
+ * @route   GET /api/auth/test-verification
+ * @desc    Test email verification token generation
+ * @access  Public - FOR TESTING ONLY
+ */
+router.get('/test-verification', async (req, res) => {
+  try {
+    // Generate verification token
+    const crypto = require('crypto');
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpiry = new Date();
+    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // 24 hour expiry
+
+    // Generate verification URL
+    const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
+    
+    // Return verification information for testing
+    res.status(200).json({
+      message: 'Verification test - DO NOT USE IN PRODUCTION',
+      token: verificationToken,
+      expires: tokenExpiry,
+      verificationUrl,
+      clientUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+      emailConfig: {
+        sendgridConfigured: !!process.env.SENDGRID_API_KEY,
+        fromEmail: process.env.EMAIL_FROM || 'noreply@vibeflo.app'
+      }
+    });
+  } catch (error) {
+    console.error('Error in test verification:', error);
+    res.status(500).json({ message: 'Server error during test verification' });
+  }
+});
+
 export default router; 
