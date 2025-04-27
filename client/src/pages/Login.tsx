@@ -15,14 +15,34 @@ import {
   CircularProgress,
   Checkbox,
   FormControlLabel,
-  Stack
+  Stack,
+  SvgIcon
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { API_BASE_URL } from '../config';
-import GoogleIcon from '../assets/icons/google.svg';
-import GithubIcon from '../assets/icons/github.svg';
-import FacebookIcon from '../assets/icons/facebook.svg';
 import { useTheme } from '../context/ThemeContext';
+
+// SVG Icon components
+const GoogleIcon = (props) => (
+  <SvgIcon {...props} viewBox="0 0 24 24">
+    <path fill="#4285F4" d="M23.745 12.27c0-.79-.07-1.54-.19-2.27h-11.3v4.51h6.47c-.29 1.48-1.14 2.73-2.4 3.58v3h3.86c2.26-2.09 3.56-5.17 3.56-8.82z"/>
+    <path fill="#34A853" d="M12.255 24c3.24 0 5.95-1.08 7.93-2.91l-3.86-3c-1.08.72-2.45 1.16-4.07 1.16-3.13 0-5.78-2.11-6.73-4.96h-3.98v3.09c1.97 3.92 6.02 6.62 10.71 6.62z"/>
+    <path fill="#FBBC05" d="M5.525 14.29c-.25-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29v-3.09h-3.98c-.8 1.61-1.26 3.43-1.26 5.38s.46 3.77 1.26 5.38l3.98-3.09z"/>
+    <path fill="#EA4335" d="M12.255 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42c-2.07-1.94-4.78-3.13-8.02-3.13-4.69 0-8.74 2.7-10.71 6.62l3.98 3.09c.95-2.85 3.6-4.96 6.73-4.96z"/>
+  </SvgIcon>
+);
+
+const GithubIcon = (props) => (
+  <SvgIcon {...props} viewBox="0 0 24 24">
+    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
+  </SvgIcon>
+);
+
+const FacebookIcon = (props) => (
+  <SvgIcon {...props} viewBox="0 0 24 24">
+    <path d="M22 12c0-5.523-4.477-10-10-10s-10 4.477-10 10c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54v-2.891h2.54v-2.203c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562v1.876h2.773l-.443 2.891h-2.33v6.988c4.781-.75 8.437-4.887 8.437-9.878z" />
+  </SvgIcon>
+);
 
 const Login: React.FC = () => {
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -248,7 +268,7 @@ const Login: React.FC = () => {
             fullWidth
             name="password"
             label="Password"
-            type="password"
+            type={showPassword ? "text" : "password"}
             id="password"
             autoComplete="current-password"
             value={password}
@@ -256,6 +276,19 @@ const Login: React.FC = () => {
               setPassword(e.target.value);
               setError('');
               setResendSuccess(false);
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="toggle password visibility"
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge="end"
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
             }}
           />
           <Button
@@ -286,7 +319,7 @@ const Login: React.FC = () => {
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<img src={GoogleIcon} alt="Google" width="20" />}
+              startIcon={<GoogleIcon />}
               href={`https://vibeflo-api.onrender.com/api/auth/google`}
               sx={{ textTransform: 'none' }}
             >
@@ -296,7 +329,7 @@ const Login: React.FC = () => {
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<img src={GithubIcon} alt="GitHub" width="20" />}
+              startIcon={<GithubIcon />}
               href={`https://vibeflo-api.onrender.com/api/auth/github`}
               sx={{ textTransform: 'none' }}
             >
