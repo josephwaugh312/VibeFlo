@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Container, CssBaseline, Toolbar, Typography, Button } from '@mui/material';
 import { Outlet, useNavigate } from 'react-router-dom';
-import TopNavigation from '../components/TopNavigation';
+import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -45,7 +45,7 @@ const MainLayout = () => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <CssBaseline />
-      <TopNavigation />
+      <Navbar />
       <VerificationBanner />
       <Box 
         component="main" 
