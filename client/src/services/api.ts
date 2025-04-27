@@ -436,11 +436,15 @@ const apiService = (() => {
   };
 })();
 
-// Create an export of the auth API for direct import
+// Create exports of API parts for direct import
 export const authAPI = apiService.auth;
+export const playlistAPI = apiService.playlists; // For backward compatibility
 export const playlistsAPI = apiService.playlists;
+export const settingsAPI = apiService.settings;
 export const pomodoroAPI = apiService.pomodoro;
+export const themeAPI = apiService.themes;  // For backward compatibility
 export const themesAPI = apiService.themes;
+export const api = apiService.api;  // Expose the raw api instance
 
 // Default export of the full service
 export default apiService; 
