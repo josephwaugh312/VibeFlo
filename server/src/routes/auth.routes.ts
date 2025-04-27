@@ -5,6 +5,8 @@ import { authenticateToken } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 import { db } from '../db';
 import { User } from '../models/user.model';
+import { Request, Response } from 'express';
+import { pool } from '../db';
 
 const router = express.Router();
 
@@ -224,5 +226,36 @@ router.get('/test-verification', async (req, res) => {
     res.status(500).json({ message: 'Server error during test verification' });
   }
 });
+
+// Temporary endpoint to check if a user exists
+// IMPORTANT: THIS IS FOR DEBUGGING ONLY AND SHOULD BE REMOVED AFTER USE
+router.get('/check-user-exists/:email', 
+  async (req: Request, res: Response) => {
+    try {
+      const email = req.params.email;
+      
+      // Check if user exists
+      const result = await pool.query('SELECT id, email, name, username, is_verified FROM users WHERE email = $1', [email]);
+      
+      if (result.rows.length === 0) {
+        return res.json({ exists: false, message: 'User does not exist' });
+      }
+      
+      // Return a sanitized version with minimal information
+      return res.json({ 
+        exists: true, 
+        user: {
+          email: result.rows[0].email,
+          name: result.rows[0].name,
+          username: result.rows[0].username,
+          is_verified: result.rows[0].is_verified
+        }
+      });
+    } catch (error) {
+      console.error('Error checking user:', error);
+      return res.status(500).json({ message: 'Server error' });
+    }
+  }
+);
 
 export default router; 
