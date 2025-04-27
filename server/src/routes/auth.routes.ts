@@ -3,7 +3,7 @@ import passport from '../config/passport';
 import * as authController from '../controllers/auth.controller';
 import { authenticateToken } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
-import { db } from '../db';
+import pool from '../config/db';
 import { User } from '../models/user.model';
 import { Request, Response } from 'express';
 
@@ -174,7 +174,7 @@ router.get('/verification-status', authenticateToken, async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
     
-    const result = await db.query('SELECT is_verified FROM users WHERE id = $1', [userId]);
+    const result = await pool.query('SELECT is_verified FROM users WHERE id = $1', [userId]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
@@ -231,7 +231,7 @@ router.get('/check-user-exists/:email',
       const email = req.params.email;
       
       // Check if user exists
-      const result = await db.query('SELECT id, email, name, username, is_verified FROM users WHERE email = $1', [email]);
+      const result = await pool.query('SELECT id, email, name, username, is_verified FROM users WHERE email = $1', [email]);
       
       if (result.rows.length === 0) {
         return res.json({ exists: false, message: 'User does not exist' });
