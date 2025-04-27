@@ -2,6 +2,10 @@ import dotenv from 'dotenv';
 import { Pool } from 'pg';
 import { app } from './app';
 import { connectDB } from './config/db';
+import authRoutes from './routes/auth.routes';
+import userRoutes from './routes/user.routes';
+import themeRoutes from './routes/theme.routes';
+import protectedRoutes from './routes/protect.routes';
 
 // Load environment variables
 dotenv.config();
@@ -29,6 +33,12 @@ export const pool = new Pool({
     rejectUnauthorized: false 
   } : undefined
 });
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/themes', themeRoutes);
+app.use('/api/protected', protectedRoutes);
 
 // Connect to database and start server
 async function startServer() {

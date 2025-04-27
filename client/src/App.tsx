@@ -2,6 +2,7 @@ import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, CssBaseline, Box } from '@mui/material';
 import { theme } from './theme';
+import './App.css'; // Import App CSS 
 import Navbar from './components/Navbar';
 import ThemeBackground from './components/ThemeBackground';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -12,6 +13,8 @@ import PrivateRoute from './components/PrivateRoute';
 import { MusicPlayer } from './components/music';
 import { MusicPlayerProvider } from './contexts/MusicPlayerContext';
 import { Toaster } from 'react-hot-toast';
+import VerifyEmail from './pages/VerifyEmail';
+import ResendVerification from './pages/ResendVerification';
 
 // Add type declaration for the window object
 declare global {
@@ -155,6 +158,8 @@ const AppRoutes = () => {
         <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/verify-email/:token" element={<VerifyEmail />} />
+        <Route path="/resend-verification" element={<ResendVerification />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>

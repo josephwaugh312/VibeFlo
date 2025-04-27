@@ -207,6 +207,16 @@ const apiService = (() => {
       const response = await api.post('/auth/reset-password', { token, newPassword });
       return response.data;
     },
+    
+    verifyEmail: async (token: string) => {
+      const response = await api.get(`/auth/verify-email/${token}`);
+      return response.data;
+    },
+    
+    resendVerificationEmail: async (email: string) => {
+      const response = await api.post('/auth/resend-verification', { email });
+      return response.data;
+    },
   };
 
   // Playlist API methods
