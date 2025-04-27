@@ -1,28 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
-import { User } from '../types';
+import { db } from '../db';
+import pool from '../config/db';
 
 /**
  * Middleware to check if a user's email is verified
- * This should be used after the authentication middleware
+ * This will prevent access to protected routes if email is not verified
  */
-export const isVerified = (req: Request, res: Response, next: NextFunction) => {
-  // First check if user is authenticated and attached to request
-  if (!req.user) {
-    return res.status(401).json({ 
-      message: 'Authentication required. Please log in.',
-      code: 'AUTH_REQUIRED'
-    });
+export const verifiedMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  // Check if user's email is verified
-  const user = req.user as User;
-  if (!user.is_verified) {
-    return res.status(403).json({ 
-      message: 'Email verification required. Please verify your email to access this feature.',
-      code: 'EMAIL_VERIFICATION_REQUIRED'
-    });
-  }
+  try {
+    // Check if the user's email is verified using pool instead of db
+    const result = await pool.query(
+      'SELECT is_verified FROM users WHERE id = $1',
+      [req.user.id]
+    );
 
-  // User is verified, proceed to the next middleware
-  next();
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const user = result.rows[0];
+    
+    // If email is not verified, prevent access to protected routes
+    if (!user.is_verified) {
+      return res.status(403).json({ 
+        message: 'Email not verified',
+        verificationRequired: true 
+      });
+    }
+
+    // Email is verified, proceed to the next middleware/route handler
+    next();
+  } catch (error) {
+    console.error('Error in verified middleware:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
 }; 
