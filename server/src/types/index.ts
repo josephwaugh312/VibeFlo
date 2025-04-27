@@ -6,8 +6,13 @@ export interface User {
   email: string;
   password?: string;
   profile_picture?: string;
+  avatar_url?: string;
   google_id?: string;
   facebook_id?: string;
+  github_id?: string;
+  is_verified?: boolean;
+  is_admin?: boolean;
+  bio?: string;
   created_at?: Date;
   updated_at?: Date;
 }
