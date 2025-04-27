@@ -2,6 +2,9 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import apiService, { authAPI } from '../services/api';
 
+// Get the API base URL from environment or use default
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+
 interface User {
   id: string;
   name: string;
@@ -21,7 +24,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   setUser: (user: User | null) => void;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<void>;
+  login: (identifier: string, password: string, rememberMe: boolean) => Promise<void>;
   register: (name: string, username: string, email: string, password: string) => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<User>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
@@ -47,6 +50,8 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // On mount, check if there's a token and try to get the user
   useEffect(() => {
@@ -62,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const userData = await authAPI.getCurrentUser();
           console.log('User authenticated successfully:', userData);
           setUser(userData);
+          setIsAuthenticated(true);
         } catch (error: any) {
           console.error('Token validation failed:', error);
           
@@ -74,6 +80,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.removeItem('token');
             apiService.setToken(null);
             setUser(null);
+            setIsAuthenticated(false);
             toast.error('Session expired. Please log in again.');
           } else {
             // For network errors or other server issues, keep the user logged in
@@ -94,6 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         console.log('No authentication token found');
         setUser(null);
+        setIsAuthenticated(false);
       }
       
       setIsLoading(false);
@@ -109,27 +117,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user]);
 
-  const login = async (email: string, password: string, rememberMe = true) => {
+  const login = async (identifier: string, password: string, rememberMe: boolean = false) => {
     try {
       setIsLoading(true);
-      const response = await authAPI.login(email, password);
+      setError(null);
       
-      if (response.token) {
+      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: identifier,
+          password,
+        }),
+        credentials: 'include',
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setUser(data.user);
+        setIsAuthenticated(true);
+        localStorage.setItem('isAuthenticated', 'true');
+        
         if (rememberMe) {
-          // Only store token if rememberMe is true
-          apiService.setToken(response.token);
+          localStorage.setItem('rememberMe', 'true');
         } else {
-          // For session-only persistence, we still set the token in API
-          // but don't store it in localStorage
-          apiService.setToken(response.token);
+          localStorage.removeItem('rememberMe');
         }
         
-        setUser(response.user);
-        toast.success(`Welcome back, ${response.user.name}!`);
+        return { success: true };
+      } else {
+        // Handle specific error cases
+        if (data.error === 'Email not verified') {
+          return { 
+            success: false, 
+            needsVerification: true, 
+            email: identifier,
+            message: data.message || 'Please verify your email before logging in'
+          };
+        }
+        
+        setError(data.message || 'Login failed');
+        return { 
+          success: false, 
+          message: data.message || 'Login failed'
+        };
       }
-    } catch (error: any) {
-      console.error('Login failed:', error);
-      toast.error(error.response?.data?.message || 'Login failed. Please try again later.');
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Connection error. Please try again.');
+      return { 
+        success: false, 
+        message: 'Connection error. Please try again.'
+      };
     } finally {
       setIsLoading(false);
     }
@@ -209,7 +251,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <AuthContext.Provider value={{
       user,
-      isAuthenticated: !!user,
+      isAuthenticated,
       isLoading,
       setUser,
       login,
