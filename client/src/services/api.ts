@@ -446,5 +446,8 @@ export const themeAPI = apiService.themes;  // For backward compatibility
 export const themesAPI = apiService.themes;
 export const api = apiService.api;  // Expose the raw api instance
 
+// Export individual auth functions for direct import
+export const { verifyEmail, resendVerificationEmail } = apiService.auth;
+
 // Default export of the full service
 export default apiService; 
