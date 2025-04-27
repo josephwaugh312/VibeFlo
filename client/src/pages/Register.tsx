@@ -6,6 +6,7 @@ import { authAPI } from '../services/api';
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    name: '',
     username: '',
     email: '',
     password: '',
@@ -19,6 +20,7 @@ const Register: React.FC = () => {
   const validate = () => {
     const newErrors: {[key: string]: string} = {};
     
+    if (!formData.name) newErrors.name = 'Name is required';
     if (!formData.username) newErrors.username = 'Username is required';
     if (!formData.email) newErrors.email = 'Email is required';
     if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email is invalid';
@@ -44,7 +46,7 @@ const Register: React.FC = () => {
     setSuccess('');
     
     try {
-      await authAPI.register(formData.username, formData.email, formData.password);
+      await authAPI.register(formData.name, formData.username, formData.email, formData.password);
       setSuccess('Registration successful! Please check your email to verify your account. You will be redirected to the login page in a few seconds.');
       console.log('Registration successful, verification email should be sent');
       
@@ -80,6 +82,19 @@ const Register: React.FC = () => {
           </Typography>
           
           <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              margin="normal"
+              variant="outlined"
+              error={!!errors.name}
+              helperText={errors.name}
+              disabled={isLoading}
+            />
+            
             <TextField
               fullWidth
               label="Username"
