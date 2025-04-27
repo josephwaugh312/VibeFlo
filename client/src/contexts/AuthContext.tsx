@@ -12,6 +12,7 @@ interface User {
   created_at?: string;
   updated_at?: string;
   is_admin?: boolean;
+  is_verified?: boolean;
   // ... any other existing fields
 }
 

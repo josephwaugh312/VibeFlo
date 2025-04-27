@@ -10,7 +10,7 @@ const VerificationBanner = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   
-  if (!user || user.is_verified) return null;
+  if (!user || user.is_verified === true) return null;
   
   return (
     <Box 
