@@ -19,7 +19,7 @@ import {
   SvgIcon
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { API_BASE_URL } from '../config';
+import { authAPI } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
 
 // SVG Icon components
@@ -110,6 +110,7 @@ const Login: React.FC = () => {
     setError('');
     setIsLoading(true);
     setNeedsVerification(false);
+    setResendSuccess(false);
     console.log('Login attempt with:', { loginIdentifier, rememberMe });
 
     try {
@@ -134,7 +135,7 @@ const Login: React.FC = () => {
         if (response.needsVerification) {
           setVerificationEmail(response.email || loginIdentifier);
           setNeedsVerification(true);
-          setError('Please verify your email before logging in');
+          setError('Email verification required');
         } else {
           setError(response.message || 'Login failed. Please check your credentials.');
         }
@@ -174,24 +175,16 @@ const Login: React.FC = () => {
     
     try {
       setResendingVerification(true);
-      const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: verificationEmail }),
-      });
+      const response = await authAPI.resendVerificationEmail(verificationEmail);
       
-      const data = await response.json();
-      
-      if (response.ok) {
+      if (response.success) {
         setResendSuccess(true);
         setError('');
       } else {
-        setError(data.message || 'Failed to resend verification email');
+        setError(response.message || 'Failed to resend verification email');
       }
-    } catch (err) {
-      setError('An error occurred while resending the verification email');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'An error occurred while resending the verification email');
     } finally {
       setResendingVerification(false);
     }
@@ -206,11 +199,11 @@ const Login: React.FC = () => {
         
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
+            {needsVerification ? 'Your email address needs to be verified before you can log in.' : error}
             {needsVerification && verificationEmail && (
               <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
-                  Your email address needs to be verified before you can log in.
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  We've sent a verification email to <strong>{verificationEmail}</strong>. Please check your inbox and spam folder.
                 </Typography>
                 <Button 
                   onClick={handleResendVerification}
@@ -241,7 +234,7 @@ const Login: React.FC = () => {
         
         {resendSuccess && (
           <Alert severity="success" sx={{ mb: 2 }}>
-            Verification email sent! Please check your inbox and spam folder.
+            Verification email sent to <strong>{verificationEmail}</strong>! Please check your inbox and spam folder.
           </Alert>
         )}
         

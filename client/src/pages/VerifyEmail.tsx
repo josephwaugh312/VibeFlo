@@ -1,389 +1,141 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { Container, Typography, Box, Button, Paper, TextField, CircularProgress, Alert } from '@mui/material';
 import { verifyEmail, resendVerificationEmail } from '../services/api';
-import { 
-  Box, 
-  Typography, 
-  Button, 
-  CircularProgress, 
-  Alert, 
-  Paper,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText
-} from '@mui/material';
-import { useTheme } from '../context/ThemeContext';
-import { EMAIL_VERIFICATION_STATUSES } from '../constants';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import ErrorIcon from '@mui/icons-material/Error';
-import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import HelpIcon from '@mui/icons-material/Help';
 
 const VerifyEmail: React.FC = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
-  const [status, setStatus] = useState<string>(EMAIL_VERIFICATION_STATUSES.VERIFYING);
+  const [verifying, setVerifying] = useState<boolean>(true);
+  const [success, setSuccess] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState<string>('');
-  const [isResending, setIsResending] = useState(false);
-  const [resendMessage, setResendMessage] = useState('');
-  const { currentTheme } = useTheme();
+  const [resendSuccess, setResendSuccess] = useState<boolean>(false);
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [resending, setResending] = useState<boolean>(false);
 
   useEffect(() => {
-    const verify = async () => {
-      if (!token) {
-        setStatus(EMAIL_VERIFICATION_STATUSES.INVALID);
-        return;
-      }
-
-      try {
-        const response = await verifyEmail(token);
-        if (response.success || response.message === 'Email verified successfully') {
-          setStatus(EMAIL_VERIFICATION_STATUSES.SUCCESS);
-          setEmail(response.email || '');
-          
-          // Store verification status in local storage to use in other parts of the app
-          try {
-            const userData = localStorage.getItem('user');
-            if (userData) {
-              const user = JSON.parse(userData);
-              user.isVerified = true;
-              localStorage.setItem('user', JSON.stringify(user));
-            }
-          } catch (e) {
-            console.error('Error updating local storage:', e);
-          }
-        } else {
-          setStatus(EMAIL_VERIFICATION_STATUSES.FAILED);
-          if (response.email) {
-            setEmail(response.email);
-          }
-        }
-      } catch (error: any) {
-        console.error('Verification error:', error);
-        setStatus(EMAIL_VERIFICATION_STATUSES.FAILED);
-        // Try to extract email from the error if possible
-        if (error.response?.data?.email) {
-          setEmail(error.response.data.email);
-        }
-      }
-    };
-
-    verify();
+    if (token) {
+      verifyEmailToken();
+    } else {
+      setVerifying(false);
+      setError('No verification token found in URL');
+    }
   }, [token]);
 
-  const handleResendVerification = async () => {
-    if (!email) return;
-    
-    setIsResending(true);
-    setResendMessage('');
-    
+  const verifyEmailToken = async () => {
     try {
-      const response = await resendVerificationEmail(email);
-      if (response.success || response.message === 'Verification email sent successfully') {
-        setResendMessage('Verification email sent. Please check your inbox and spam folder.');
-      } else {
-        setResendMessage(response.message || 'Failed to resend verification email.');
-      }
-    } catch (error: any) {
-      console.error('Error resending verification:', error);
-      setResendMessage(error.response?.data?.message || 'Failed to resend verification email. Please try again later.');
+      setVerifying(true);
+      await verifyEmail(token!);
+      setSuccess(true);
+      setError(null);
+    } catch (err: any) {
+      setSuccess(false);
+      setError(err.response?.data?.message || 'Failed to verify email. Please try again or request a new verification link.');
     } finally {
-      setIsResending(false);
+      setVerifying(false);
     }
   };
 
-  const handleLogin = () => {
-    navigate('/login');
-  };
+  const handleResendVerification = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      setResendError('Please enter your email address');
+      return;
+    }
 
-  const handleGoHome = () => {
-    navigate('/');
-  };
-
-  const renderContent = () => {
-    switch (status) {
-      case EMAIL_VERIFICATION_STATUSES.VERIFYING:
-        return (
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <CircularProgress size={60} />
-            <Typography variant="h5" sx={{ mt: 3 }}>
-              Verifying your email...
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-              This will only take a moment
-            </Typography>
-          </Box>
-        );
-      case EMAIL_VERIFICATION_STATUSES.SUCCESS:
-        return (
-          <Box sx={{ width: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-              <MarkEmailReadIcon sx={{ fontSize: 80, color: 'success.main' }} />
-            </Box>
-            
-            <Alert severity="success" sx={{ mb: 3, width: '100%' }}>
-              Your email has been successfully verified!
-            </Alert>
-            
-            <Typography variant="h5" gutterBottom align="center">
-              Thank you for verifying your email address
-            </Typography>
-            
-            <Typography variant="body1" paragraph align="center">
-              You now have full access to all features of VibeFlo.
-            </Typography>
-            
-            <List sx={{ mb: 4 }}>
-              <ListItem>
-                <ListItemIcon>
-                  <CheckCircleIcon color="success" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Create personalized music playlists" 
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <CheckCircleIcon color="success" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Customize your theme and experience" 
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <CheckCircleIcon color="success" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Access all premium features" 
-                />
-              </ListItem>
-            </List>
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={handleLogin}
-                fullWidth
-              >
-                Go to Login
-              </Button>
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                onClick={handleGoHome}
-                fullWidth
-              >
-                Go to Home
-              </Button>
-            </Box>
-          </Box>
-        );
-      case EMAIL_VERIFICATION_STATUSES.FAILED:
-        return (
-          <Box sx={{ width: '100%' }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
-              <ErrorIcon sx={{ fontSize: 80, color: 'error.main' }} />
-            </Box>
-            
-            <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
-              Verification failed. The link may have expired or is invalid.
-            </Alert>
-            
-            <Typography variant="h5" gutterBottom align="center">
-              Unable to verify your email
-            </Typography>
-            
-            <Typography variant="body1" paragraph>
-              There was a problem verifying your email address. This could be because:
-            </Typography>
-            
-            <List sx={{ mb: 3 }}>
-              <ListItem>
-                <ListItemIcon>
-                  <HelpIcon color="error" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="The verification link has expired" 
-                  secondary="Verification links are valid for 24 hours"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <HelpIcon color="error" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="The verification link is invalid" 
-                  secondary="The link may be incomplete or corrupted"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <HelpIcon color="error" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Your email was already verified" 
-                  secondary="You may have clicked the link more than once"
-                />
-              </ListItem>
-            </List>
-            
-            <Divider sx={{ my: 3 }} />
-            
-            {email ? (
-              <Box sx={{ mb: 3 }}>
-                <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
-                  Need a new verification link?
-                </Typography>
-                <Button 
-                  variant="contained" 
-                  color="primary" 
-                  onClick={handleResendVerification}
-                  disabled={isResending}
-                  fullWidth
-                  sx={{ mb: 2 }}
-                  startIcon={isResending ? <CircularProgress size={20} color="inherit" /> : null}
-                >
-                  {isResending ? 'Sending...' : 'Resend Verification Email'}
-                </Button>
-                {resendMessage && (
-                  <Alert 
-                    severity={resendMessage.includes('sent') ? 'success' : 'error'} 
-                    sx={{ mt: 2, width: '100%' }}
-                  >
-                    {resendMessage}
-                  </Alert>
-                )}
-              </Box>
-            ) : (
-              <Box sx={{ mb: 3 }}>
-                <Button
-                  variant="contained"
-                  color="primary"
-                  component={Link}
-                  to="/resend-verification"
-                  fullWidth
-                  sx={{ mb: 2 }}
-                >
-                  Go to Verification Page
-                </Button>
-              </Box>
-            )}
-            
-            <Box sx={{ display: 'flex', gap: 2 }}>
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                onClick={handleLogin}
-                fullWidth
-              >
-                Go to Login
-              </Button>
-              <Button 
-                variant="outlined" 
-                color="secondary" 
-                onClick={handleGoHome}
-                fullWidth
-              >
-                Go to Home
-              </Button>
-            </Box>
-          </Box>
-        );
-      case EMAIL_VERIFICATION_STATUSES.INVALID:
-        return (
-          <Box sx={{ width: '100%' }}>
-            <Alert severity="error" sx={{ mb: 3, width: '100%' }}>
-              Invalid verification request.
-            </Alert>
-            <Typography variant="h5" gutterBottom align="center">
-              Invalid Verification Request
-            </Typography>
-            <Typography variant="body1" gutterBottom>
-              No verification token was provided or the URL is incomplete. 
-              Please use the complete verification link from your email or request a new verification email.
-            </Typography>
-            <Box sx={{ mt: 3 }}>
-              <Button 
-                variant="contained" 
-                color="primary"
-                component={Link}
-                to="/resend-verification"
-                fullWidth
-                sx={{ mb: 2 }}
-              >
-                Request New Verification Email
-              </Button>
-              <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  onClick={handleLogin}
-                  fullWidth
-                >
-                  Go to Login
-                </Button>
-                <Button 
-                  variant="outlined" 
-                  color="secondary" 
-                  onClick={handleGoHome}
-                  fullWidth
-                >
-                  Go to Home
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        );
-      default:
-        return null;
+    try {
+      setResending(true);
+      setResendError(null);
+      await resendVerificationEmail(email);
+      setResendSuccess(true);
+    } catch (err: any) {
+      setResendSuccess(false);
+      setResendError(err.response?.data?.message || 'Failed to resend verification email. Please try again later.');
+    } finally {
+      setResending(false);
     }
   };
 
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '80vh',
-        p: 3,
-        background: currentTheme?.background?.gradient || currentTheme?.background?.color || 'inherit',
-        color: currentTheme?.textColor || 'inherit',
-      }}
-    >
-      <Paper
-        elevation={3}
-        sx={{
-          p: 4,
-          borderRadius: 2,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          maxWidth: 500,
-          width: '100%',
-        }}
-      >
+    <Container maxWidth="sm">
+      <Box sx={{ my: 4, textAlign: 'center' }}>
         <Typography variant="h4" component="h1" gutterBottom>
           Email Verification
         </Typography>
-        <Box
-          sx={{
-            mt: 2,
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          {renderContent()}
-        </Box>
-      </Paper>
-    </Box>
+
+        {verifying ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        ) : success ? (
+          <Paper elevation={3} sx={{ p: 4, bgcolor: 'background.paper' }}>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              Your email has been verified successfully!
+            </Alert>
+            <Typography variant="body1" paragraph>
+              Thank you for verifying your email address. You can now use all features of the application.
+            </Typography>
+            <Button
+              fullWidth
+              variant="contained"
+              color="primary"
+              onClick={() => navigate('/login')}
+              sx={{ mt: 2 }}
+            >
+              Go to Login
+            </Button>
+          </Paper>
+        ) : (
+          <Paper elevation={3} sx={{ p: 4, bgcolor: 'background.paper' }}>
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <Typography variant="body1" paragraph>
+              We couldn't verify your email with the provided token. The token might be expired or invalid.
+            </Typography>
+            <Typography variant="body1" paragraph>
+              Please request a new verification link below:
+            </Typography>
+            
+            <Box component="form" onSubmit={handleResendVerification} sx={{ mt: 2 }}>
+              {resendSuccess && (
+                <Alert severity="success" sx={{ mb: 2 }}>
+                  Verification email sent successfully! Please check your inbox.
+                </Alert>
+              )}
+              {resendError && <Alert severity="error" sx={{ mb: 2 }}>{resendError}</Alert>}
+              
+              <TextField
+                fullWidth
+                label="Email Address"
+                variant="outlined"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                type="email"
+                required
+                sx={{ mb: 2 }}
+              />
+              
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                color="primary"
+                disabled={resending}
+                sx={{ mb: 2 }}
+              >
+                {resending ? <CircularProgress size={24} /> : 'Resend Verification Email'}
+              </Button>
+              
+              <Link to="/login" style={{ textDecoration: 'none' }}>
+                <Button fullWidth variant="outlined">
+                  Back to Login
+                </Button>
+              </Link>
+            </Box>
+          </Paper>
+        )}
+      </Box>
+    </Container>
   );
 };
 
