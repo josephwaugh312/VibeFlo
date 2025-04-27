@@ -1,9 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { 
+  TextField, 
+  Button, 
+  Typography, 
+  Container, 
+  Box, 
+  InputAdornment, 
+  IconButton,
+  Paper,
+  Divider,
+  Alert,
+  CircularProgress,
+  Checkbox,
+  FormControlLabel,
+  Stack
+} from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { API_BASE_URL } from '../config';
+import GoogleIcon from '../assets/icons/google.svg';
+import GithubIcon from '../assets/icons/github.svg';
+import GoogleIconSVG from '../assets/icons/google.svg';
+import FacebookIcon from '../assets/icons/facebook.svg';
+import { useTheme } from '../contexts/ThemeContext';
 
 // SVG Icons for OAuth providers
-const GoogleIcon = () => (
+const GoogleIconSVG = () => (
   <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
     <g transform="matrix(1, 0, 0, 1, 27.009001, -39.238998)">
       <path fill="#4285F4" d="M -3.264 51.509 C -3.264 50.719 -3.334 49.969 -3.454 49.239 L -14.754 49.239 L -14.754 53.749 L -8.284 53.749 C -8.574 55.229 -9.424 56.479 -10.684 57.329 L -10.684 60.329 L -6.824 60.329 C -4.564 58.239 -3.264 55.159 -3.264 51.509 Z" />
@@ -20,12 +43,6 @@ const FacebookIcon = () => (
   </svg>
 );
 
-const GitHubIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" fill="currentColor" />
-  </svg>
-);
-
 const Login: React.FC = () => {
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -35,8 +52,14 @@ const Login: React.FC = () => {
   const [lockoutEndTime, setLockoutEndTime] = useState<Date | null>(null);
   const [timeLeft, setTimeLeft] = useState<string>('');
   const [showFacebookNotice, setShowFacebookNotice] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login: authLogin } = useAuth();
+  const { currentTheme } = useTheme();
 
   // Get the API base URL from environment or use default
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
@@ -85,22 +108,36 @@ const Login: React.FC = () => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+    setNeedsVerification(false);
     console.log('Login attempt with:', { loginIdentifier, rememberMe });
 
     try {
       console.log('About to call login API...');
       // Use the login function from AuthContext directly with rememberMe
-      await login(loginIdentifier, password, rememberMe);
-      console.log('Login successful, navigating to dashboard');
+      const response = await authLogin(loginIdentifier, password, rememberMe);
+      console.log('Login response:', response);
       
-      // Debug current path
-      console.log('Current path before navigation:', window.location.pathname);
-      
-      // Try to force a page reload to dashboard
-      window.location.href = '/dashboard';
-      
-      // The code below won't execute if the location changes
-      console.log('If you see this, the location change did not happen immediately');
+      if (response.success) {
+        console.log('Login successful, navigating to dashboard');
+        
+        // Debug current path
+        console.log('Current path before navigation:', window.location.pathname);
+        
+        // Try to force a page reload to dashboard
+        window.location.href = '/dashboard';
+        
+        // The code below won't execute if the location changes
+        console.log('If you see this, the location change did not happen immediately');
+      } else {
+        // Check if the account needs verification
+        if (response.needsVerification) {
+          setVerificationEmail(response.email || loginIdentifier);
+          setNeedsVerification(true);
+          setError('Please verify your email before logging in');
+        } else {
+          setError(response.message || 'Login failed. Please check your credentials.');
+        }
+      }
     } catch (err: any) {
       console.error('Login error details:', {
         status: err.response?.status,
@@ -131,156 +168,174 @@ const Login: React.FC = () => {
     setShowFacebookNotice(true);
   };
 
+  const handleResendVerification = async () => {
+    if (!verificationEmail) return;
+    
+    try {
+      setResendingVerification(true);
+      const response = await fetch(`${API_BASE_URL}/api/auth/resend-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: verificationEmail }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setResendSuccess(true);
+        setError('');
+      } else {
+        setError(data.message || 'Failed to resend verification email');
+      }
+    } catch (err) {
+      setError('An error occurred while resending the verification email');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-gray-800 bg-opacity-80 p-8 rounded-lg shadow-lg space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-white">
-            Sign in to your account
-          </h2>
-          <p className="mt-2 text-center text-sm text-white/70">
-            Or{' '}
-            <Link to="/register" className="font-medium text-purple-300 hover:text-white">
-              create a new account
-            </Link>
-          </p>
-        </div>
+    <Container maxWidth="sm">
+      <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
+        <Typography variant="h4" component="h1" align="center" gutterBottom>
+          Log In
+        </Typography>
+        
         {error && (
-          <div className="bg-red-900/70 border border-red-500 text-white px-4 py-3 rounded-lg shadow-lg relative" role="alert">
-            <span className="block sm:inline">{error}</span>
-            {lockoutEndTime && (
-              <div className="mt-2 text-sm">
-                Time remaining: {timeLeft}
-              </div>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+            {needsVerification && verificationEmail && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1, fontWeight: 'medium' }}>
+                  Your email address needs to be verified before you can log in.
+                </Typography>
+                <Button 
+                  onClick={handleResendVerification}
+                  disabled={resendingVerification}
+                  size="small"
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  startIcon={resendingVerification ? <CircularProgress size={20} color="inherit" /> : null}
+                  sx={{ mb: 1 }}
+                >
+                  {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
+                </Button>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  fullWidth
+                  component={Link}
+                  to={`/resend-verification?email=${encodeURIComponent(verificationEmail)}`}
+                >
+                  Go to Verification Page
+                </Button>
+              </Box>
             )}
-          </div>
+          </Alert>
         )}
-        {showFacebookNotice && (
-          <div className="bg-blue-900/70 border border-blue-500 text-white px-4 py-3 rounded-lg shadow-lg relative animation-fade-in" role="alert">
-            <span className="block sm:inline">Facebook login coming soon!</span>
-          </div>
+        
+        {resendSuccess && (
+          <Alert severity="success" sx={{ mb: 2 }}>
+            Verification email sent! Please check your inbox and spam folder.
+          </Alert>
         )}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit} role="form">
-          <input type="hidden" name="remember" value="true" />
-          <div className="rounded-md shadow-sm -space-y-px">
-            <div>
-              <label htmlFor="email-address" className="sr-only">
-                Email address
-              </label>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                className="appearance-none rounded-t-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-700 placeholder-gray-400 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
-                value={loginIdentifier}
-                onChange={(e) => setLoginIdentifier(e.target.value)}
-                disabled={!!lockoutEndTime}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="sr-only">
-                Password
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                className="appearance-none rounded-b-md relative block w-full px-3 py-2 border border-gray-600 bg-gray-700 placeholder-gray-400 text-white focus:outline-none focus:ring-purple-500 focus:border-purple-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={!!lockoutEndTime}
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember-me"
-                name="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-600 bg-gray-700 rounded"
-              />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-white">
-                Remember me
-              </label>
-            </div>
-
-            <div className="text-sm">
-              <Link to="/forgot-password" className="font-medium text-purple-300 hover:text-white">
-                Forgot your password?
-              </Link>
-            </div>
-          </div>
-
-          <div>
-            <button
-              type="submit"
-              disabled={isLoading || !!lockoutEndTime}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Signing in...' : 'Sign in'}
-            </button>
-          </div>
-        </form>
-
-        {/* OAuth Login Buttons */}
-        <div className="mt-6">
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-gray-800 text-gray-400">Or continue with</span>
-            </div>
-          </div>
-
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            {/* Google Login */}
-            <a
+        
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="email"
+            label="Email Address"
+            name="email"
+            autoComplete="email"
+            autoFocus
+            value={loginIdentifier}
+            onChange={(e) => {
+              setLoginIdentifier(e.target.value);
+              setError('');
+              setResendSuccess(false);
+            }}
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            name="password"
+            label="Password"
+            type="password"
+            id="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => {
+              setPassword(e.target.value);
+              setError('');
+              setResendSuccess(false);
+            }}
+          />
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            sx={{ mt: 3, mb: 2 }}
+            disabled={isLoading || !!lockoutEndTime}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
+          </Button>
+          
+          <Box sx={{ textAlign: 'center', mb: 2 }}>
+            <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
+              <Typography variant="body2" color="primary">
+                Forgot password?
+              </Typography>
+            </Link>
+          </Box>
+          
+          <Divider sx={{ my: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              OR
+            </Typography>
+          </Divider>
+          
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<img src={GoogleIcon} alt="Google" width="20" />}
               href={`https://vibeflo-api.onrender.com/api/auth/google`}
-              className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-white text-sm font-medium text-gray-800 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              data-cy="google-login"
+              sx={{ textTransform: 'none' }}
             >
-              <span className="sr-only">Sign in with Google</span>
-              <GoogleIcon />
-            </a>
-
-            {/* Facebook Login - Now with Coming Soon notice */}
-            <button
-              onClick={handleFacebookClick}
-              className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-[#1877F2] text-sm font-medium text-white hover:bg-[#166FE5] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
-              data-cy="facebook-login"
-            >
-              <span className="sr-only">Sign in with Facebook</span>
-              <FacebookIcon />
-              <span className="absolute -top-1 -right-1 flex h-4 w-4">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-4 w-4 bg-sky-500 text-[0.6rem] text-white flex items-center justify-center font-bold">!</span>
-              </span>
-            </button>
-
-            {/* GitHub Login */}
-            <a
+              Continue with Google
+            </Button>
+            
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<img src={GithubIcon} alt="GitHub" width="20" />}
               href={`https://vibeflo-api.onrender.com/api/auth/github`}
-              className="w-full flex justify-center py-2 px-4 border border-gray-600 rounded-md shadow-sm bg-[#24292e] text-sm font-medium text-white hover:bg-[#2c3339] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              data-cy="github-login"
+              sx={{ textTransform: 'none' }}
             >
-              <span className="sr-only">Sign in with GitHub</span>
-              <GitHubIcon />
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+              Continue with GitHub
+            </Button>
+          </Box>
+          
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+            <Typography variant="body2">
+              Don't have an account?{' '}
+              <Link to="/register" style={{ textDecoration: 'none' }}>
+                <Typography component="span" variant="body2" color="primary">
+                  Sign up
+                </Typography>
+              </Link>
+            </Typography>
+          </Box>
+        </Box>
+      </Paper>
+    </Container>
   );
 };
 
