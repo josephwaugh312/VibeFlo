@@ -14,7 +14,7 @@ import {
   ListItemIcon,
   ListItemText
 } from '@mui/material';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import { EMAIL_VERIFICATION_STATUSES } from '../constants';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorIcon from '@mui/icons-material/Error';
