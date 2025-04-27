@@ -100,8 +100,9 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
       process.env.JWT_SECRET || 'your-secret-key'
     ) as DecodedToken;
     
-    // Check if user exists in the database - Fixed to use proper knex syntax
-    const userResult = await db.select('*').from('users').where({ id: decoded.id }).first();
+    // Check if user exists in the database - Using query method instead of select
+    const result = await db.query('SELECT * FROM users WHERE id = $1', [decoded.id]);
+    const userResult = result.rows[0];
     
     if (!userResult) {
       return res.status(401).json({ message: 'User not found. Please register or log in.' });
