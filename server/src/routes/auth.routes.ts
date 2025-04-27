@@ -5,7 +5,6 @@ import { authenticateToken } from '../middleware/auth';
 import { generateToken } from '../utils/jwt';
 import { db } from '../db';
 import { User } from '../models/user.model';
-import pool from '../config/db';
 
 const router = express.Router();
 
@@ -223,55 +222,6 @@ router.get('/test-verification', async (req, res) => {
   } catch (error) {
     console.error('Error in test verification:', error);
     res.status(500).json({ message: 'Server error during test verification' });
-  }
-});
-
-/**
- * @route   GET /api/auth/check-user/:email
- * @desc    Debug route to check user verification status
- * @access  Public - FOR TESTING ONLY, REMOVE IN PRODUCTION
- */
-router.get('/check-user/:email', async (req, res) => {
-  if (process.env.NODE_ENV === 'production') {
-    // Add an extra check here to make sure only authorized users can access this in production
-    // This is a temporary debug route and should be removed before final deployment
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== 'temporary-debug-key') {
-      return res.status(403).json({ message: 'Unauthorized' });
-    }
-  }
-
-  try {
-    const { email } = req.params;
-    console.log(`Checking user with email: ${email}`);
-    
-    // Query the user
-    const userResult = await pool.query(
-      'SELECT id, email, username, is_verified, created_at, updated_at FROM users WHERE email = $1',
-      [email]
-    );
-    
-    if (userResult.rows.length === 0) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    
-    const user = userResult.rows[0];
-    
-    // Also check if there are any verification tokens for this user
-    const tokenResult = await pool.query(
-      'SELECT id, user_id, expires_at, created_at FROM verification_tokens WHERE user_id = $1',
-      [user.id]
-    );
-    
-    // Return the combined information
-    return res.status(200).json({
-      message: 'User information retrieved',
-      user,
-      verificationTokens: tokenResult.rows,
-    });
-  } catch (error) {
-    console.error('Error checking user:', error);
-    return res.status(500).json({ message: 'Server error', error: error.message });
   }
 });
 
