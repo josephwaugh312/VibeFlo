@@ -1,12 +1,12 @@
 import express from 'express';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { protect } from '../middleware/auth.middleware';
 import { verifiedMiddleware } from '../middleware/verified.middleware';
 
 // Initialize router
 const router = express.Router();
 
 // Apply authentication middleware to all routes in this router
-router.use(authMiddleware);
+router.use(protect);
 
 // Apply email verification middleware to all routes in this router
 router.use(verifiedMiddleware);

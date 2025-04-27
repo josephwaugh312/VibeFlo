@@ -6,7 +6,6 @@ import { generateToken } from '../utils/jwt';
 import { db } from '../db';
 import { User } from '../models/user.model';
 import { Request, Response } from 'express';
-import { pool } from '../db';
 
 const router = express.Router();
 
@@ -235,7 +234,7 @@ router.get('/check-user-exists/:email',
       const email = req.params.email;
       
       // Check if user exists
-      const result = await pool.query('SELECT id, email, name, username, is_verified FROM users WHERE email = $1', [email]);
+      const result = await db.query('SELECT id, email, name, username, is_verified FROM users WHERE email = $1', [email]);
       
       if (result.rows.length === 0) {
         return res.json({ exists: false, message: 'User does not exist' });
