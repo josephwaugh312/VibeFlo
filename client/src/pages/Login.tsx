@@ -23,7 +23,7 @@ import GoogleIcon from '../assets/icons/google.svg';
 import GithubIcon from '../assets/icons/github.svg';
 import GoogleIconSVG from '../assets/icons/google.svg';
 import FacebookIcon from '../assets/icons/facebook.svg';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 // SVG Icons for OAuth providers
 const GoogleIconSVG = () => (
