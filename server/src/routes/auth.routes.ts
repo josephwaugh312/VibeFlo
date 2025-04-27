@@ -174,17 +174,14 @@ router.get('/verification-status', authenticateToken, async (req, res) => {
       return res.status(401).json({ message: 'User not authenticated' });
     }
     
-    const result = await db.select('is_verified')
-      .from('users')
-      .where({ id: userId })
-      .first();
+    const result = await db.query('SELECT is_verified FROM users WHERE id = $1', [userId]);
     
-    if (!result) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ message: 'User not found' });
     }
     
     return res.status(200).json({ 
-      isVerified: result.is_verified 
+      isVerified: result.rows[0].is_verified 
     });
   } catch (error) {
     console.error('Error checking verification status:', error);

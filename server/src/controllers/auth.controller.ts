@@ -17,124 +17,124 @@ interface AuthRequest extends Request {
  * Register a new user
  */
 export const register = handleAsync(async (req: Request, res: Response) => {
-  const { name, username, email, password } = req.body;
+  const { email, password, username } = req.body;
 
-  // Check if required fields are provided
-  if (!name) throw validationErrors.required('Name');
-  if (!username) throw validationErrors.required('Username');
-  if (!email) throw validationErrors.required('Email');
-  if (!password) throw validationErrors.required('Password');
-
-  // Validate password strength
-  if (password.length < 8) {
-    throw validationErrors.tooShort('Password', 8);
+  if (!email || !password || !username) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email, password, and username are required',
+    });
   }
 
-  // Check for at least one uppercase letter, one lowercase letter, and one number
-  const hasUppercase = /[A-Z]/.test(password);
-  const hasLowercase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-
-  if (!hasUppercase || !hasLowercase || !hasNumber) {
-    throw validationErrors.invalidFormat(
-      'Password', 
-      'that includes at least one uppercase letter, one lowercase letter, and one number'
-    );
-  }
-
-  // Check if user with this email already exists
-  const emailCheck = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-  if (emailCheck.rows.length > 0) {
-    throw resourceErrors.alreadyExists('User', 'email', email);
-  }
-
-  // Check if user with this username already exists
-  const usernameCheck = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-  if (usernameCheck.rows.length > 0) {
-    throw resourceErrors.alreadyExists('User', 'username', username);
-  }
-
-  // Hash password
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-
-  // Create new user
-  const newUser = await pool.query(
-    'INSERT INTO users (name, username, email, password, is_verified) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-    [name, username, email, hashedPassword, false]
-  );
-
-  const user = newUser.rows[0];
-
-  // Generate verification token
-  const verificationToken = crypto.randomBytes(32).toString('hex');
-  const tokenExpiry = new Date();
-  tokenExpiry.setHours(tokenExpiry.getHours() + 24); // 24 hour expiry
-
-  // Save verification token
-  await pool.query(
-    'INSERT INTO verification_tokens (user_id, token, expires_at) VALUES ($1, $2, $3)',
-    [user.id, verificationToken, tokenExpiry]
-  );
-
-  // Generate verification URL
-  const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
-
-  // Try to send verification email but don't block registration if it fails
   try {
-    await emailService.sendVerificationEmail(
-      user.email,
-      user.name || user.username || 'User',
-      verificationToken
+    // Check if user already exists
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE email = $1 OR username = $2',
+      [email, username]
     );
-    console.log(`Verification email sent to ${email}`);
-  } catch (emailError) {
-    console.error('Error sending verification email:', emailError);
-    // Don't fail registration if email sending fails
-    // Just log it and continue
 
-    // Set user as verified even if email fails
-    await pool.query('UPDATE users SET is_verified = TRUE WHERE id = $1', [user.id]);
+    if (existingUser.rows.length > 0) {
+      const existingEmail = existingUser.rows.find(
+        (user: User) => user.email === email
+      );
+      const existingUsername = existingUser.rows.find(
+        (user: User) => user.username === username
+      );
+
+      if (existingEmail) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email already in use',
+        });
+      }
+
+      if (existingUsername) {
+        return res.status(400).json({
+          success: false,
+          message: 'Username already taken',
+        });
+      }
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const tokenExpiry = new Date();
+    tokenExpiry.setHours(tokenExpiry.getHours() + 24); // Token valid for 24 hours
+
+    // Mark user as NOT verified initially
+    const isVerified = false;
+
+    // Insert user into database
+    const result = await pool.query(
+      `INSERT INTO users (email, password, username, verification_token, token_expiry, is_verified) 
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [email, hashedPassword, username, verificationToken, tokenExpiry, isVerified]
+    );
+
+    const newUser = result.rows[0];
+
+    // Send verification email
+    try {
+      await emailService.sendVerificationEmail(email, username, verificationToken);
+      
+      // Return success with a message about email verification
+      return res.status(201).json({
+        success: true,
+        message: 'Registration successful! Please check your email to verify your account.',
+        needsVerification: true,
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          isVerified: newUser.is_verified,
+        },
+      });
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      
+      // Still return success, but with a warning about the email
+      return res.status(201).json({
+        success: true,
+        message: 'Registration successful, but we could not send the verification email. Please use the resend verification option.',
+        needsVerification: true,
+        emailError: true,
+        user: {
+          id: newUser.id,
+          email: newUser.email,
+          username: newUser.username,
+          isVerified: newUser.is_verified,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Registration error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'An error occurred during registration',
+    });
   }
-
-  // Generate JWT token
-  const token = generateToken(user);
-
-  res.status(201).json({
-    user: {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      profile_picture: user.profile_picture,
-      is_verified: user.is_verified
-    },
-    token,
-    message: 'Registration successful. Please check your email to verify your account.'
-  });
 });
 
 /**
  * Login user and return JWT token
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { login, password } = req.body;
+  const { email, password } = req.body;
   
-  console.log('Login attempt:', { login, passwordLength: password?.length });
+  console.log('Login attempt:', { email, passwordLength: password?.length });
 
-  if (!login) throw validationErrors.required('Username or email');
+  if (!email) throw validationErrors.required('Email');
   if (!password) throw validationErrors.required('Password');
 
-  const isEmail = login.includes('@');
-  
   // Query based on whether the login is an email or username
-  const queryText = isEmail 
-    ? 'SELECT * FROM users WHERE email = $1' 
-    : 'SELECT * FROM users WHERE username = $1';
+  const queryText = 'SELECT * FROM users WHERE email = $1';
   
-  console.log('Query:', queryText, 'Parameter:', login);
+  console.log('Query:', queryText, 'Parameter:', email);
   
-  const userResult = await pool.query(queryText, [login]);
+  const userResult = await pool.query(queryText, [email]);
   
   console.log('User found:', userResult.rows.length > 0, 'User details:', userResult.rows.length > 0 ? { 
     id: userResult.rows[0].id,
@@ -145,8 +145,8 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   if (userResult.rows.length === 0) {
     // Record the failed attempt
-    await recordFailedLoginAttempt(login);
-    console.log('User not found with login:', login);
+    await recordFailedLoginAttempt(email);
+    console.log('User not found with login:', email);
     throw authErrors.invalidCredentials();
   }
   
@@ -190,7 +190,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   if (!isMatch) {
     // Record the failed attempt
-    await recordFailedLoginAttempt(login);
+    await recordFailedLoginAttempt(email);
     console.log('Password does not match');
     throw authErrors.invalidCredentials();
   }
@@ -199,6 +199,16 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   if (user.failed_login_attempts > 0) {
     console.log('Resetting failed login attempts');
     await pool.query('UPDATE users SET failed_login_attempts = 0 WHERE id = $1', [user.id]);
+  }
+  
+  // Check if email is verified
+  if (!user.is_verified) {
+    return res.status(401).json({
+      success: false,
+      message: 'Please verify your email before logging in',
+      needsVerification: true,
+      email: user.email
+    });
   }
   
   // Generate JWT token
@@ -544,9 +554,6 @@ export const resendVerificationEmail = handleAsync(async (req: Request, res: Res
     [user.id, verificationToken, tokenExpiry]
   );
 
-  // Generate verification URL
-  const verificationUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/verify-email/${verificationToken}`;
-
   // Send verification email
   await emailService.sendVerificationEmail(
     user.email,
@@ -555,4 +562,29 @@ export const resendVerificationEmail = handleAsync(async (req: Request, res: Res
   );
 
   res.status(200).json({ message: 'Verification email sent successfully' });
+});
+
+/**
+ * Check if user's email is verified
+ * @route GET /api/auth/verification-status
+ */
+export const checkVerificationStatus = handleAsync(async (req: Request, res: Response) => {
+  const userId = req.user?.id;
+  
+  if (!userId) {
+    return res.status(401).json({ message: 'User not authenticated' });
+  }
+  
+  const result = await pool.query(
+    'SELECT is_verified FROM users WHERE id = $1',
+    [userId]
+  );
+  
+  if (result.rows.length === 0) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+  
+  return res.status(200).json({ 
+    isVerified: result.rows[0].is_verified 
+  });
 }); 
