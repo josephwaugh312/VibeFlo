@@ -5,7 +5,7 @@ dotenv.config();
 
 // Configure SendGrid with API key from environment variables
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@vibeflo.app';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'joseph.waugh312@gmail.com';
 
 // Validate required environment variables
 if (!SENDGRID_API_KEY) {
@@ -80,6 +80,9 @@ class EmailService {
       console.log(`Verification email sent to ${to}`);
     } catch (error) {
       console.error('Error sending verification email:', error);
+      if (error.response) {
+        console.error('SendGrid API Response:', error.response.body);
+      }
       throw new Error('Failed to send verification email');
     }
   }
