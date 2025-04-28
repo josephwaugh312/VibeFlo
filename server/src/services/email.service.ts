@@ -5,16 +5,24 @@ dotenv.config();
 
 // Configure SendGrid with API key from environment variables
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@vibeflo.app';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'josephwaugh312@gmail.com';
+
+// Validate required environment variables
+if (!SENDGRID_API_KEY) {
+  console.error('SENDGRID_API_KEY is not set in environment variables');
+  throw new Error('SendGrid API key is required for email functionality');
+}
+
+if (!FROM_EMAIL) {
+  console.error('EMAIL_FROM is not set in environment variables');
+  throw new Error('Sender email address is required for email functionality');
+}
+
 const CLIENT_URL = process.env.CLIENT_URL || 'https://vibeflo.app';
 
-// Initialize SendGrid if API key is available
-if (SENDGRID_API_KEY) {
-  sgMail.setApiKey(SENDGRID_API_KEY);
-  console.log('SendGrid configured successfully');
-} else {
-  console.warn('SendGrid API key not found. Email functionality will not work.');
-}
+// Initialize SendGrid
+sgMail.setApiKey(SENDGRID_API_KEY);
+console.log('SendGrid configured successfully with sender:', FROM_EMAIL);
 
 /**
  * Base email service providing methods for sending various types of emails
