@@ -81,7 +81,14 @@ class EmailService {
     } catch (error) {
       console.error('Error sending verification email:', error);
       if (error.response) {
-        console.error('SendGrid API Response:', error.response.body);
+        console.error('SendGrid API Response:', {
+          statusCode: error.response.statusCode,
+          body: error.response.body,
+          headers: error.response.headers
+        });
+        if (error.response.body && error.response.body.errors) {
+          console.error('SendGrid Error Details:', error.response.body.errors);
+        }
       }
       throw new Error('Failed to send verification email');
     }
