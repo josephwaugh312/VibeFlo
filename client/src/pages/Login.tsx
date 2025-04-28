@@ -116,21 +116,12 @@ const Login: React.FC = () => {
 
     try {
       console.log('About to call login API...');
-      // Use the login function from AuthContext directly with rememberMe
       const response = await authLogin(loginIdentifier, password, rememberMe);
       console.log('Login response:', response);
       
       if (response.success) {
         console.log('Login successful, navigating to dashboard');
-        
-        // Debug current path
-        console.log('Current path before navigation:', window.location.pathname);
-        
-        // Try to force a page reload to dashboard
-        window.location.href = '/dashboard';
-        
-        // The code below won't execute if the location changes
-        console.log('If you see this, the location change did not happen immediately');
+        navigate('/dashboard', { replace: true });
       } else {
         // Check if the account needs verification
         if (response.needsVerification) {
