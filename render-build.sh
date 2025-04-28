@@ -208,6 +208,7 @@ else
   # Run database migrations and fixes with error handling
   run_db_operation "fix for themes table columns" "ts-node src/db/fix-themes-columns.ts"
   run_db_operation "database migrations" "ts-node src/db/run-theme-migrations.ts"
+  run_db_operation "token_expiry migration" "ts-node src/db/run-token-expiry-migration.ts"
   run_db_operation "fix for themes image_url column" "ts-node src/db/fix-themes-image-url.ts"
   run_db_operation "fix for custom_themes table" "ts-node src/db/fix-custom-themes.ts"
   run_db_operation "fix for OAuth columns" "ts-node src/db/fix-oauth-columns.ts"
