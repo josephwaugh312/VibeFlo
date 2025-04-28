@@ -5,7 +5,7 @@ dotenv.config();
 
 // Configure SendGrid with API key from environment variables
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
-const FROM_EMAIL = process.env.EMAIL_FROM || 'josephwaugh312@gmail.com';
+const FROM_EMAIL = process.env.EMAIL_FROM || 'noreply@vibeflo.app';
 
 // Validate required environment variables
 if (!SENDGRID_API_KEY) {
