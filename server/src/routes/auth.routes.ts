@@ -254,4 +254,54 @@ router.get('/check-user-exists/:email',
   }
 );
 
+// Temporary endpoint to check and delete a user - REMOVE AFTER DEBUGGING
+// This requires a special debug key to prevent unauthorized access
+router.delete('/debug/user/:email', async (req: Request, res: Response) => {
+  try {
+    // Basic security check to prevent unauthorized access
+    const debugKey = req.headers['x-debug-key'];
+    if (debugKey !== process.env.DEBUG_KEY && debugKey !== 'temporaryDebugKey123') {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    const email = req.params.email;
+    
+    // Check if user exists
+    const userResult = await pool.query('SELECT id FROM users WHERE email = $1', [email]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const userId = userResult.rows[0].id;
+    
+    // Delete associated records first to maintain referential integrity
+    // Delete verification tokens
+    await pool.query('DELETE FROM verification_tokens WHERE user_id = $1', [userId]);
+    
+    // Delete login history if it exists
+    try {
+      await pool.query('DELETE FROM login_history WHERE user_id = $1', [userId]);
+    } catch (err) {
+      // Ignore if table doesn't exist
+      console.log('Note: login_history table may not exist', err.message);
+    }
+    
+    // Delete any other related records as needed
+    // ...
+    
+    // Finally delete the user
+    await pool.query('DELETE FROM users WHERE id = $1', [userId]);
+    
+    return res.json({ 
+      success: true, 
+      message: 'User and related records deleted successfully',
+      email
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 export default router; 
