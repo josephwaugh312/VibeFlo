@@ -176,7 +176,10 @@ const Login: React.FC = () => {
     
     try {
       setResendingVerification(true);
+      setResendSuccess(false);
       const response = await authAPI.resendVerificationEmail(verificationEmail);
+      
+      console.log('Resend verification response:', response);
       
       if (response.success) {
         setResendSuccess(true);
@@ -185,6 +188,7 @@ const Login: React.FC = () => {
         setError(response.message || 'Failed to resend verification email');
       }
     } catch (err: any) {
+      console.error('Error resending verification email:', err);
       setError(err.response?.data?.message || 'An error occurred while resending the verification email');
     } finally {
       setResendingVerification(false);
@@ -206,28 +210,32 @@ const Login: React.FC = () => {
                 <Typography variant="body2" sx={{ mb: 1 }}>
                   We've sent a verification email to <strong>{verificationEmail}</strong>. Please check your inbox and spam folder.
                 </Typography>
-                <Button 
-                  onClick={handleResendVerification}
-                  disabled={resendingVerification}
-                  size="small"
-                  variant="contained"
-                  color="primary"
-                  fullWidth
-                  startIcon={resendingVerification ? <CircularProgress size={20} color="inherit" /> : null}
-                  sx={{ mb: 1 }}
-                >
-                  {resendingVerification ? 'Sending...' : 'Resend Verification Email'}
-                </Button>
-                <Button
-                  size="small"
-                  variant="outlined"
-                  color="primary"
-                  fullWidth
-                  component={Link}
-                  to={`/resend-verification?email=${encodeURIComponent(verificationEmail)}`}
-                >
-                  Go to Verification Page
-                </Button>
+                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
+                  <Button 
+                    onClick={handleResendVerification}
+                    disabled={resendingVerification || resendSuccess}
+                    size="small"
+                    variant="contained"
+                    color="primary"
+                    fullWidth
+                    startIcon={resendingVerification ? <CircularProgress size={20} color="inherit" /> : null}
+                  >
+                    {resendingVerification ? 'Sending...' : resendSuccess ? 'Email Sent' : 'Resend Verification Email'}
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    color="primary"
+                    fullWidth
+                    component={Link}
+                    to={`/resend-verification?email=${encodeURIComponent(verificationEmail)}`}
+                  >
+                    Verification Help
+                  </Button>
+                </Stack>
+                <Typography variant="caption" color="text.secondary">
+                  If you don't receive the email within a few minutes, check your spam folder or use the Verification Help page.
+                </Typography>
               </Box>
             )}
           </Alert>

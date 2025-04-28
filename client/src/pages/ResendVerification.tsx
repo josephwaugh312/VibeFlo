@@ -1,81 +1,58 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { 
-  Container, 
-  Paper, 
-  Typography, 
-  Box, 
-  TextField, 
-  Button, 
-  Alert, 
-  CircularProgress,
-  useTheme,
-  Divider,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-} from '@mui/material';
-import EmailIcon from '@mui/icons-material/Email';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import InfoIcon from '@mui/icons-material/Info';
-import WarningIcon from '@mui/icons-material/Warning';
+import { Container, Paper, Typography, TextField, Button, Box, Alert, CircularProgress, Stack } from '@mui/material';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { authAPI } from '../services/api';
+import { useTheme } from '@mui/material/styles';
+import EmailIcon from '@mui/icons-material/Email';
 
 const ResendVerification: React.FC = () => {
-  const navigate = useNavigate();
-  const theme = useTheme();
-  const location = useLocation();
-  
   const [email, setEmail] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [emailAlreadyVerified, setEmailAlreadyVerified] = useState(false);
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const theme = useTheme();
 
-  // Get email from URL parameters if available
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const emailParam = params.get('email');
+    const emailParam = searchParams.get('email');
     if (emailParam) {
       setEmail(emailParam);
     }
-  }, [location]);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!email.trim()) {
-      setError('Please enter your email address');
+    // Basic email validation
+    if (!email || !/\S+@\S+\.\S+/.test(email)) {
+      setError('Please enter a valid email address');
       return;
     }
-    
-    setIsSubmitting(true);
-    setError('');
-    setEmailAlreadyVerified(false);
-    
+
     try {
+      setSubmitting(true);
+      setError('');
       const response = await authAPI.resendVerificationEmail(email);
       
-      console.log('Verification email sent:', response);
-      setSuccess(true);
-      setIsSubmitting(false);
-    } catch (err: any) {
-      console.error('Failed to resend verification email:', err);
-      const errorMessage = err.response?.data?.message || 'Failed to resend verification email. Please try again.';
+      console.log('Resend verification response:', response);
       
-      // Check if the error is because the email is already verified
-      if (errorMessage.includes('already verified')) {
-        setEmailAlreadyVerified(true);
+      if (response.success) {
+        setSuccess(true);
+        setError('');
+      } else {
+        setError(response.message || 'Failed to resend verification email');
       }
-      
-      setError(errorMessage);
-      setIsSubmitting(false);
+    } catch (err: any) {
+      console.error('Error resending verification email:', err);
+      setError(err.response?.data?.message || 'An error occurred while resending the verification email');
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 8, mb: 8 }}>
+    <Container maxWidth="sm" sx={{ mt: 8, mb: 4 }}>
       <Paper 
         elevation={3} 
         sx={{ 
@@ -83,144 +60,88 @@ const ResendVerification: React.FC = () => {
           display: 'flex', 
           flexDirection: 'column', 
           alignItems: 'center',
-          borderRadius: 2,
-          bgcolor: 'background.paper'
+          bgcolor: theme.palette.background.paper
         }}
       >
-        <EmailIcon sx={{ fontSize: 48, mb: 2, color: 'primary.main' }} />
-        <Typography variant="h5" sx={{ mb: 1 }}>
-          Email Verification
-        </Typography>
-        
-        {emailAlreadyVerified ? (
-          <Box sx={{ width: '100%', mt: 2 }}>
+        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
+          <EmailIcon sx={{ fontSize: 40, mb: 1, color: theme.palette.primary.main }} />
+          <Typography component="h1" variant="h5">
+            Resend Verification Email
+          </Typography>
+        </Box>
+
+        {success ? (
+          <Box sx={{ width: '100%', textAlign: 'center' }}>
             <Alert severity="success" sx={{ mb: 3 }}>
-              Good news! Your email <strong>{email}</strong> is already verified.
+              Success! We've sent a new verification email to <strong>{email}</strong>
             </Alert>
-            <Typography variant="body1" sx={{ mb: 4, textAlign: 'center' }}>
-              You can now log in to your account and access all features.
+            <Typography variant="body2" sx={{ mb: 3 }}>
+              Please check your inbox and spam folder. The verification link will expire after 24 hours.
             </Typography>
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={() => navigate('/login')}
-                fullWidth
+            <Stack direction="row" spacing={2} justifyContent="center">
+              <Button
+                variant="contained"
+                color="primary"
+                component={Link}
+                to="/login"
               >
-                Go to Login
+                Return to Login
               </Button>
-            </Box>
-          </Box>
-        ) : success ? (
-          <Box sx={{ width: '100%', mt: 2 }}>
-            <Alert severity="success" sx={{ mb: 3 }}>
-              Verification email has been sent to <strong>{email}</strong>
-            </Alert>
-            <Typography variant="body1" sx={{ mb: 2 }}>
-              Please check your inbox for the verification link. The email should arrive within a few minutes.
-            </Typography>
-            
-            <Divider sx={{ my: 3 }} />
-            
-            <Typography variant="subtitle1" fontWeight="bold" sx={{ mb: 2 }}>
-              Important Information:
-            </Typography>
-            
-            <List sx={{ mb: 3 }}>
-              <ListItem>
-                <ListItemIcon>
-                  <InfoIcon color="info" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Check your spam or junk folder" 
-                  secondary="Email providers sometimes filter verification emails"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <WarningIcon color="warning" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="The verification link expires in 24 hours" 
-                  secondary="Make sure to click it before it expires"
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <CheckCircleIcon color="success" />
-                </ListItemIcon>
-                <ListItemText 
-                  primary="Once verified, you'll have full access" 
-                  secondary="You'll be able to use all features of VibeFlo"
-                />
-              </ListItem>
-            </List>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2 }}>
-              <Button 
-                variant="outlined" 
-                color="primary" 
-                onClick={() => setSuccess(false)}
-                sx={{ flexGrow: 1 }}
+              <Button
+                variant="outlined"
+                onClick={handleSubmit}
+                disabled={submitting}
               >
-                Try Different Email
+                Resend Again
               </Button>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={() => navigate('/login')}
-                sx={{ flexGrow: 1 }}
-              >
-                Go to Login
-              </Button>
-            </Box>
+            </Stack>
           </Box>
         ) : (
-          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%', mt: 2 }}>
+          <Box component="form" onSubmit={handleSubmit} sx={{ width: '100%' }}>
             {error && (
-              <Alert severity="error" sx={{ mb: 3 }}>
+              <Alert severity="error" sx={{ mb: 2 }}>
                 {error}
               </Alert>
             )}
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              Enter your email address below, and we'll send you a new verification link.
+            
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              Enter your email address below to receive a new verification link. If you don't receive the email, check your spam folder.
             </Typography>
+            
             <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
               label="Email Address"
-              type="email"
-              variant="outlined"
+              name="email"
+              autoComplete="email"
+              autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              fullWidth
-              required
-              sx={{ mb: 3 }}
+              disabled={submitting}
             />
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-              <Button
-                variant="outlined"
-                color="secondary"
-                onClick={() => navigate('/login')}
-                disabled={isSubmitting}
+            
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              color="primary"
+              sx={{ mt: 3, mb: 2 }}
+              disabled={submitting}
+              startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {submitting ? 'Sending...' : 'Resend Verification Email'}
+            </Button>
+            
+            <Box sx={{ mt: 2, textAlign: 'center' }}>
+              <Button 
+                component={Link} 
+                to="/login"
+                color="primary"
               >
                 Back to Login
               </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
-                disabled={isSubmitting}
-                startIcon={isSubmitting && <CircularProgress size={20} color="inherit" />}
-              >
-                {isSubmitting ? 'Sending...' : 'Send Verification Email'}
-              </Button>
-            </Box>
-            <Box sx={{ mt: 4, textAlign: 'center' }}>
-              <Typography variant="body2">
-                Already verified?{' '}
-                <Link to="/login" style={{ color: theme.palette.primary.main, textDecoration: 'none' }}>
-                  Sign in here
-                </Link>
-              </Typography>
             </Box>
           </Box>
         )}
