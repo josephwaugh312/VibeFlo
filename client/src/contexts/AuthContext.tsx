@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import apiService, { authAPI } from '../services/api';
 
 // Get the API base URL from environment or use default
@@ -121,7 +121,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return response;
     } catch (error) {
       console.error('Login error:', error);
-      throw error;
+      if (error instanceof AxiosError) {
+        return {
+          success: false,
+          message: error.response?.data?.message || 'An error occurred during login'
+        };
+      }
+      return {
+        success: false,
+        message: 'An unexpected error occurred during login'
+      };
     }
   };
 
