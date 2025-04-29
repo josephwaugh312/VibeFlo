@@ -7,6 +7,7 @@ import userRoutes from './routes/user.routes';
 import themeRoutes from './routes/theme.routes';
 import protectedRoutes from './routes/protect.routes';
 import playlistRoutes from './routes/playlist.routes';
+import youtubeRoutes from './routes/youtube.routes';
 
 // Load environment variables
 dotenv.config();
@@ -41,6 +42,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/themes', themeRoutes);
 app.use('/api/protected', protectedRoutes);
 app.use('/api/playlists', playlistRoutes);
+app.use('/api/youtube', youtubeRoutes);
 
 // Connect to database and start server
 async function startServer() {
