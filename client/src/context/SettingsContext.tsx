@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { settingsAPI } from '../services/api';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Settings {
   pomodoro_duration: number;
