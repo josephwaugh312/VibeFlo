@@ -17,11 +17,12 @@ import {
   FormControlLabel,
   Stack,
   SvgIcon,
-  SvgIconProps
+  SvgIconProps,
+  useTheme
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { authAPI } from '../services/api';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme as useAppTheme } from '../context/ThemeContext';
 
 // SVG Icon components
 const GoogleIcon = (props: SvgIconProps) => (
@@ -61,7 +62,8 @@ const Login: React.FC = () => {
   const [needsVerification, setNeedsVerification] = useState(false);
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
-  const { currentTheme } = useTheme();
+  const theme = useTheme();
+  const { currentTheme } = useAppTheme();
 
   // Get the API base URL from environment or use default
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
@@ -188,93 +190,78 @@ const Login: React.FC = () => {
 
   return (
     <Container maxWidth="sm">
-      <Paper elevation={3} sx={{ p: 4, mt: 8 }}>
-        <Typography variant="h4" component="h1" align="center" gutterBottom>
-          Log In
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 4, 
+          mt: 8,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
+        }}
+      >
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          align="center" 
+          gutterBottom
+          sx={{ 
+            color: currentTheme?.text_color || theme.palette.text.primary,
+            fontWeight: 'bold',
+            mb: 3
+          }}
+        >
+          Welcome Back
         </Typography>
         
         {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              borderRadius: '12px',
+              background: 'rgba(211, 47, 47, 0.1)',
+              border: '1px solid rgba(211, 47, 47, 0.2)'
+            }}
+          >
             {needsVerification ? 'Your email address needs to be verified before you can log in.' : error}
-            {needsVerification && verificationEmail && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  We've sent a verification email to <strong>{verificationEmail}</strong>. Please check your inbox and spam folder.
-                </Typography>
-                <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
-                  <Button 
-                    onClick={handleResendVerification}
-                    disabled={resendingVerification || resendSuccess}
-                    size="small"
-                    variant="contained"
-                    color="primary"
-                    fullWidth
-                    startIcon={resendingVerification ? <CircularProgress size={20} color="inherit" /> : null}
-                  >
-                    {resendingVerification ? 'Sending...' : resendSuccess ? 'Email Sent' : 'Resend Verification Email'}
-                  </Button>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    color="primary"
-                    fullWidth
-                    component={Link}
-                    to={`/resend-verification?email=${encodeURIComponent(verificationEmail)}`}
-                  >
-                    Verification Help
-                  </Button>
-                </Stack>
-                <Typography variant="caption" color="text.secondary">
-                  If you don't receive the email within a few minutes, check your spam folder or use the Verification Help page.
-                </Typography>
-              </Box>
-            )}
           </Alert>
         )}
         
-        {resendSuccess && (
-          <Alert severity="success" sx={{ mb: 2 }}>
-            Verification email sent to <strong>{verificationEmail}</strong>! Please check your inbox and spam folder.
-          </Alert>
-        )}
-        
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
           <TextField
-            margin="normal"
-            required
             fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
+            label="Email or Username"
             value={loginIdentifier}
-            onChange={(e) => {
-              setLoginIdentifier(e.target.value);
-              setError('');
-              setResendSuccess(false);
+            onChange={(e) => setLoginIdentifier(e.target.value)}
+            margin="normal"
+            variant="outlined"
+            disabled={isLoading}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
             }}
           />
+          
           <TextField
-            margin="normal"
-            required
             fullWidth
-            name="password"
             label="Password"
-            type={showPassword ? "text" : "password"}
-            id="password"
-            autoComplete="current-password"
+            type={showPassword ? 'text' : 'password'}
             value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError('');
-              setResendSuccess(false);
-            }}
+            onChange={(e) => setPassword(e.target.value)}
+            margin="normal"
+            variant="outlined"
+            disabled={isLoading}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <IconButton
-                    aria-label="toggle password visibility"
                     onClick={() => setShowPassword(!showPassword)}
                     edge="end"
                   >
@@ -283,60 +270,120 @@ const Login: React.FC = () => {
                 </InputAdornment>
               ),
             }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
+            }}
           />
+          
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  sx={{
+                    color: currentTheme?.primary_color || theme.palette.primary.main,
+                    '&.Mui-checked': {
+                      color: currentTheme?.primary_color || theme.palette.primary.main,
+                    },
+                  }}
+                />
+              }
+              label="Remember me"
+            />
+            <Link 
+              to="/forgot-password" 
+              style={{ 
+                textDecoration: 'none',
+                color: currentTheme?.primary_color || theme.palette.primary.main,
+                fontSize: '0.875rem'
+              }}
+            >
+              Forgot password?
+            </Link>
+          </Box>
+          
           <Button
             type="submit"
             fullWidth
             variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-            disabled={isLoading || !!lockoutEndTime}
+            disabled={isLoading}
+            sx={{
+              mt: 3,
+              mb: 2,
+              py: 1.5,
+              borderRadius: '12px',
+              background: currentTheme?.primary_color 
+                ? `linear-gradient(135deg, ${currentTheme.primary_color} 0%, ${currentTheme.secondary_color || currentTheme.primary_color} 100%)`
+                : theme.palette.primary.main,
+              '&:hover': {
+                background: currentTheme?.primary_color 
+                  ? `linear-gradient(135deg, ${currentTheme.secondary_color || currentTheme.primary_color} 0%, ${currentTheme.primary_color} 100%)`
+                  : theme.palette.primary.dark,
+              },
+            }}
           >
             {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
           </Button>
           
-          <Box sx={{ textAlign: 'center', mb: 2 }}>
-            <Link to="/forgot-password" style={{ textDecoration: 'none' }}>
-              <Typography variant="body2" color="primary">
-                Forgot password?
-              </Typography>
-            </Link>
-          </Box>
-          
-          <Divider sx={{ my: 2 }}>
-            <Typography variant="body2" color="text.secondary">
+          <Divider sx={{ my: 3 }}>
+            <Typography variant="body2" color="textSecondary">
               OR
             </Typography>
           </Divider>
           
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
             <Button
               fullWidth
               variant="outlined"
               startIcon={<GoogleIcon />}
-              href={`https://vibeflo-api.onrender.com/api/auth/google`}
-              sx={{ textTransform: 'none' }}
+              sx={{
+                borderRadius: '12px',
+                borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                color: currentTheme?.text_color || theme.palette.text.primary,
+                '&:hover': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                  background: 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
             >
-              Continue with Google
+              Google
             </Button>
-            
             <Button
               fullWidth
               variant="outlined"
               startIcon={<GithubIcon />}
-              href={`https://vibeflo-api.onrender.com/api/auth/github`}
-              sx={{ textTransform: 'none' }}
+              sx={{
+                borderRadius: '12px',
+                borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                color: currentTheme?.text_color || theme.palette.text.primary,
+                '&:hover': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                  background: 'rgba(0, 0, 0, 0.04)',
+                },
+              }}
             >
-              Continue with GitHub
+              GitHub
             </Button>
-          </Box>
+          </Stack>
           
-          <Box sx={{ mt: 2, textAlign: 'center' }}>
-            <Typography variant="body2">
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
               Don't have an account?{' '}
-              <Link to="/register" style={{ textDecoration: 'none' }}>
-                <Typography component="span" variant="body2" color="primary">
-                  Sign up
-                </Typography>
+              <Link 
+                to="/register" 
+                style={{ 
+                  textDecoration: 'none',
+                  color: currentTheme?.primary_color || theme.palette.primary.main,
+                  fontWeight: 'bold'
+                }}
+              >
+                Sign Up
               </Link>
             </Typography>
           </Box>

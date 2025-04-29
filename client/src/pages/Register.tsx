@@ -1,10 +1,23 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { TextField, Button, Box, Typography, Container, Alert, Paper, CircularProgress } from '@mui/material';
+import { 
+  TextField, 
+  Button, 
+  Box, 
+  Typography, 
+  Container, 
+  Alert, 
+  Paper, 
+  CircularProgress,
+  useTheme
+} from '@mui/material';
 import { authAPI } from '../services/api';
+import { useTheme as useAppTheme } from '../context/ThemeContext';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const { currentTheme } = useAppTheme();
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -64,120 +77,232 @@ const Register: React.FC = () => {
 
   return (
     <Container maxWidth="sm">
-      <Box sx={{ my: 4 }}>
-        <Paper elevation={3} sx={{ p: 4, bgcolor: 'background.paper' }}>
-          <Typography variant="h4" component="h1" gutterBottom align="center">
-            Create an Account
-          </Typography>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 4, 
+          mt: 8,
+          background: 'rgba(255, 255, 255, 0.9)',
+          backdropFilter: 'blur(10px)',
+          borderRadius: '16px',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
+        }}
+      >
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          gutterBottom 
+          align="center"
+          sx={{ 
+            color: currentTheme?.text_color || theme.palette.text.primary,
+            fontWeight: 'bold',
+            mb: 3
+          }}
+        >
+          Create an Account
+        </Typography>
+        
+        {success && (
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 2,
+              borderRadius: '12px',
+              background: 'rgba(46, 125, 50, 0.1)',
+              border: '1px solid rgba(46, 125, 50, 0.2)'
+            }}
+          >
+            {success}
+          </Alert>
+        )}
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mb: 2,
+              borderRadius: '12px',
+              background: 'rgba(211, 47, 47, 0.1)',
+              border: '1px solid rgba(211, 47, 47, 0.2)'
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+        
+        <Typography 
+          variant="body2" 
+          color="textSecondary" 
+          paragraph 
+          align="center"
+          sx={{ mb: 2 }}
+        >
+          Join VibeFlo to create personalized music playlists and enhance your productivity
+        </Typography>
+        
+        <Typography 
+          variant="body2" 
+          color="primary" 
+          paragraph 
+          align="center" 
+          sx={{ 
+            fontWeight: 'medium',
+            mb: 3,
+            color: currentTheme?.primary_color || theme.palette.primary.main
+          }}
+        >
+          You'll need to verify your email address after registration. A verification link will be sent to your email.
+        </Typography>
+        
+        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+          <TextField
+            fullWidth
+            label="Full Name"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            margin="normal"
+            variant="outlined"
+            error={!!errors.name}
+            helperText={errors.name}
+            disabled={isLoading}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
+            }}
+          />
           
-          {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
-          {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+          <TextField
+            fullWidth
+            label="Username"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            margin="normal"
+            variant="outlined"
+            error={!!errors.username}
+            helperText={errors.username}
+            disabled={isLoading}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
+            }}
+          />
           
-          <Typography variant="body2" color="textSecondary" paragraph align="center">
-            Join VibeFlo to create personalized music playlists and enhance your productivity
-          </Typography>
+          <TextField
+            fullWidth
+            label="Email Address"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            margin="normal"
+            variant="outlined"
+            error={!!errors.email}
+            helperText={errors.email}
+            disabled={isLoading}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
+            }}
+          />
           
-          <Typography variant="body2" color="primary" paragraph align="center" sx={{ fontWeight: 'medium' }}>
-            You'll need to verify your email address after registration. A verification link will be sent to your email.
-          </Typography>
+          <TextField
+            fullWidth
+            label="Password"
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleChange}
+            margin="normal"
+            variant="outlined"
+            error={!!errors.password}
+            helperText={errors.password}
+            disabled={isLoading}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
+            }}
+          />
           
-          <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-            <TextField
-              fullWidth
-              label="Full Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              margin="normal"
-              variant="outlined"
-              error={!!errors.name}
-              helperText={errors.name}
-              disabled={isLoading}
-            />
-            
-            <TextField
-              fullWidth
-              label="Username"
-              name="username"
-              value={formData.username}
-              onChange={handleChange}
-              margin="normal"
-              variant="outlined"
-              error={!!errors.username}
-              helperText={errors.username}
-              disabled={isLoading}
-            />
-            
-            <TextField
-              fullWidth
-              label="Email Address"
-              name="email"
-              type="email"
-              value={formData.email}
-              onChange={handleChange}
-              margin="normal"
-              variant="outlined"
-              error={!!errors.email}
-              helperText={errors.email}
-              disabled={isLoading}
-            />
-            
-            <TextField
-              fullWidth
-              label="Password"
-              name="password"
-              type="password"
-              value={formData.password}
-              onChange={handleChange}
-              margin="normal"
-              variant="outlined"
-              error={!!errors.password}
-              helperText={errors.password}
-              disabled={isLoading}
-            />
-            
-            <TextField
-              fullWidth
-              label="Confirm Password"
-              name="confirmPassword"
-              type="password"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              margin="normal"
-              variant="outlined"
-              error={!!errors.confirmPassword}
-              helperText={errors.confirmPassword}
-              disabled={isLoading}
-            />
-            
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              color="primary"
-              sx={{ mt: 3, mb: 2 }}
-              disabled={isLoading}
-            >
-              {isLoading ? <CircularProgress size={24} /> : 'Register'}
-            </Button>
-            
-            <Box sx={{ textAlign: 'center' }}>
-              <Typography variant="body2">
-                Already have an account?{' '}
-                <Link to="/login" style={{ textDecoration: 'none' }}>
-                  Login
-                </Link>
-              </Typography>
-              
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                <Link to="/resend-verification" style={{ textDecoration: 'none' }}>
-                  Didn't receive verification email?
-                </Link>
-              </Typography>
-            </Box>
+          <TextField
+            fullWidth
+            label="Confirm Password"
+            name="confirmPassword"
+            type="password"
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            margin="normal"
+            variant="outlined"
+            error={!!errors.confirmPassword}
+            helperText={errors.confirmPassword}
+            disabled={isLoading}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '12px',
+                '&:hover fieldset': {
+                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                },
+              },
+            }}
+          />
+          
+          <Button
+            type="submit"
+            fullWidth
+            variant="contained"
+            disabled={isLoading}
+            sx={{
+              mt: 3,
+              mb: 2,
+              py: 1.5,
+              borderRadius: '12px',
+              background: currentTheme?.primary_color 
+                ? `linear-gradient(135deg, ${currentTheme.primary_color} 0%, ${currentTheme.secondary_color || currentTheme.primary_color} 100%)`
+                : theme.palette.primary.main,
+              '&:hover': {
+                background: currentTheme?.primary_color 
+                  ? `linear-gradient(135deg, ${currentTheme.secondary_color || currentTheme.primary_color} 0%, ${currentTheme.primary_color} 100%)`
+                  : theme.palette.primary.dark,
+              },
+            }}
+          >
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+          </Button>
+          
+          <Box sx={{ textAlign: 'center' }}>
+            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+              Already have an account?{' '}
+              <Link 
+                to="/login" 
+                style={{ 
+                  textDecoration: 'none',
+                  color: currentTheme?.primary_color || theme.palette.primary.main,
+                  fontWeight: 'bold'
+                }}
+              >
+                Log In
+              </Link>
+            </Typography>
           </Box>
-        </Paper>
-      </Box>
+        </Box>
+      </Paper>
     </Container>
   );
 };
