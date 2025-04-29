@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
   TextField,
   Typography,
   Box,
@@ -25,8 +25,8 @@ interface CreateThemeDialogProps {
 
 const MAX_FILE_SIZE = 1024 * 1024; // 1MB in bytes
 
-const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({
-  open,
+const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({ 
+  open, 
   onClose
 }) => {
   const { createCustomTheme } = useTheme();
@@ -122,7 +122,7 @@ const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({
     if (!validateForm()) {
       return;
     }
-    
+
     setIsSubmitting(true);
     
     try {
@@ -150,17 +150,17 @@ const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({
       setIsSubmitting(false);
     }
   };
-  
+
   const triggerFileInput = () => {
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
-  
+
   return (
     <Dialog 
       open={open} 
-      onClose={handleClose}
+      onClose={handleClose} 
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -197,7 +197,7 @@ const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({
         >
           <Add color="inherit" />
         </Box>
-        <Typography variant="h6" sx={{ fontWeight: 500 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 500, fontSize: '1.25rem' }}>
           Create New Theme
         </Typography>
       </DialogTitle>
@@ -464,9 +464,9 @@ const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({
           
           <FormControlLabel
             control={
-              <Switch
-                checked={isPublic}
-                onChange={(e) => setIsPublic(e.target.checked)}
+              <Switch 
+                checked={isPublic} 
+                onChange={(e) => setIsPublic(e.target.checked)} 
                 disabled={isSubmitting}
                 sx={{
                   '& .MuiSwitch-switchBase.Mui-checked': {
@@ -518,7 +518,7 @@ const CreateThemeDialog: React.FC<CreateThemeDialogProps> = ({
         <Button 
           onClick={handleSubmit} 
           variant="contained" 
-          color="primary"
+          color="primary" 
           disabled={isSubmitting || (uploadMethod === 'file' && !!fileError)}
           startIcon={isSubmitting ? <CircularProgress size={20} color="inherit" /> : null}
           sx={{

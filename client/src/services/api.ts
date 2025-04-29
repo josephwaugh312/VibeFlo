@@ -229,7 +229,7 @@ const apiService = (() => {
     getUserPlaylists: async () => {
       try {
         console.log('Fetching user playlists...');
-        const response = await api.get('/api/playlists');
+        const response = await api.get('/playlists');
         console.log('User playlists response:', response.data);
         return response.data;
       } catch (error) {

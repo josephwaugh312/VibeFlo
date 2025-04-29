@@ -1,26 +1,37 @@
 import React, { useState } from 'react';
-import { 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
   TextField,
-  Typography,
-  Alert,
+  CircularProgress,
+  FormControl,
+  FormLabel,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
   Box,
-  CircularProgress
+  Typography
 } from '@mui/material';
-import { ReportProblem } from '@mui/icons-material';
-import apiService from '../../services/api';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
+import axios from 'axios';
 
 interface ReportThemeDialogProps {
   open: boolean;
   onClose: () => void;
-  themeId: number;
+  themeId: string;
   themeName: string;
 }
+
+const REPORT_REASONS = [
+  "Inappropriate content",
+  "Copyright violation",
+  "Offensive material",
+  "Low quality",
+  "Other"
+];
 
 const ReportThemeDialog: React.FC<ReportThemeDialogProps> = ({
   open,
@@ -28,105 +39,107 @@ const ReportThemeDialog: React.FC<ReportThemeDialogProps> = ({
   themeId,
   themeName
 }) => {
-  const [reason, setReason] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  
+  const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [details, setDetails] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const handleSubmit = async () => {
-    if (!reason.trim()) {
-      setError('Please provide a reason for reporting this theme');
+    if (!themeId) {
+      toast.error("Missing theme information");
       return;
     }
-    
+
     try {
-      setIsSubmitting(true);
-      setError(null);
+      setLoading(true);
       
-      await apiService.api.post(`/moderation/themes/${themeId}/report`, { reason });
+      // Get server URL from environment
+      const serverUrl = process.env.REACT_APP_SERVER_URL || 'http://localhost:5001';
       
-      toast.success('Thank you for your report. Our team will review this theme.');
-      setReason('');
-      onClose();
-    } catch (err: any) {
-      console.error('Error reporting theme:', err);
-      setError(err.response?.data?.message || 'Failed to submit report. Please try again later.');
+      // Get auth token for authentication
+      const token = localStorage.getItem('token');
+      
+      await axios.post(`${serverUrl}/api/themes/report`, {
+        theme_id: themeId,
+        reason,
+        details: details.trim()
+      }, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined
+        }
+      });
+      
+      toast.success("Report submitted successfully");
+      handleClose();
+    } catch (error) {
+      console.error("Error submitting report:", error);
+      toast.error("Failed to submit report. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
-  const handleCancel = () => {
-    setReason('');
-    setError(null);
+
+  const handleClose = () => {
+    setReason(REPORT_REASONS[0]);
+    setDetails('');
     onClose();
   };
-  
+
   return (
     <Dialog 
       open={open} 
-      onClose={handleCancel}
-      maxWidth="sm"
+      onClose={handleClose}
       fullWidth
+      maxWidth="sm"
     >
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <ReportProblem color="error" />
-        Report Inappropriate Theme
-      </DialogTitle>
-      
+      <DialogTitle>Report Theme</DialogTitle>
       <DialogContent>
-        <Typography variant="body1" gutterBottom>
-          You are reporting <strong>{themeName}</strong> as inappropriate or violating community guidelines.
-        </Typography>
-        
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Our moderation team will review your report and take appropriate action if necessary.
-          Please provide specific details about why you believe this theme violates our guidelines.
-        </Typography>
-        
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-        
-        <TextField
-          fullWidth
-          multiline
-          rows={4}
-          label="Reason for Report"
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Please explain why you believe this theme is inappropriate..."
-          required
-          disabled={isSubmitting}
-          error={!!error && !reason.trim()}
-          helperText={(!reason.trim() && !!error) ? "This field is required" : ""}
-          sx={{ mt: 1 }}
-        />
-        
-        <Box mt={2}>
+        <Box sx={{ mb: 2, mt: 1 }}>
+          <Typography variant="body2" gutterBottom>
+            You are reporting: <strong>{themeName}</strong>
+          </Typography>
           <Typography variant="caption" color="text.secondary">
-            Reports are anonymous to theme creators, but our moderation team can see your account details.
-            False or malicious reports may result in account restrictions.
+            Our moderation team will review this theme based on your report.
           </Typography>
         </Box>
+
+        <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
+          <FormLabel component="legend">Reason for reporting</FormLabel>
+          <RadioGroup
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+          >
+            {REPORT_REASONS.map((reportReason) => (
+              <FormControlLabel
+                key={reportReason}
+                value={reportReason}
+                control={<Radio />}
+                label={reportReason}
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
+
+        <TextField
+          label="Additional details"
+          multiline
+          rows={4}
+          fullWidth
+          value={details}
+          onChange={(e) => setDetails(e.target.value)}
+          placeholder="Please provide any additional information about this report"
+        />
       </DialogContent>
-      
       <DialogActions>
-        <Button 
-          onClick={handleCancel}
-          disabled={isSubmitting}
-        >
+        <Button onClick={handleClose} disabled={loading}>
           Cancel
         </Button>
         <Button 
+          variant="contained" 
+          color="primary" 
           onClick={handleSubmit}
-          color="error"
-          variant="contained"
-          disabled={isSubmitting || !reason.trim()}
-          startIcon={isSubmitting ? <CircularProgress size={16} color="inherit" /> : undefined}
+          disabled={loading}
         >
-          {isSubmitting ? 'Submitting...' : 'Submit Report'}
+          {loading ? <CircularProgress size={24} /> : "Submit Report"}
         </Button>
       </DialogActions>
     </Dialog>

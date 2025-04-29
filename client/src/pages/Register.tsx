@@ -13,11 +13,15 @@ import {
 } from '@mui/material';
 import { authAPI } from '../services/api';
 import { useTheme as useAppTheme } from '../context/ThemeContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useTheme as useMuiTheme } from '@mui/material/styles';
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const { currentTheme } = useAppTheme();
+  const { register } = useAuth();
+  const muiTheme = useMuiTheme();
   const [formData, setFormData] = useState({
     name: '',
     username: '',
@@ -59,7 +63,7 @@ const Register: React.FC = () => {
     setSuccess('');
     
     try {
-      await authAPI.register(formData.name, formData.username, formData.email, formData.password);
+      await register(formData.email, formData.username, formData.password);
       setSuccess('Registration successful! Please check your email to verify your account. You will be redirected to the login page in a few seconds.');
       console.log('Registration successful, verification email should be sent');
       
@@ -76,31 +80,40 @@ const Register: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          mt: 8,
-          background: 'rgba(255, 255, 255, 0.9)',
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+        background: 'transparent',
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          maxWidth: 400,
+          width: '100%',
+          background: 'rgba(0, 0, 0, 0.7)',
           backdropFilter: 'blur(10px)',
-          borderRadius: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
+          borderRadius: 2,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
-        <Typography 
-          variant="h4" 
-          component="h1" 
-          gutterBottom 
-          align="center"
-          sx={{ 
-            color: currentTheme?.text_color || theme.palette.text.primary,
+        <Typography
+          variant="h4"
+          component="h1"
+          gutterBottom
+          sx={{
+            textAlign: 'center',
+            color: '#fff',
             fontWeight: 'bold',
-            mb: 3
+            mb: 3,
           }}
         >
-          Create an Account
+          Create Account
         </Typography>
         
         {success && (
@@ -154,7 +167,7 @@ const Register: React.FC = () => {
           You'll need to verify your email address after registration. A verification link will be sent to your email.
         </Typography>
         
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
+        <form onSubmit={handleSubmit}>
           <TextField
             fullWidth
             label="Full Name"
@@ -273,13 +286,10 @@ const Register: React.FC = () => {
               mb: 2,
               py: 1.5,
               borderRadius: '12px',
-              background: currentTheme?.primary_color 
-                ? `linear-gradient(135deg, ${currentTheme.primary_color} 0%, ${currentTheme.secondary_color || currentTheme.primary_color} 100%)`
-                : theme.palette.primary.main,
+              background: 'linear-gradient(45deg, #9C27B0 30%, #E91E63 90%)',
+              color: '#fff',
               '&:hover': {
-                background: currentTheme?.primary_color 
-                  ? `linear-gradient(135deg, ${currentTheme.secondary_color || currentTheme.primary_color} 0%, ${currentTheme.primary_color} 100%)`
-                  : theme.palette.primary.dark,
+                background: 'linear-gradient(45deg, #7B1FA2 30%, #C2185B 90%)',
               },
             }}
           >
@@ -301,9 +311,9 @@ const Register: React.FC = () => {
               </Link>
             </Typography>
           </Box>
-        </Box>
+        </form>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

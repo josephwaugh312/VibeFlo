@@ -4,9 +4,10 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 const isProduction = process.env.NODE_ENV === 'production';
+const disableSSL = process.env.DISABLE_SSL === 'true';
 
 // Log database configuration
-console.log(`Knex connection mode: ${isProduction ? 'Production (SSL enabled)' : 'Development'}`);
+console.log(`Knex connection mode: ${isProduction ? 'Production' : 'Development'}${isProduction && !disableSSL ? ' (SSL enabled)' : ''}`);
 
 // Log database connection details (masking sensitive parts)
 const connectionUrl = process.env.DATABASE_URL || 'not set';
@@ -16,13 +17,13 @@ console.log(`Database URL being used: ${maskedUrl}`);
 // Create a new PostgreSQL connection pool
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: isProduction ? { 
+  ssl: isProduction && !disableSSL ? { 
     rejectUnauthorized: false // Required for Render PostgreSQL
   } : undefined
 });
 
 // Debug connection information
-console.log(`Database connection mode: ${isProduction ? 'Production (SSL enabled)' : 'Development'}`);
+console.log(`Database connection mode: ${isProduction ? 'Production' : 'Development'}${isProduction && !disableSSL ? ' (SSL enabled)' : ''}`);
 
 // Connect to the database
 export const connectDB = async () => {

@@ -1,0 +1,62 @@
+From a47c7292b5c709f40fce96a948ee44c1e9181fda Mon Sep 17 00:00:00 2001
+From: Joseph Waugh <josephwaugh312@github.com>
+Date: Wed, 23 Apr 2025 14:58:09 -0400
+Subject: [PATCH] Fix: Remove react-beautiful-dnd from dependencies and
+ hardcoded API keys
+
+---
+ client/package.json                        | 2 --
+ client/src/contexts/MusicPlayerContext.tsx | 4 ++--
+ client/src/pages/PlaylistDetail.tsx        | 4 ++--
+ 3 files changed, 4 insertions(+), 6 deletions(-)
+
+diff --git a/client/package.json b/client/package.json
+index ad361aa..bb42f55 100644
+--- a/client/package.json
++++ b/client/package.json
+@@ -18,12 +18,10 @@
+     "@types/jest": "^27.5.2",
+     "@types/node": "^16.18.126",
+     "@types/react": "^19.1.0",
+-    "@types/react-beautiful-dnd": "^13.1.8",
+     "@types/react-dom": "^19.1.1",
+     "axios": "^1.8.4",
+     "date-fns": "^4.1.0",
+     "react": "^19.1.0",
+-    "react-beautiful-dnd": "^13.1.1",
+     "react-dom": "^19.1.0",
+     "react-hot-toast": "^2.5.2",
+     "react-icons": "^5.5.0",
+diff --git a/client/src/contexts/MusicPlayerContext.tsx b/client/src/contexts/MusicPlayerContext.tsx
+index fec91c7..2098a49 100644
+--- a/client/src/contexts/MusicPlayerContext.tsx
++++ b/client/src/contexts/MusicPlayerContext.tsx
+@@ -86,8 +86,8 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
+   
+   const playerRef = useRef<any>(null);
+   
+-  // YouTube API key
+-  const YOUTUBE_API_KEY = 'AIzaSyCoui8gnwmosPMGCGuX2cImY4SLre7JgiA';
++  // YouTube API key from environment variables
++  const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
+   
+   // Mock data for fallback when YouTube API fails
+   const mockSearchResults = [
+diff --git a/client/src/pages/PlaylistDetail.tsx b/client/src/pages/PlaylistDetail.tsx
+index 424c73b..7b26a28 100644
+--- a/client/src/pages/PlaylistDetail.tsx
++++ b/client/src/pages/PlaylistDetail.tsx
+@@ -4,8 +4,8 @@ import apiService from '../services/api';
+ import toast from 'react-hot-toast';
+ import { Track } from '../components/music/MusicPlayer';
+ 
+-// YouTube API key - same one used in MusicPlayer
+-const YOUTUBE_API_KEY = 'AIzaSyCoui8gnwmosPMGCGuX2cImY4SLre7JgiA';
++// YouTube API key from environment variables
++const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
+ 
+ interface Song {
+   id?: string | number;
+-- 
+2.39.5 (Apple Git-154)
+

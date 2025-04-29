@@ -1,49 +1,63 @@
-import * as dotenv from 'dotenv';
 import pool from '../config/db';
 
-// Load environment variables
-dotenv.config();
-
-// Function to check if a user exists by email
-export async function checkUserByEmail(email: string) {
+async function checkUser(email: string) {
   try {
-    console.log(`Checking for user with email: ${email}`);
+    console.log(`Checking user with email: ${email}`);
     
-    // Check users table
-    const userResult = await pool.query('SELECT id, email, username, is_verified FROM users WHERE email = $1', [email]);
-    console.log(`User records found: ${userResult.rows.length}`);
-    console.log(`User data:`, userResult.rows);
+    // Query the user
+    const userResult = await pool.query(
+      'SELECT id, email, username, is_verified, created_at, updated_at FROM users WHERE email = $1',
+      [email]
+    );
     
-    // Check verification_tokens table if needed
-    if (userResult.rows.length > 0) {
-      const userId = userResult.rows[0].id;
-      const tokenResult = await pool.query('SELECT * FROM verification_tokens WHERE user_id = $1', [userId]);
-      console.log(`Verification tokens found: ${tokenResult.rows.length}`);
-      console.log(`Token data:`, tokenResult.rows);
+    if (userResult.rows.length === 0) {
+      console.log('User not found');
+      return;
     }
     
-    return {
-      exists: userResult.rows.length > 0,
-      userData: userResult.rows[0] || null,
-      tokens: userResult.rows.length > 0 ? await pool.query('SELECT * FROM verification_tokens WHERE user_id = $1', [userResult.rows[0].id]) : []
-    };
+    const user = userResult.rows[0];
+    console.log('User found:');
+    console.log(JSON.stringify(user, null, 2));
+    
+    // Also check if there are any verification tokens for this user
+    const tokenResult = await pool.query(
+      'SELECT * FROM verification_tokens WHERE user_id = $1',
+      [user.id]
+    );
+    
+    if (tokenResult.rows.length === 0) {
+      console.log('No verification tokens found for this user');
+    } else {
+      console.log('Verification tokens:');
+      console.log(JSON.stringify(tokenResult.rows, null, 2));
+    }
+    
+    // Check user's login history
+    const loginResult = await pool.query(
+      'SELECT created_at FROM login_history WHERE user_id = $1 ORDER BY created_at DESC LIMIT 5',
+      [user.id]
+    );
+    
+    if (loginResult.rows.length === 0) {
+      console.log('No login history found for this user');
+    } else {
+      console.log('Recent login history:');
+      console.log(JSON.stringify(loginResult.rows, null, 2));
+    }
+    
   } catch (error) {
     console.error('Error checking user:', error);
-    throw error;
+  } finally {
+    // Close the pool to end the script properly
+    await pool.end();
   }
 }
 
-// If this script is run directly (not imported)
-if (require.main === module) {
-  const email = process.argv[2] || 'lisaberndt1970@gmail.com';
-  
-  checkUserByEmail(email)
-    .then(result => {
-      console.log('Check completed:', JSON.stringify(result, null, 2));
-      process.exit(0);
-    })
-    .catch(err => {
-      console.error('Unhandled error:', err);
-      process.exit(1);
-    });
-} 
+// Get email from command line argument
+const email = process.argv[2];
+if (!email) {
+  console.error('Please provide an email as a command line argument');
+  process.exit(1);
+}
+
+checkUser(email).catch(console.error); 

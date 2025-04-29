@@ -106,7 +106,7 @@ async function runThemeMigrations() {
           id SERIAL PRIMARY KEY,
           name VARCHAR(255) NOT NULL,
           description TEXT,
-          image_url TEXT NOT NULL,
+          image_url TEXT,
           background_color VARCHAR(50) DEFAULT '#FFFFFF',
           text_color VARCHAR(50) DEFAULT '#333333',
           primary_color VARCHAR(50) DEFAULT '#6200EE',
@@ -151,6 +151,38 @@ async function runThemeMigrations() {
       
       console.log(`Populated ${standardThemes.length} standard themes`);
     } else {
+      // Check if the themes table has the expected structure
+      console.log('Themes table exists, checking for missing columns...');
+      
+      // Check if image_url column exists
+      const imageUrlColumnCheck = await client.query(`
+        SELECT EXISTS (
+          SELECT FROM information_schema.columns 
+          WHERE table_schema = 'public'
+          AND table_name = 'themes'
+          AND column_name = 'image_url'
+        );
+      `);
+      
+      if (!imageUrlColumnCheck.rows[0].exists) {
+        console.log('Adding image_url column to themes table...');
+        await client.query(`
+          ALTER TABLE themes
+          ADD COLUMN image_url TEXT;
+        `);
+        
+        // Update existing themes with image URLs
+        for (const theme of standardThemes) {
+          await client.query(`
+            UPDATE themes 
+            SET image_url = $1
+            WHERE name = $2
+          `, [theme.image_url, theme.name]);
+        }
+        
+        console.log('image_url column added successfully and existing themes updated');
+      }
+      
       // Check if the standard themes table has any data
       const themesCount = await client.query('SELECT COUNT(*) FROM themes');
       if (parseInt(themesCount.rows[0].count) === 0) {
@@ -163,23 +195,23 @@ async function runThemeMigrations() {
           
           await client.query(`
             INSERT INTO themes (
-              name, description, image_url, background_color, text_color, 
+              name, description, background_color, text_color, 
               primary_color, secondary_color, accent_color, 
-              is_default, is_dark
+              is_default, is_dark, image_url
             ) VALUES (
               $1, $2, $3, $4, $5, $6, $7, $8, $9, $10
             )
           `, [
             theme.name,
             theme.description,
-            theme.image_url,
             theme.background_color,
             theme.text_color,
             theme.primary_color,
             theme.secondary_color,
             theme.accent_color,
             isDefault,
-            theme.is_dark
+            theme.is_dark,
+            theme.image_url
           ]);
         }
         

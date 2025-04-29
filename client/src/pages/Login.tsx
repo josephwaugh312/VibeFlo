@@ -18,11 +18,11 @@ import {
   Stack,
   SvgIcon,
   SvgIconProps,
-  useTheme
+  useTheme as useMuiTheme
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { authAPI } from '../services/api';
-import { useTheme as useAppTheme } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 
 // SVG Icon components
 const GoogleIcon = (props: SvgIconProps) => (
@@ -63,7 +63,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { login: authLogin } = useAuth();
   const theme = useTheme();
-  const { currentTheme } = useAppTheme();
+  const muiTheme = useMuiTheme();
 
   // Get the API base URL from environment or use default
   const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
@@ -189,207 +189,176 @@ const Login: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="sm">
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          mt: 8,
-          background: 'rgba(255, 255, 255, 0.9)',
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+        background: 'transparent',
+      }}
+    >
+      <Paper
+        elevation={0}
+        sx={{
+          p: 4,
+          maxWidth: 400,
+          width: '100%',
+          background: 'rgba(0, 0, 0, 0.7)',
           backdropFilter: 'blur(10px)',
-          borderRadius: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.15)'
+          borderRadius: 2,
+          border: '1px solid rgba(255, 255, 255, 0.1)',
         }}
       >
-        <Typography 
-          variant="h4" 
-          component="h1" 
-          align="center" 
+        <Typography
+          variant="h4"
+          component="h1"
           gutterBottom
-          sx={{ 
-            color: currentTheme?.text_color || theme.palette.text.primary,
+          sx={{
+            textAlign: 'center',
+            color: '#fff',
             fontWeight: 'bold',
-            mb: 3
+            mb: 3,
           }}
         >
           Welcome Back
         </Typography>
-        
+
         {error && (
-          <Alert 
-            severity="error" 
-            sx={{ 
-              mb: 2,
-              borderRadius: '12px',
-              background: 'rgba(211, 47, 47, 0.1)',
-              border: '1px solid rgba(211, 47, 47, 0.2)'
-            }}
-          >
+          <Alert severity="error" sx={{ mb: 2 }}>
             {needsVerification ? 'Your email address needs to be verified before you can log in.' : error}
           </Alert>
         )}
-        
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 2 }}>
-          <TextField
-            fullWidth
-            label="Email or Username"
-            value={loginIdentifier}
-            onChange={(e) => setLoginIdentifier(e.target.value)}
-            margin="normal"
-            variant="outlined"
-            disabled={isLoading}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                '&:hover fieldset': {
-                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+
+        <form onSubmit={handleSubmit}>
+          <Stack spacing={2}>
+            <TextField
+              label="Email or Username"
+              variant="outlined"
+              fullWidth
+              value={loginIdentifier}
+              onChange={(e) => setLoginIdentifier(e.target.value)}
+              required
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  color: '#fff',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#9C27B0',
+                  },
                 },
-              },
-            }}
-          />
-          
-          <TextField
-            fullWidth
-            label="Password"
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            margin="normal"
-            variant="outlined"
-            disabled={isLoading}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    onClick={() => setShowPassword(!showPassword)}
-                    edge="end"
-                  >
-                    {showPassword ? <VisibilityOff /> : <Visibility />}
-                  </IconButton>
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '12px',
-                '&:hover fieldset': {
-                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
                 },
-              },
-            }}
-          />
-          
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  sx={{
-                    color: currentTheme?.primary_color || theme.palette.primary.main,
-                    '&.Mui-checked': {
-                      color: currentTheme?.primary_color || theme.palette.primary.main,
-                    },
-                  }}
-                />
-              }
-              label="Remember me"
+              }}
             />
-            <Link 
-              to="/forgot-password" 
-              style={{ 
-                textDecoration: 'none',
-                color: currentTheme?.primary_color || theme.palette.primary.main,
-                fontSize: '0.875rem'
-              }}
-            >
-              Forgot password?
-            </Link>
-          </Box>
-          
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            disabled={isLoading}
-            sx={{
-              mt: 3,
-              mb: 2,
-              py: 1.5,
-              borderRadius: '12px',
-              background: currentTheme?.primary_color 
-                ? `linear-gradient(135deg, ${currentTheme.primary_color} 0%, ${currentTheme.secondary_color || currentTheme.primary_color} 100%)`
-                : theme.palette.primary.main,
-              '&:hover': {
-                background: currentTheme?.primary_color 
-                  ? `linear-gradient(135deg, ${currentTheme.secondary_color || currentTheme.primary_color} 0%, ${currentTheme.primary_color} 100%)`
-                  : theme.palette.primary.dark,
-              },
-            }}
-          >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
-          </Button>
-          
-          <Divider sx={{ my: 3 }}>
-            <Typography variant="body2" color="textSecondary">
-              OR
-            </Typography>
-          </Divider>
-          
-          <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
-            <Button
-              fullWidth
+
+            <TextField
+              label="Password"
+              type={showPassword ? 'text' : 'password'}
               variant="outlined"
-              startIcon={<GoogleIcon />}
+              fullWidth
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
               sx={{
-                borderRadius: '12px',
-                borderColor: currentTheme?.primary_color || theme.palette.primary.main,
-                color: currentTheme?.text_color || theme.palette.text.primary,
-                '&:hover': {
-                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
-                  background: 'rgba(0, 0, 0, 0.04)',
+                '& .MuiOutlinedInput-root': {
+                  color: '#fff',
+                  '& fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                  },
+                  '&:hover fieldset': {
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                  },
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#9C27B0',
+                  },
+                },
+                '& .MuiInputLabel-root': {
+                  color: 'rgba(255, 255, 255, 0.7)',
                 },
               }}
-            >
-              Google
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              startIcon={<GithubIcon />}
-              sx={{
-                borderRadius: '12px',
-                borderColor: currentTheme?.primary_color || theme.palette.primary.main,
-                color: currentTheme?.text_color || theme.palette.text.primary,
-                '&:hover': {
-                  borderColor: currentTheme?.primary_color || theme.palette.primary.main,
-                  background: 'rgba(0, 0, 0, 0.04)',
-                },
-              }}
-            >
-              GitHub
-            </Button>
-          </Stack>
-          
-          <Box sx={{ textAlign: 'center' }}>
-            <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              Don't have an account?{' '}
-              <Link 
-                to="/register" 
-                style={{ 
+            />
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    sx={{
+                      color: 'rgba(255, 255, 255, 0.7)',
+                      '&.Mui-checked': {
+                        color: '#9C27B0',
+                      },
+                    }}
+                  />
+                }
+                label="Remember me"
+                sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
+              />
+              <Link
+                href="/forgot-password"
+                sx={{
+                  color: '#9C27B0',
                   textDecoration: 'none',
-                  color: currentTheme?.primary_color || theme.palette.primary.main,
-                  fontWeight: 'bold'
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  },
                 }}
               >
-                Sign Up
+                Forgot password?
+              </Link>
+            </Box>
+
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              sx={{
+                background: 'linear-gradient(45deg, #9C27B0 30%, #E91E63 90%)',
+                color: '#fff',
+                height: 48,
+                '&:hover': {
+                  background: 'linear-gradient(45deg, #7B1FA2 30%, #C2185B 90%)',
+                },
+              }}
+            >
+              {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
+            </Button>
+
+            <Typography
+              variant="body2"
+              sx={{
+                textAlign: 'center',
+                color: 'rgba(255, 255, 255, 0.7)',
+                mt: 2,
+              }}
+            >
+              Don't have an account?{' '}
+              <Link
+                href="/register"
+                sx={{
+                  color: '#9C27B0',
+                  textDecoration: 'none',
+                  '&:hover': {
+                    textDecoration: 'underline',
+                  },
+                }}
+              >
+                Sign up
               </Link>
             </Typography>
-          </Box>
-        </Box>
+          </Stack>
+        </form>
       </Paper>
-    </Container>
+    </Box>
   );
 };
 

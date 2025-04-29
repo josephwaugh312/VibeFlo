@@ -6,6 +6,7 @@ import { generateToken } from '../utils/jwt';
 import pool from '../config/db';
 import { User } from '../models/user.model';
 import { Request, Response } from 'express';
+import sgMail from '@sendgrid/mail';
 
 const router = express.Router();
 
@@ -301,6 +302,33 @@ router.delete('/debug/user/:email', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error deleting user:', error);
     return res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+router.post('/test-verification', async (req, res) => {
+  try {
+    await sgMail.send({
+      to: 'joseph.waugh312@gmail.com',
+      from: 'noreply@vibeflo.app',
+      subject: 'SendGrid Test',
+      text: 'Testing SendGrid configuration',
+      html: '<p>Testing SendGrid configuration</p>'
+    });
+    res.json({ success: true, message: 'Test email sent successfully' });
+  } catch (error) {
+    console.error('SendGrid test failed:', error);
+    if (error.response) {
+      console.error('SendGrid API Response:', {
+        statusCode: error.response.statusCode,
+        body: error.response.body,
+        headers: error.response.headers
+      });
+    }
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to send test email',
+      error: error.response ? error.response.body : error.message
+    });
   }
 });
 

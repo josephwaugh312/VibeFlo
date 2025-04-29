@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useRef, useEffect, FormEven
 import { Track } from '../components/music/MusicPlayer';
 import { playlistAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
+import axios from 'axios';
 
 type PlayerTab = 'nowPlaying' | 'playlist' | 'search';
 
@@ -83,10 +84,11 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   
   const playerRef = useRef<any>(null);
   
-  // Get constants from environment variables
+  // Get YouTube API key from environment variable
   const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
   
   // Mock data for fallback when YouTube API fails
@@ -455,27 +457,31 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const handleSearch = async (e: FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
+    setSearchError(null);
+    
+    if (!searchQuery.trim()) {
+      setSearchError('Please enter a search query');
+      setSearchResults(mockSearchResults);
+      return;
+    }
+    
     try {
-      if (!YOUTUBE_API_KEY) {
-        console.error('YouTube API key is missing. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
-        toast.error('YouTube API key is missing');
-        setSearchResults(mockSearchResults);
-        return;
-      }
+      // Using YouTube Data API v3
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          part: 'snippet',
+          maxResults: 10,
+          q: searchQuery,
+          type: 'video',
+          key: YOUTUBE_API_KEY
+        }
+      });
       
-      // Assuming playlistAPI has a search method
-      // If not, you'll need to implement it or modify this code
-      const response = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(searchQuery)}&type=video&key=${YOUTUBE_API_KEY}`);
-      
-      if (!response.ok) {
-        throw new Error(`YouTube API error: ${response.status}`);
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       setSearchResults(data.items || []);
     } catch (err) {
       console.error('Error searching:', err);
-      toast.error('YouTube search failed. Showing sample results instead.');
+      setSearchError('YouTube search failed. Showing sample results instead.');
       setSearchResults(mockSearchResults);
     } finally {
       setIsSearching(false);
