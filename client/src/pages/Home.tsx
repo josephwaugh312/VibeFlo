@@ -42,39 +42,39 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-        <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg">
-          <div className="text-white mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-16">
+        <div className="bg-gray-800 bg-opacity-80 p-8 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-gray-700">
+          <div className="text-white mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-white drop-shadow-md mb-2">Focus Timer</h2>
-          <p className="text-white/90 font-medium">
+          <h2 className="text-2xl font-bold text-white drop-shadow-md mb-4">Focus Timer</h2>
+          <p className="text-white/90 font-medium leading-relaxed">
             Customize your pomodoro timer settings, add tasks to your queue, and track your productivity with our intuitive interface.
           </p>
         </div>
 
-        <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg">
-          <div className="text-white mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-gray-800 bg-opacity-80 p-8 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-gray-700">
+          <div className="text-white mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-white drop-shadow-md mb-2">Music Player</h2>
-          <p className="text-white/90 font-medium">
+          <h2 className="text-2xl font-bold text-white drop-shadow-md mb-4">Music Player</h2>
+          <p className="text-white/90 font-medium leading-relaxed">
             Create playlists with your favorite YouTube tracks and enjoy background music tailored to your study or work sessions.
           </p>
         </div>
 
-        <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg">
-          <div className="text-white mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="bg-gray-800 bg-opacity-80 p-8 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-gray-700">
+          <div className="text-white mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-white drop-shadow-md mb-2">Productivity Analytics</h2>
-          <p className="text-white/90 font-medium">
+          <h2 className="text-2xl font-bold text-white drop-shadow-md mb-4">Productivity Analytics</h2>
+          <p className="text-white/90 font-medium leading-relaxed">
             Gain insights into your productivity patterns with detailed statistics and visualizations of your work sessions.
           </p>
         </div>
