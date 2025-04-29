@@ -114,7 +114,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setIsAuthenticated(true);
         } else {
           // If no user data, fetch it
-          await initializeAuth();
+          try {
+            const userData = await apiService.auth.getCurrentUser();
+            localStorage.setItem('user', JSON.stringify(userData));
+            setUser(userData);
+            setIsAuthenticated(true);
+          } catch (error) {
+            console.error('Error fetching user data after login:', error);
+            // Clear the token if we can't get user data
+            localStorage.removeItem('token');
+            apiService.setToken(null);
+            setUser(null);
+            setIsAuthenticated(false);
+            return {
+              success: false,
+              message: 'Failed to fetch user data after login'
+            };
+          }
         }
       }
       
