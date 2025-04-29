@@ -168,8 +168,12 @@ const AppRoutes = () => {
 
 const App: React.FC = () => {
   console.log('App component rendering');
+  const { initializeAuth } = useAuth();
 
   useEffect(() => {
+    // Initialize auth state
+    initializeAuth();
+    
     // Load theme from localStorage if available
     const savedTheme = localStorage.getItem('selectedTheme');
     if (savedTheme) {
@@ -197,11 +201,8 @@ const App: React.FC = () => {
       } catch (error) {
         console.error('Error loading theme from localStorage:', error);
       }
-    } else {
-      // Set default background if no theme in localStorage
-      document.body.style.backgroundImage = 'linear-gradient(135deg, #8e44ad 0%, #3498db 100%)';
     }
-  }, []);
+  }, [initializeAuth]);
 
   return (
     <MuiThemeProvider theme={theme}>
