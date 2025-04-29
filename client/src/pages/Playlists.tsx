@@ -5,10 +5,10 @@ import { Track } from '../components/music/MusicPlayer';
 import { toast } from 'react-hot-toast';
 
 interface Playlist {
-  id: number;
+  id: string;
   name: string;
   description?: string;
-  user_id: number;
+  user_id: string;
   created_at: string;
 }
 
