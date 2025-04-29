@@ -10,6 +10,7 @@ interface AuthRequest extends Request {
  */
 export const getUserPlaylists = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('Getting playlists for user:', req.user?.id);
     const userId = req.user?.id;
     
     if (!userId) {
@@ -21,10 +22,11 @@ export const getUserPlaylists = async (req: AuthRequest, res: Response) => {
       [userId]
     );
 
+    console.log('Found playlists:', playlists.rows);
     res.json(playlists.rows);
   } catch (error) {
-    console.error('Error fetching playlists:', error);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Error getting playlists:', error);
+    res.status(500).json({ message: 'Error fetching playlists' });
   }
 };
 
