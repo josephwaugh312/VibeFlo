@@ -35,6 +35,9 @@ interface AuthContextType {
   logout: () => void;
   initializeAuth: () => Promise<void>;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResponse>;
+  updateProfile: (userData: Partial<User>) => Promise<User>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -104,6 +107,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateProfile = async (userData: Partial<User>): Promise<User> => {
+    try {
+      const updatedUser = await authAPI.updateProfile(userData);
+      setUser(prevUser => ({ ...prevUser!, ...updatedUser }));
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
+  };
+
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<void> => {
+    try {
+      await authAPI.changePassword(currentPassword, newPassword);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      throw error;
+    }
+  };
+
+  const deleteAccount = async (password: string): Promise<void> => {
+    try {
+      await authAPI.deleteAccount(password);
+      logout();
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      throw error;
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -123,7 +157,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated,
         logout,
         initializeAuth,
-        login
+        login,
+        updateProfile,
+        changePassword,
+        deleteAccount
       }}
     >
       {children}
