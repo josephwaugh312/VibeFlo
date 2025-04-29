@@ -28,6 +28,54 @@ const Dashboard: React.FC = () => {
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-3xl font-bold text-white drop-shadow-lg mb-6">Welcome, @{user?.username || 'User'}!</h1>
       
+      {/* Feature Cards - Horizontal Layout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Focus Timer Card */}
+        <Link to="/dashboard" className="block">
+          <div className="bg-gray-800 bg-opacity-80 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm border border-gray-700 h-full">
+            <div className="text-purple-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Focus Timer</h2>
+            <p className="text-white/90">
+              Customize your pomodoro timer settings, add tasks to your queue, and track your productivity with our intuitive interface.
+            </p>
+          </div>
+        </Link>
+
+        {/* Music Player Card */}
+        <Link to="/playlists" className="block">
+          <div className="bg-gray-800 bg-opacity-80 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm border border-gray-700 h-full">
+            <div className="text-purple-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Music Player</h2>
+            <p className="text-white/90">
+              Create playlists with your favorite YouTube tracks and enjoy background music tailored to your study or work sessions.
+            </p>
+          </div>
+        </Link>
+
+        {/* Analytics Card */}
+        <Link to="/stats" className="block">
+          <div className="bg-gray-800 bg-opacity-80 p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 backdrop-blur-sm border border-gray-700 h-full">
+            <div className="text-purple-400 mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">Productivity Analytics</h2>
+            <p className="text-white/90">
+              Gain insights into your productivity patterns with detailed statistics and visualizations of your work sessions.
+            </p>
+          </div>
+        </Link>
+      </div>
+
       {/* User Bio Quote Display */}
       {user?.bio && (
         <Paper 
