@@ -129,32 +129,14 @@ const Login: React.FC = () => {
         if (response.needsVerification) {
           setVerificationEmail(response.email || loginIdentifier);
           setNeedsVerification(true);
-          setError('Email verification required');
+          setError('Please verify your email before logging in.');
         } else {
           setError(response.message || 'Login failed. Please check your credentials.');
         }
       }
-    } catch (err: any) {
-      console.error('Login error:', err);
-      console.error('Login error details:', {
-        status: err.response?.status,
-        statusText: err.response?.statusText,
-        data: err.response?.data,
-        message: err.message
-      });
-      
-      if (err.response?.status === 429) {
-        // Extract lockout end time from error message
-        const match = err.response?.data?.message?.match(/try again in (\d+) minutes/);
-        if (match) {
-          const minutes = parseInt(match[1]);
-          const endTime = new Date();
-          endTime.setMinutes(endTime.getMinutes() + minutes);
-          setLockoutEndTime(endTime);
-        }
-      }
-      
-      setError(err.response?.data?.message || 'Login failed. Please check your credentials.');
+    } catch (error) {
+      console.error('Login error:', error);
+      setError('An unexpected error occurred during login. Please try again.');
     } finally {
       setIsLoading(false);
     }
