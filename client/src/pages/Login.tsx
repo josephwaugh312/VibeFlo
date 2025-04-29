@@ -135,6 +135,7 @@ const Login: React.FC = () => {
         }
       }
     } catch (err: any) {
+      console.error('Login error:', err);
       console.error('Login error details:', {
         status: err.response?.status,
         statusText: err.response?.statusText,

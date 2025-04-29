@@ -24,6 +24,8 @@ interface LoginResponse {
   needsVerification?: boolean;
   email?: string;
   message?: string;
+  token?: string;
+  user?: User;
 }
 
 interface AuthContextType {
@@ -98,9 +100,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (identifier: string, password: string, rememberMe: boolean = true): Promise<LoginResponse> => {
     try {
       const response = await authAPI.login(identifier, password);
-      if (response.success) {
-        await initializeAuth();
+      console.log('Login response in auth context:', response);
+      
+      if (response.success && response.token) {
+        // Store the token
+        localStorage.setItem('token', response.token);
+        apiService.setToken(response.token);
+        
+        // If we have user data, store it
+        if (response.user) {
+          localStorage.setItem('user', JSON.stringify(response.user));
+          setUser(response.user);
+          setIsAuthenticated(true);
+        } else {
+          // If no user data, fetch it
+          await initializeAuth();
+        }
       }
+      
       return response;
     } catch (error) {
       console.error('Login error:', error);
