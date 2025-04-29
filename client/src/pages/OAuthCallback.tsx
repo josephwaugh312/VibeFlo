@@ -3,15 +3,15 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { CircularProgress, Box, Typography, Paper } from '@mui/material';
+import apiService from '../services/api';
 
 const OAuthCallback: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
-  const { setUser } = useAuth();
+  const { setUser, setIsAuthenticated, initializeAuth } = useAuth();
 
-  // Set error immediately on mount if error param exists
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const errorParam = params.get('error');
@@ -20,85 +20,64 @@ const OAuthCallback: React.FC = () => {
       console.error('OAuth error from server:', errorParam);
       setError(`Authentication error: ${errorParam}`);
       setIsProcessing(false);
+      setTimeout(() => navigate('/login'), 3000);
     }
-  }, [location.search]);
+  }, [location.search, navigate]);
   
   useEffect(() => {
     const processOAuthCallback = async () => {
       try {
-        // Extract token from URL query parameters
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
-        const errorParam = params.get('error');
-        
-        if (errorParam) {
-          // Error is already set in the other useEffect
-          // Just handle the redirect timing
-          
-          // Delay redirect for Cypress test to detect the error message
-          setTimeout(() => {
-            navigate('/login');
-          }, 10000); // Increased timeout to ensure test has time to verify
-          return;
-        }
         
         if (!token) {
           console.error('No token in callback URL');
           setError('No authentication token received');
           setIsProcessing(false);
-          
-          // Delay redirect
-          setTimeout(() => {
-            navigate('/login');
-          }, 10000);
+          setTimeout(() => navigate('/login'), 3000);
           return;
         }
         
-        console.log('OAuth token received, storing and fetching user data');
+        console.log('OAuth token received, initializing authentication');
         
-        // Store the token
+        // Store the token and initialize auth context
         localStorage.setItem('token', token);
         
-        // Configure axios with the token
+        // Configure axios and API service with the token
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        apiService.setToken(token);
         
         try {
-          // Fetch user data
-          console.log('Fetching user data from /api/auth/me');
-          const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/auth/me`);
-          console.log('User data received:', response.data);
-          const userData = response.data;
-          setUser(userData);
+          // Initialize auth context which will fetch and validate user data
+          await initializeAuth();
           
-          // Redirect to dashboard
+          // If initialization succeeds, redirect to dashboard
           setTimeout(() => {
             navigate('/dashboard');
           }, 1000);
-        } catch (fetchError: any) {
-          console.error('Error fetching user data:', fetchError);
-          console.error('Response:', fetchError.response?.data);
-          setError(fetchError.response?.data?.message || 'Failed to fetch user data');
-          setIsProcessing(false);
+        } catch (authError: any) {
+          console.error('Error initializing authentication:', authError);
           
-          // Still redirect to dashboard after a longer delay since we have a token
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 3000);
+          // Clear any invalid data
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          axios.defaults.headers.common['Authorization'] = '';
+          apiService.setToken(null);
+          
+          setError('Failed to complete authentication. Please try again.');
+          setIsProcessing(false);
+          setTimeout(() => navigate('/login'), 3000);
         }
       } catch (err: any) {
         console.error('OAuth callback processing error:', err);
         setError(err.response?.data?.message || 'Authentication failed');
         setIsProcessing(false);
-        
-        // Redirect to login after showing error
-        setTimeout(() => {
-          navigate('/login');
-        }, 10000);
+        setTimeout(() => navigate('/login'), 3000);
       }
     };
     
     processOAuthCallback();
-  }, [location, navigate, setUser]);
+  }, [location, navigate, setUser, setIsAuthenticated, initializeAuth]);
 
   return (
     <Box
@@ -110,24 +89,45 @@ const OAuthCallback: React.FC = () => {
       p={3}
       data-cy="oauth-callback-container"
     >
-      <Paper elevation={3} sx={{ p: 4, maxWidth: 500, width: '100%', textAlign: 'center' }}>
+      <Paper 
+        elevation={3} 
+        sx={{ 
+          p: 4, 
+          maxWidth: 500, 
+          width: '100%', 
+          textAlign: 'center',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          color: 'white'
+        }}
+      >
         {error ? (
           <>
             <Typography variant="h5" color="error" gutterBottom data-cy="auth-error-title">
               Authentication Error
             </Typography>
-            <Typography color="textSecondary" data-cy="auth-error-message">{error}</Typography>
-            <Typography variant="body2" sx={{ mt: 2 }}>
-              {isProcessing ? "Attempting to continue anyway..." : "Redirecting to login..."}
+            <Typography color="rgba(255, 255, 255, 0.7)" data-cy="auth-error-message">
+              {error}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.5)' }}>
+              Redirecting to login...
             </Typography>
           </>
         ) : (
           <>
-            <CircularProgress size={60} thickness={4} sx={{ mb: 3 }} />
-            <Typography variant="h5" gutterBottom>
+            <CircularProgress 
+              size={60} 
+              thickness={4} 
+              sx={{ 
+                mb: 3,
+                color: theme => theme.palette.primary.main
+              }} 
+            />
+            <Typography variant="h5" gutterBottom sx={{ color: 'white' }}>
               Completing Authentication
             </Typography>
-            <Typography color="textSecondary">
+            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
               Please wait while we finalize your sign-in...
             </Typography>
           </>
