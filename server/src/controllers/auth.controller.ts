@@ -122,19 +122,22 @@ export const register = handleAsync(async (req: Request, res: Response) => {
  * Login user and return JWT token
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { login, email, password } = req.body;
   
-  console.log('Login attempt:', { email, passwordLength: password?.length });
+  // Use either login or email field
+  const loginIdentifier = login || email;
+  
+  console.log('Login attempt:', { loginIdentifier, passwordLength: password?.length });
 
-  if (!email) throw validationErrors.required('Email');
+  if (!loginIdentifier) throw validationErrors.required('Email');
   if (!password) throw validationErrors.required('Password');
 
   // Query based on whether the login is an email or username
   const queryText = 'SELECT * FROM users WHERE email = $1';
   
-  console.log('Query:', queryText, 'Parameter:', email);
+  console.log('Query:', queryText, 'Parameter:', loginIdentifier);
   
-  const userResult = await pool.query(queryText, [email]);
+  const userResult = await pool.query(queryText, [loginIdentifier]);
   
   console.log('User found:', userResult.rows.length > 0, 'User details:', userResult.rows.length > 0 ? { 
     id: userResult.rows[0].id,
@@ -145,8 +148,8 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   if (userResult.rows.length === 0) {
     // Record the failed attempt
-    await recordFailedLoginAttempt(email);
-    console.log('User not found with login:', email);
+    await recordFailedLoginAttempt(loginIdentifier);
+    console.log('User not found with login:', loginIdentifier);
     throw authErrors.invalidCredentials();
   }
   
@@ -190,7 +193,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   if (!isMatch) {
     // Record the failed attempt
-    await recordFailedLoginAttempt(email);
+    await recordFailedLoginAttempt(loginIdentifier);
     console.log('Password does not match');
     throw authErrors.invalidCredentials();
   }
