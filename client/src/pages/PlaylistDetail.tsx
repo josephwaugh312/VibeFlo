@@ -898,9 +898,9 @@ const PlaylistDetail: React.FC = () => {
         
         {/* YouTube Search Results */}
         {youtubeSearchResults.length > 0 && (
-          <div className="p-6 bg-gray-800 border-t border-gray-700">
-            <h3 className="text-lg font-medium mb-4 text-white">YouTube Search Results</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-4 bg-gray-800 border-t border-gray-700">
+            <h3 className="text-lg font-medium mb-3 text-white">YouTube Search Results</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {youtubeSearchResults.map((result) => (
                 <div
                   key={result.id.videoId}
@@ -909,15 +909,15 @@ const PlaylistDetail: React.FC = () => {
                   <img
                     src={result.snippet.thumbnails.medium.url}
                     alt={result.snippet.title}
-                    className="w-full h-auto rounded-t-md"
+                    className="w-full h-24 object-cover rounded-t-md"
                   />
-                  <div className="p-3">
-                    <h4 className="font-semibold text-sm line-clamp-2 mb-1 text-white">{result.snippet.title}</h4>
-                    <p className="text-xs text-gray-300 mb-2">{result.snippet.channelTitle}</p>
+                  <div className="p-2">
+                    <h4 className="font-semibold text-sm line-clamp-1 mb-1 text-white">{result.snippet.title}</h4>
+                    <p className="text-xs text-gray-300 mb-2 truncate">{result.snippet.channelTitle}</p>
                     <button
                       onClick={() => handleAddYouTubeTrack(result)}
                       disabled={isAddingYoutubeTrack}
-                      className={`w-full py-1.5 px-3 rounded text-sm font-medium ${
+                      className={`w-full py-1 px-2 rounded text-xs font-medium ${
                         isAddingYoutubeTrack
                           ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                           : 'bg-purple-600 hover:bg-purple-700 text-white'
