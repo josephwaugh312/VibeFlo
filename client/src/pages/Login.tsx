@@ -200,15 +200,16 @@ const Login: React.FC = () => {
       }}
     >
       <Paper
-        elevation={0}
+        elevation={3}
         sx={{
           p: 4,
-          maxWidth: 400,
           width: '100%',
-          background: 'rgba(0, 0, 0, 0.7)',
-          backdropFilter: 'blur(10px)',
+          maxWidth: 400,
           borderRadius: 2,
+          backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
         }}
       >
         <Typography
@@ -217,8 +218,8 @@ const Login: React.FC = () => {
           gutterBottom
           sx={{
             textAlign: 'center',
-            color: '#fff',
             fontWeight: 'bold',
+            color: 'text.primary',
             mb: 3,
           }}
         >
@@ -227,12 +228,25 @@ const Login: React.FC = () => {
 
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
-            {needsVerification ? 'Your email address needs to be verified before you can log in.' : error}
+            {error}
+          </Alert>
+        )}
+
+        {needsVerification && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Please verify your email before logging in.
+            <Button
+              onClick={handleResendVerification}
+              disabled={resendingVerification}
+              sx={{ ml: 1 }}
+            >
+              {resendingVerification ? 'Sending...' : 'Resend Verification'}
+            </Button>
           </Alert>
         )}
 
         <form onSubmit={handleSubmit}>
-          <Stack spacing={2}>
+          <Stack spacing={3}>
             <TextField
               label="Email or Username"
               variant="outlined"
@@ -242,7 +256,8 @@ const Login: React.FC = () => {
               required
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  color: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: 1,
                   '& fieldset': {
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                   },
@@ -250,11 +265,8 @@ const Login: React.FC = () => {
                     borderColor: 'rgba(255, 255, 255, 0.3)',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#9C27B0',
+                    borderColor: 'primary.main',
                   },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'rgba(255, 255, 255, 0.7)',
                 },
               }}
             />
@@ -267,9 +279,22 @@ const Login: React.FC = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  color: '#fff',
+                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  borderRadius: 1,
                   '& fieldset': {
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                   },
@@ -277,11 +302,8 @@ const Login: React.FC = () => {
                     borderColor: 'rgba(255, 255, 255, 0.3)',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: '#9C27B0',
+                    borderColor: 'primary.main',
                   },
-                },
-                '& .MuiInputLabel-root': {
-                  color: 'rgba(255, 255, 255, 0.7)',
                 },
               }}
             />
@@ -293,24 +315,20 @@ const Login: React.FC = () => {
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                     sx={{
-                      color: 'rgba(255, 255, 255, 0.7)',
+                      color: 'primary.main',
                       '&.Mui-checked': {
-                        color: '#9C27B0',
+                        color: 'primary.main',
                       },
                     }}
                   />
                 }
                 label="Remember me"
-                sx={{ color: 'rgba(255, 255, 255, 0.7)' }}
               />
               <Link
-                href="/forgot-password"
-                sx={{
-                  color: '#9C27B0',
+                to="/forgot-password"
+                style={{
                   textDecoration: 'none',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                  },
+                  color: muiTheme.palette.primary.main,
                 }}
               >
                 Forgot password?
@@ -321,40 +339,75 @@ const Login: React.FC = () => {
               type="submit"
               variant="contained"
               fullWidth
+              disabled={isLoading || !!lockoutEndTime}
               sx={{
+                py: 1.5,
                 background: 'linear-gradient(45deg, #9C27B0 30%, #E91E63 90%)',
-                color: '#fff',
-                height: 48,
                 '&:hover': {
                   background: 'linear-gradient(45deg, #7B1FA2 30%, #C2185B 90%)',
                 },
               }}
             >
-              {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : lockoutEndTime ? (
+                `Try again in ${timeLeft}`
+              ) : (
+                'Log In'
+              )}
             </Button>
 
-            <Typography
-              variant="body2"
-              sx={{
-                textAlign: 'center',
-                color: 'rgba(255, 255, 255, 0.7)',
-                mt: 2,
-              }}
-            >
-              Don't have an account?{' '}
-              <Link
-                href="/register"
+            <Divider sx={{ my: 2 }}>or</Divider>
+
+            <Stack spacing={2}>
+              <Button
+                variant="outlined"
+                startIcon={<GoogleIcon />}
+                fullWidth
                 sx={{
-                  color: '#9C27B0',
-                  textDecoration: 'none',
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  color: 'text.primary',
                   '&:hover': {
-                    textDecoration: 'underline',
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   },
                 }}
               >
-                Sign up
-              </Link>
-            </Typography>
+                Continue with Google
+              </Button>
+
+              <Button
+                variant="outlined"
+                startIcon={<GithubIcon />}
+                fullWidth
+                sx={{
+                  borderColor: 'rgba(255, 255, 255, 0.2)',
+                  color: 'text.primary',
+                  '&:hover': {
+                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                  },
+                }}
+              >
+                Continue with GitHub
+              </Button>
+            </Stack>
+
+            <Box sx={{ textAlign: 'center', mt: 2 }}>
+              <Typography variant="body2" color="text.secondary">
+                Don't have an account?{' '}
+                <Link
+                  to="/register"
+                  style={{
+                    textDecoration: 'none',
+                    color: muiTheme.palette.primary.main,
+                    fontWeight: 'bold',
+                  }}
+                >
+                  Sign up
+                </Link>
+              </Typography>
+            </Box>
           </Stack>
         </form>
       </Paper>
