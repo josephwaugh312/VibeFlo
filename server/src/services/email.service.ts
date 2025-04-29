@@ -24,6 +24,26 @@ const CLIENT_URL = process.env.CLIENT_URL || 'https://vibeflo.app';
 sgMail.setApiKey(SENDGRID_API_KEY);
 console.log('SendGrid configured successfully with sender:', FROM_EMAIL);
 
+// Test SendGrid configuration
+sgMail.send({
+  to: FROM_EMAIL,
+  from: FROM_EMAIL,
+  subject: 'SendGrid Test',
+  text: 'Testing SendGrid configuration',
+  html: '<p>Testing SendGrid configuration</p>'
+}).then(() => {
+  console.log('SendGrid test email sent successfully');
+}).catch((error) => {
+  console.error('SendGrid test email failed:', error);
+  if (error.response) {
+    console.error('SendGrid API Response:', {
+      statusCode: error.response.statusCode,
+      body: error.response.body,
+      headers: error.response.headers
+    });
+  }
+});
+
 /**
  * Base email service providing methods for sending various types of emails
  */
@@ -75,22 +95,32 @@ class EmailService {
         `
       };
 
-      // Send the email
+      console.log('Attempting to send verification email with config:', {
+        to,
+        from: FROM_EMAIL,
+        subject: msg.subject,
+        apiKeyPresent: !!SENDGRID_API_KEY,
+        apiKeyLength: SENDGRID_API_KEY?.length,
+        domain: FROM_EMAIL.split('@')[1]
+      });
+
       await sgMail.send(msg);
-      console.log(`Verification email sent to ${to}`);
-    } catch (error) {
-      console.error('Error sending verification email:', error);
-      if (error.response) {
-        console.error('SendGrid API Response:', {
+      console.log('Verification email sent successfully to:', to);
+    } catch (error: any) {
+      console.error('Error sending verification email:', {
+        error: error.message,
+        code: error.code,
+        response: error.response ? {
           statusCode: error.response.statusCode,
           body: error.response.body,
           headers: error.response.headers
-        });
-        if (error.response.body && error.response.body.errors) {
-          console.error('SendGrid Error Details:', error.response.body.errors);
-        }
-      }
-      throw new Error('Failed to send verification email');
+        } : 'No response details',
+        to,
+        from: FROM_EMAIL,
+        apiKeyPresent: !!SENDGRID_API_KEY,
+        apiKeyLength: SENDGRID_API_KEY?.length
+      });
+      throw error;
     }
   }
 

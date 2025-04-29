@@ -148,6 +148,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated(true);
         localStorage.setItem('isAuthenticated', 'true');
         
+        // Set the token in the API service and localStorage
+        if (data.token) {
+          apiService.setToken(data.token);
+          localStorage.setItem('token', data.token);
+        }
+        
         if (rememberMe) {
           localStorage.setItem('rememberMe', 'true');
         } else {

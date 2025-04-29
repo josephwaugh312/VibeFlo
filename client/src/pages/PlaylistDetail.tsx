@@ -3,8 +3,9 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import apiService from '../services/api';
 import toast from 'react-hot-toast';
 import { Track } from '../components/music/MusicPlayer';
+import axios from 'axios';
 
-// Get YouTube API key from environment variables 
+// Get YouTube API key from environment variable
 const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
 
 interface Song {
@@ -136,6 +137,7 @@ const PlaylistDetail: React.FC = () => {
   const [isLoadingToPlayer, setIsLoadingToPlayer] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   const fetchPlaylistAndSongs = async () => {
     if (!id) {
@@ -265,38 +267,32 @@ const PlaylistDetail: React.FC = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     
-    // Check if YouTube API key is available
-    if (!YOUTUBE_API_KEY) {
-      console.error('YouTube API key is missing. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
-      toast.error('YouTube API key is missing');
-      return;
-    }
-    
-    // YouTube search
-    setIsSearchingYoutube(true);
     try {
-      console.log('Searching YouTube for:', searchQuery);
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/search?part=snippet&maxResults=10&q=${encodeURIComponent(
-          searchQuery
-        )}&type=video&key=${YOUTUBE_API_KEY}`
-      );
+      setIsSearchingYoutube(true);
+      setSearchError(null);
       
-      if (!response.ok) {
-        throw new Error(`YouTube API error: ${response.status}`);
-      }
+      // Using YouTube Data API v3
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+        params: {
+          part: 'snippet',
+          maxResults: 10,
+          q: searchQuery,
+          type: 'video',
+          key: YOUTUBE_API_KEY
+        }
+      });
       
-      const data = await response.json();
-      console.log('YouTube search results:', data);
+      // Axios returns the data directly in response.data, not response.json()
+      console.log('YouTube search results:', response.data);
       
-      if (data.items && data.items.length > 0) {
-        setYoutubeSearchResults(data.items);
+      if (response.data.items && response.data.items.length > 0) {
+        setYoutubeSearchResults(response.data.items);
       } else {
         toast('No YouTube videos found', { icon: 'ℹ️' });
       }
     } catch (error) {
       console.error('Error searching YouTube:', error);
-      toast.error('YouTube API error: Check your API key or search query');
+      setSearchError('YouTube API error: Check your API key or search query');
     } finally {
       setIsSearchingYoutube(false);
     }
@@ -355,13 +351,6 @@ const PlaylistDetail: React.FC = () => {
   const handleAddYoutubeUrl = async () => {
     if (!id) return;
     
-    // Check if YouTube API key is available
-    if (!YOUTUBE_API_KEY) {
-      console.error('YouTube API key is missing. Please set REACT_APP_YOUTUBE_API_KEY in your .env file.');
-      toast.error('YouTube API key is missing');
-      return;
-    }
-    
     try {
       setIsAddingYoutubeTrack(true);
       
@@ -370,16 +359,16 @@ const PlaylistDetail: React.FC = () => {
         throw new Error('Invalid YouTube URL');
       }
       
-      // Fetch video details from YouTube API
-      const response = await fetch(
-        `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${youtubeId}&key=${YOUTUBE_API_KEY}`
-      );
+      // Fetch video details from YouTube API - using axios instead of fetch
+      const response = await axios.get('https://www.googleapis.com/youtube/v3/videos', {
+        params: {
+          part: 'snippet',
+          id: youtubeId,
+          key: YOUTUBE_API_KEY
+        }
+      });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch video details');
-      }
-      
-      const data = await response.json();
+      const data = response.data;
       
       if (!data.items || data.items.length === 0) {
         throw new Error('Video not found');
