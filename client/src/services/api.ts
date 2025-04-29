@@ -169,7 +169,7 @@ const apiService = (() => {
     updateProfile: async (userData: any) => {
       try {
         console.log('API service - updateProfile raw data:', userData);
-        const response = await api.put('/users/me', userData);
+        const response = await api.put('/api/users/me', userData);
         console.log('API service - updateProfile raw response:', response);
         
         // Make sure avatar changes are preserved
@@ -240,7 +240,23 @@ const apiService = (() => {
         console.log('Fetching user playlists...');
         const response = await api.get('/playlists');
         console.log('User playlists response:', response.data);
-        return response.data;
+        
+        // Ensure the response data is an array
+        if (!Array.isArray(response.data)) {
+          console.error('Invalid playlists data format:', response.data);
+          throw new Error('Invalid playlists data format');
+        }
+        
+        // Validate each playlist has required fields
+        const validPlaylists = response.data.map(playlist => ({
+          id: String(playlist.id),
+          name: playlist.name,
+          description: playlist.description || '',
+          user_id: String(playlist.user_id),
+          created_at: playlist.created_at
+        }));
+        
+        return validPlaylists;
       } catch (error) {
         console.error('Error fetching user playlists:', error);
         throw error;
