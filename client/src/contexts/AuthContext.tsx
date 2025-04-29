@@ -2,9 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios, { AxiosError } from 'axios';
 import apiService, { authAPI } from '../services/api';
 
-// Get the API base URL from environment or use default
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-
+// Remove the hardcoded API base URL since we're using the one from apiService
 interface User {
   id: string;
   name: string;
@@ -49,6 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshAttempts, setRefreshAttempts] = useState(0);
 
   const initializeAuth = async () => {
     try {
@@ -76,13 +75,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('user', JSON.stringify(response));
           setUser(response);
           setIsAuthenticated(true);
+          setRefreshAttempts(0); // Reset attempts on success
         } catch (error) {
           console.error('Error refreshing user data:', error);
-          // If token verification fails, clear everything
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          setUser(null);
-          setIsAuthenticated(false);
+          
+          // Only clear auth state if we've tried multiple times
+          if (refreshAttempts >= 3) {
+            console.log('Max refresh attempts reached, clearing auth state');
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            setUser(null);
+            setIsAuthenticated(false);
+            setRefreshAttempts(0);
+          } else {
+            setRefreshAttempts(prev => prev + 1);
+          }
         }
       } else {
         setUser(null);
