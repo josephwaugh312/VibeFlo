@@ -14,7 +14,7 @@ import {
 } from '@mui/material';
 import { authAPI } from '../services/api';
 import { useTheme as useAppTheme } from '../context/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import { useTheme as useMuiTheme } from '@mui/material/styles';
 
 const Register: React.FC = () => {
