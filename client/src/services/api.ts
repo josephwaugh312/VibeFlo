@@ -155,12 +155,39 @@ const apiService = (() => {
   // Authentication API methods
   const auth = {
     login: async (loginIdentifier: string, password: string) => {
-      const response = await api.post('/auth/login', { 
-        email: loginIdentifier, 
-        login: loginIdentifier, 
-        password 
-      });
-      return response.data;
+      try {
+        console.log('Attempting login with:', { loginIdentifier });
+        const response = await api.post('/api/auth/login', { 
+          email: loginIdentifier, 
+          login: loginIdentifier, 
+          password 
+        });
+        console.log('Login response:', response.data);
+        
+        // Ensure the response has the expected format
+        if (response.data && response.data.token) {
+          return {
+            success: true,
+            token: response.data.token,
+            user: response.data.user,
+            message: response.data.message
+          };
+        } else {
+          console.error('Invalid login response format:', response.data);
+          throw new Error('Invalid login response format');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        if (error.response?.data) {
+          return {
+            success: false,
+            message: error.response.data.message,
+            needsVerification: error.response.data.needsVerification,
+            email: error.response.data.email
+          };
+        }
+        throw error;
+      }
     },
     
     register: async (name: string, username: string, email: string, password: string) => {
