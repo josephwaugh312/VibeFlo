@@ -116,8 +116,13 @@ const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
 
 // Root component that handles auth state and routing
 const AppRoutes = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, initializeAuth } = useAuth();
   const navigate = useNavigate();
+  
+  // Initialize auth state
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
   
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -168,12 +173,8 @@ const AppRoutes = () => {
 
 const App: React.FC = () => {
   console.log('App component rendering');
-  const { initializeAuth } = useAuth();
 
   useEffect(() => {
-    // Initialize auth state
-    initializeAuth();
-    
     // Load theme from localStorage if available
     const savedTheme = localStorage.getItem('selectedTheme');
     if (savedTheme) {
@@ -202,7 +203,7 @@ const App: React.FC = () => {
         console.error('Error loading theme from localStorage:', error);
       }
     }
-  }, [initializeAuth]);
+  }, []);
 
   return (
     <MuiThemeProvider theme={theme}>
