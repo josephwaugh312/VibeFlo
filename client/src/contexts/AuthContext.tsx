@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
+import axios from 'axios';
 import apiService, { authAPI } from '../services/api';
 
 // Get the API base URL from environment or use default
@@ -31,250 +31,112 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   setUser: (user: User | null) => void;
-  login: (identifier: string, password: string, rememberMe: boolean) => Promise<LoginResponse>;
-  register: (name: string, username: string, email: string, password: string) => Promise<void>;
-  updateProfile: (data: Partial<User>) => Promise<User>;
-  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
-  deleteAccount: (password: string) => Promise<void>;
+  setIsAuthenticated: (value: boolean) => void;
   logout: () => void;
+  initializeAuth: () => Promise<void>;
+  login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResponse>;
 }
 
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  isAuthenticated: false,
-  isLoading: true,
-  setUser: () => {},
-  login: async () => ({ success: false }),
-  register: async () => {},
-  updateProfile: async () => ({} as User),
-  changePassword: async () => {},
-  deleteAccount: async () => {},
-  logout: () => {},
-});
-
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // On mount, check if there's a token and try to get the user
-  useEffect(() => {
-    const checkAuthStatus = async () => {
+  const initializeAuth = async () => {
+    try {
       const token = localStorage.getItem('token');
-      
+      const storedUser = localStorage.getItem('user');
+
       if (token) {
-        // Set token in API service
+        // Configure axios and API service with the token
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         apiService.setToken(token);
-        
-        try {
-          // Check if token is valid by getting user data
-          const userData = await authAPI.getCurrentUser();
-          console.log('User authenticated successfully:', userData);
+
+        if (storedUser) {
+          // If we have stored user data, use it immediately
+          const userData = JSON.parse(storedUser);
           setUser(userData);
           setIsAuthenticated(true);
-        } catch (error: any) {
-          console.error('Token validation failed:', error);
+        }
+
+        try {
+          // Verify token and refresh user data
+          console.log('Verifying token and refreshing user data');
+          const response = await apiService.auth.getCurrentUser();
+          console.log('User data refreshed:', response);
           
-          // Only log out for specific 401 unauthorized errors
-          if (error.response && error.response.status === 401 && 
-              error.response.data && 
-              error.response.data.message === 'Invalid token') {
-            
-            console.log('Invalid token detected - logging out');
-            localStorage.removeItem('token');
-            apiService.setToken(null);
-            setUser(null);
-            setIsAuthenticated(false);
-            toast.error('Session expired. Please log in again.');
-          } else {
-            // For network errors or other server issues, keep the user logged in
-            console.log('Error checking auth status, but keeping user logged in');
-            
-            // If we have cached user data, use it instead of forcing logout
-            const cachedUser = localStorage.getItem('cachedUser');
-            if (cachedUser) {
-              try {
-                setUser(JSON.parse(cachedUser));
-                console.log('Using cached user data during server unavailability');
-              } catch (e) {
-                console.error('Failed to parse cached user data', e);
-              }
-            }
-          }
+          localStorage.setItem('user', JSON.stringify(response));
+          setUser(response);
+          setIsAuthenticated(true);
+        } catch (error) {
+          console.error('Error refreshing user data:', error);
+          // If token verification fails, clear everything
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          setUser(null);
+          setIsAuthenticated(false);
         }
       } else {
-        console.log('No authentication token found');
         setUser(null);
         setIsAuthenticated(false);
       }
-      
-      setIsLoading(false);
-    };
-    
-    checkAuthStatus();
-  }, []);
-
-  // Cache user data when it changes
-  useEffect(() => {
-    if (user) {
-      localStorage.setItem('cachedUser', JSON.stringify(user));
-    }
-  }, [user]);
-
-  const login = async (identifier: string, password: string, rememberMe: boolean = false) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: identifier,
-          password,
-        }),
-        credentials: 'include',
-      });
-      
-      const data = await response.json();
-      
-      if (response.ok) {
-        setUser(data.user);
-        setIsAuthenticated(true);
-        localStorage.setItem('isAuthenticated', 'true');
-        
-        // Set the token in the API service and localStorage
-        if (data.token) {
-          apiService.setToken(data.token);
-          localStorage.setItem('token', data.token);
-        }
-        
-        if (rememberMe) {
-          localStorage.setItem('rememberMe', 'true');
-        } else {
-          localStorage.removeItem('rememberMe');
-        }
-        
-        return { success: true };
-      } else {
-        // Handle specific error cases
-        if (data.error === 'Email not verified') {
-          return { 
-            success: false, 
-            needsVerification: true, 
-            email: identifier,
-            message: data.message || 'Please verify your email before logging in'
-          };
-        }
-        
-        setError(data.message || 'Login failed');
-        return { 
-          success: false, 
-          message: data.message || 'Login failed'
-        };
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Connection error. Please try again.');
-      return { 
-        success: false, 
-        message: 'Connection error. Please try again.'
-      };
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const register = async (name: string, username: string, email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      const response = await authAPI.register(name, username, email, password);
-      toast.success('Registration successful! Please check your email for verification.');
-      return response;
-    } catch (error: any) {
-      console.error('Registration failed:', error);
-      if (error.response?.data?.message) {
-        toast.error(error.response.data.message);
-      } else {
-        toast.error('Registration failed. Please try again later.');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateProfile = async (data: Partial<User>) => {
-    setIsLoading(true);
-    try {
-      const updatedUser = await authAPI.updateProfile(data);
-      setUser(prev => prev ? { ...prev, ...updatedUser } : null);
-      toast.success('Profile updated successfully');
-      return updatedUser;
-    } catch (error: any) {
-      console.error('Profile update failed:', error);
-      toast.error(error.response?.data?.message || 'Failed to update profile. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const changePassword = async (currentPassword: string, newPassword: string) => {
-    setIsLoading(true);
-    try {
-      const response = await authAPI.changePassword(currentPassword, newPassword);
-      toast.success('Password changed successfully');
-      return response;
-    } catch (error: any) {
-      console.error('Password change failed:', error);
-      toast.error(error.response?.data?.message || 'Failed to change password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const deleteAccount = async (password: string) => {
-    setIsLoading(true);
-    try {
-      const response = await authAPI.deleteAccount(password);
+    } catch (error) {
+      console.error('Auth initialization error:', error);
       setUser(null);
-      localStorage.removeItem('token');
-      apiService.setToken(null);
-      toast.success('Account deleted successfully');
-      return response;
-    } catch (error: any) {
-      console.error('Account deletion failed:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete account. Please try again.');
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const login = async (identifier: string, password: string, rememberMe: boolean = true): Promise<LoginResponse> => {
+    try {
+      const response = await authAPI.login(identifier, password);
+      if (response.success) {
+        await initializeAuth();
+      }
+      return response;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
     }
   };
 
   const logout = () => {
-    setUser(null);
     localStorage.removeItem('token');
-    apiService.setToken(null);
-    toast.success('Logged out successfully');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+    apiService.clearToken();
+    setUser(null);
+    setIsAuthenticated(false);
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated,
-      isLoading,
-      setUser,
-      login,
-      register,
-      updateProfile,
-      changePassword,
-      deleteAccount,
-      logout,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isLoading,
+        setUser,
+        setIsAuthenticated,
+        logout,
+        initializeAuth,
+        login
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export default AuthContext;
