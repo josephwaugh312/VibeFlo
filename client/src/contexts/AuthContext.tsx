@@ -35,6 +35,7 @@ interface AuthContextType {
   logout: () => void;
   initializeAuth: () => Promise<void>;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResponse>;
+  register: (email: string, username: string, password: string, confirmPassword: string) => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<User>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
@@ -107,6 +108,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (email: string, username: string, password: string, confirmPassword: string): Promise<void> => {
+    try {
+      if (password !== confirmPassword) {
+        throw new Error('Passwords do not match');
+      }
+      await authAPI.register(username, username, email, password);
+    } catch (error) {
+      console.error('Registration error:', error);
+      throw error;
+    }
+  };
+
   const updateProfile = async (userData: Partial<User>): Promise<User> => {
     try {
       const updatedUser = await authAPI.updateProfile(userData);
@@ -158,6 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logout,
         initializeAuth,
         login,
+        register,
         updateProfile,
         changePassword,
         deleteAccount
