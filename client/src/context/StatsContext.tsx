@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { pomodoroAPI } from '../services/api';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 
 // Define the structure of a Pomodoro session
 export interface PomodoroSession {
