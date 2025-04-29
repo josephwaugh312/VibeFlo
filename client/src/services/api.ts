@@ -155,7 +155,11 @@ const apiService = (() => {
   // Authentication API methods
   const auth = {
     login: async (loginIdentifier: string, password: string) => {
-      const response = await api.post('/auth/login', { login: loginIdentifier, password });
+      const response = await api.post('/auth/login', { 
+        email: loginIdentifier, 
+        login: loginIdentifier, 
+        password 
+      });
       return response.data;
     },
     
