@@ -64,7 +64,7 @@ const Register: React.FC = () => {
     setSuccess('');
     
     try {
-      await register(formData.email, formData.username, formData.password);
+      await register(formData.email, formData.username, formData.password, formData.confirmPassword);
       setSuccess('Registration successful! Please check your email to verify your account. You will be redirected to the login page in a few seconds.');
       console.log('Registration successful, verification email should be sent');
       
