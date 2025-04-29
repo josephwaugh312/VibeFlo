@@ -125,6 +125,14 @@ const apiService = (() => {
     }
   };
 
+  // Clear token and auth headers
+  const clearToken = () => {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem('token');
+    }
+    delete api.defaults.headers.common['Authorization'];
+  };
+
   // Initialize with token from storage if present - use a lazy initialization
   const initializeAuth = () => {
     try {
@@ -453,6 +461,7 @@ const apiService = (() => {
   return {
     api,
     setToken,
+    clearToken,
     auth,
     playlists,
     settings,
