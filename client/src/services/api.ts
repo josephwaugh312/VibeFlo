@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { Track } from '../components/music/MusicPlayer';
 import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 
@@ -178,7 +178,7 @@ const apiService = (() => {
         }
       } catch (error) {
         console.error('Login error:', error);
-        if (error.response?.data) {
+        if (error instanceof AxiosError && error.response?.data) {
           return {
             success: false,
             message: error.response.data.message,
