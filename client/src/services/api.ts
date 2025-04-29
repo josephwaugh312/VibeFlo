@@ -76,11 +76,15 @@ const apiService = (() => {
       // If token exists, add it to the headers
       if (token && config.headers) {
         config.headers.Authorization = `Bearer ${token}`;
+        console.log('Adding token to request:', token.substring(0, 10) + '...');
+      } else {
+        console.warn('No token found for request to:', config.url);
       }
       
       return config;
     },
     (error) => {
+      console.error('Request interceptor error:', error);
       return Promise.reject(error);
     }
   );
@@ -93,8 +97,13 @@ const apiService = (() => {
       if (error.response?.status === 401) {
         console.warn(`401 Unauthorized received from ${error.config?.url} - auth handling delegated to context`);
         
-        // Don't clear token here - let the Auth context handle it based on the actual error message
-        // This prevents unwanted logouts during temporary server issues
+        // Check if the error is specifically about an invalid token
+        if (error.response?.data?.message === 'Invalid token') {
+          console.log('Invalid token detected - clearing auth state');
+          localStorage.removeItem('token');
+          api.defaults.headers.common['Authorization'] = '';
+          window.location.href = '/login';
+        }
       }
       
       return Promise.reject(error);
