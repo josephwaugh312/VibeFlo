@@ -6,7 +6,7 @@ import { Track } from '../components/music/MusicPlayer';
 import axios from 'axios';
 
 // Get YouTube API key from environment variable
-const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
+// const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
 
 interface Song {
   id?: string | number;
@@ -138,6 +138,7 @@ const PlaylistDetail: React.FC = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
+  const [searchResults, setSearchResults] = useState<YouTubeSearchResult[]>([]);
 
   const fetchPlaylistAndSongs = async () => {
     if (!id) {
@@ -264,37 +265,32 @@ const PlaylistDetail: React.FC = () => {
     fetchPlaylistAndSongs();
   }, [id, navigate]);
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
+  const searchYouTube = async (query: string) => {
     try {
-      setIsSearchingYoutube(true);
-      setSearchError(null);
-      
-      // Using YouTube Data API v3
-      const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
-        params: {
-          part: 'snippet',
-          maxResults: 10,
-          q: searchQuery,
-          type: 'video',
-          key: YOUTUBE_API_KEY
-        }
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/youtube/search`, {
+        params: { query },
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
       });
-      
-      // Axios returns the data directly in response.data, not response.json()
-      console.log('YouTube search results:', response.data);
-      
-      if (response.data.items && response.data.items.length > 0) {
-        setYoutubeSearchResults(response.data.items);
-      } else {
-        toast('No YouTube videos found', { icon: 'ℹ️' });
-      }
-    } catch (error) {
-      console.error('Error searching YouTube:', error);
-      setSearchError('YouTube API error: Check your API key or search query');
-    } finally {
-      setIsSearchingYoutube(false);
+      setSearchResults(response.data);
+    } catch (err) {
+      console.error('Error searching YouTube:', err);
+      setSearchResults([]);
+    }
+  };
+
+  const getVideoDetails = async (youtubeId: string) => {
+    try {
+      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/youtube/video/${youtubeId}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      return response.data;
+    } catch (err) {
+      console.error('Error getting video details:', err);
+      return null;
     }
   };
 
@@ -364,7 +360,7 @@ const PlaylistDetail: React.FC = () => {
         params: {
           part: 'snippet',
           id: youtubeId,
-          key: YOUTUBE_API_KEY
+          key: process.env.REACT_APP_YOUTUBE_API_KEY
         }
       });
       
@@ -720,6 +716,21 @@ const PlaylistDetail: React.FC = () => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+    
+    try {
+      setIsSearchingYoutube(true);
+      setSearchError(null);
+      await searchYouTube(searchQuery);
+    } catch (error) {
+      console.error('Error searching YouTube:', error);
+      setSearchError('Error searching YouTube');
+    } finally {
+      setIsSearchingYoutube(false);
+    }
   };
 
   if (isLoading) {
