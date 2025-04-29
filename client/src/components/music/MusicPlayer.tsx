@@ -343,9 +343,9 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
         className={`fixed right-0 bottom-0 z-50 bg-gray-900 border-l border-t border-gray-700 shadow-lg transition-all duration-300 ease-in-out ${
           isOpen 
             ? isMinimized 
-              ? 'w-full sm:w-96 h-20' 
-              : 'w-full sm:w-96 h-[90vh] sm:h-[600px]' 
-            : 'translate-x-full w-full sm:w-96 h-[90vh] sm:h-[600px]'
+              ? 'w-96 h-20' 
+              : 'w-96 h-[600px]' 
+            : 'translate-x-full w-96 h-[600px]'
         }`}
         data-testid="music-player-container"
       >
@@ -756,16 +756,16 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                         <p className="text-sm mt-2">Please try again later</p>
                       </div>
                     ) : searchResults.length > 0 ? (
-                      <ul className="space-y-3">
+                      <ul className="space-y-2">
                         {searchResults.map((result: YouTubeSearchResult) => (
-                          <li key={result.id.videoId} className="flex items-start p-2 hover:bg-gray-800 rounded">
+                          <li key={result.id.videoId} className="flex items-center p-2 hover:bg-gray-800 rounded">
                             <img
                               src={result.snippet.thumbnails.default.url}
                               alt={result.snippet.title}
-                              className="w-16 h-16 rounded object-cover mr-3 flex-shrink-0"
+                              className="w-12 h-12 rounded object-cover mr-3 flex-shrink-0"
                             />
-                            <div className="flex-1 min-w-0 max-w-[160px] sm:max-w-[220px]">
-                              <h4 className="text-white text-sm font-medium line-clamp-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-white text-sm font-medium line-clamp-1">
                                 {result.snippet.title}
                               </h4>
                               <p className="text-gray-400 text-xs truncate">{result.snippet.channelTitle}</p>
