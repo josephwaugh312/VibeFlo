@@ -20,6 +20,11 @@ interface DecodedToken {
  * Middleware to protect routes requiring authentication
  */
 export const protect = (req: Request, res: Response, next: NextFunction) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Protect middleware - Request path:', req.path);
+    console.log('Protect middleware - Auth header:', req.headers.authorization ? 'Present' : 'Missing');
+  }
+  
   passport.authenticate('jwt', { session: false }, (err: any, user: any) => {
     // If there's an error from Passport or JWT verification
     if (err) {
@@ -44,6 +49,15 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
       const authHeader = req.headers.authorization || '';
       const hasToken = authHeader.startsWith('Bearer ');
       
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Protect middleware - No user found');
+        console.log('Protect middleware - Has token:', hasToken);
+        if (hasToken) {
+          const token = authHeader.split(' ')[1];
+          console.log('Protect middleware - Token preview:', token.substring(0, 10) + '...');
+        }
+      }
+      
       const error: any = new Error(
         hasToken 
           ? 'Invalid authentication token'
@@ -57,6 +71,11 @@ export const protect = (req: Request, res: Response, next: NextFunction) => {
     }
 
     // Authentication successful
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Protect middleware - Authentication successful');
+      console.log('Protect middleware - User ID:', user.id);
+    }
+    
     (req as AuthRequest).user = user;
     next();
   })(req, res, next);
