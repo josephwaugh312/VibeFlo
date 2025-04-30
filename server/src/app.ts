@@ -92,14 +92,25 @@ if (process.env.NODE_ENV === 'production') {
   }
   
   if (buildPath) {
-    // Log all paths being accessed for debugging
+    // Log all paths being accessed for debugging - but AFTER the API routes
     app.use((req, res, next) => {
-      console.log(`Request path: ${req.method} ${req.path}`);
+      // Skip all /api requests for logging - they should have been handled already
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      console.log(`Non-API request path: ${req.method} ${req.path}`);
       next();
     });
     
-    // Serve static files from the found build folder
-    app.use(express.static(buildPath));
+    // IMPORTANT: Only serve static files for non-API routes
+    app.use((req, res, next) => {
+      // Skip all /api requests - they should go to API handlers, not static files
+      if (req.path.startsWith('/api/')) {
+        return next();
+      }
+      // For all other requests, serve static files
+      express.static(buildPath)(req, res, next);
+    });
     
     // API routes are already mounted at /api above
     
