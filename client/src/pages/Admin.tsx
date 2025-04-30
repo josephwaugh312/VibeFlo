@@ -75,10 +75,10 @@ const Admin: React.FC = () => {
         setError(null);
 
         if (tabIndex === 0) {
-          const response = await apiService.api.get('/moderation/admin/themes/pending');
+          const response = await apiService.api.get('/api/moderation/admin/themes/pending');
           setPendingThemes(response.data);
         } else {
-          const response = await apiService.api.get('/moderation/admin/themes/reported');
+          const response = await apiService.api.get('/api/moderation/admin/themes/reported');
           setReportedThemes(response.data);
         }
       } catch (err: any) {
