@@ -106,6 +106,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (identifier: string, password: string, rememberMe: boolean = true): Promise<LoginResponse> => {
     try {
+      console.log('AuthContext: Attempting login with', { identifier, rememberMe });
+      
+      // Validate inputs
+      if (!identifier || !password) {
+        console.error('Login failed: Missing credentials');
+        return {
+          success: false,
+          message: 'Email/username and password are required'
+        };
+      }
+      
       const response = await authAPI.login(identifier, password);
       console.log('Login response in auth context:', response);
       

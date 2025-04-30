@@ -114,7 +114,15 @@ const Login: React.FC = () => {
     setIsLoading(true);
     setNeedsVerification(false);
     setResendSuccess(false);
-    console.log('Login attempt with:', { loginIdentifier, rememberMe });
+    
+    // Validate inputs
+    if (!loginIdentifier || !password) {
+      setError('Please enter both email/username and password');
+      setIsLoading(false);
+      return;
+    }
+    
+    console.log('Login attempt with:', { loginIdentifier, passwordLength: password.length, rememberMe });
 
     try {
       console.log('About to call login API...');
