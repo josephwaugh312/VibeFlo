@@ -123,96 +123,40 @@ export const register = handleAsync(async (req: Request, res: Response) => {
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
   const { login, email, password } = req.body;
-  
-  // Use either login or email field
-  const loginIdentifier = login || email;
-  
-  console.log('Login attempt:', { loginIdentifier, passwordLength: password?.length });
 
-  if (!loginIdentifier) throw validationErrors.required('Email');
-  if (!password) throw validationErrors.required('Password');
+  // Find user by email or login
+  const userResult = await pool.query(
+    'SELECT * FROM users WHERE email = $1 OR username = $1',
+    [login || email]
+  );
 
-  // Query based on whether the login is an email or username
-  const queryText = 'SELECT * FROM users WHERE email = $1';
-  
-  console.log('Query:', queryText, 'Parameter:', loginIdentifier);
-  
-  const userResult = await pool.query(queryText, [loginIdentifier]);
-  
-  console.log('User found:', userResult.rows.length > 0, 'User details:', userResult.rows.length > 0 ? { 
-    id: userResult.rows[0].id,
-    email: userResult.rows[0].email,
-    username: userResult.rows[0].username,
-    passwordHash: userResult.rows[0].password?.substring(0, 10) + '...'
-  } : 'No user found');
-  
   if (userResult.rows.length === 0) {
-    // Record the failed attempt
-    await recordFailedLoginAttempt(loginIdentifier);
-    console.log('User not found with login:', loginIdentifier);
-    throw authErrors.invalidCredentials();
-  }
-  
-  const user = userResult.rows[0];
-  
-  // Check if account is locked
-  if (user.is_locked) {
-    const lockExpiryTime = new Date(user.lock_expires);
-    if (lockExpiryTime > new Date()) {
-      // Account is still locked
-      const timeRemaining = Math.ceil((lockExpiryTime.getTime() - Date.now()) / (1000 * 60));
-      console.log('Account is locked, time remaining:', timeRemaining, 'minutes');
-      throw authErrors.accountLocked(`Account is temporarily locked. Please try again in ${timeRemaining} minute(s).`);
-    } else {
-      // Lock has expired, reset the lock status
-      console.log('Lock expired, resetting lock status');
-      await pool.query('UPDATE users SET is_locked = false, failed_login_attempts = 0 WHERE id = $1', [user.id]);
-    }
-  }
-  
-  // Check if password matches
-  console.log('Checking password with bcrypt...');
-  
-  // Try bcrypt compare first
-  let isMatch = false;
-  try {
-    if (user.password.startsWith('$2')) {
-      // It's a bcrypt hash, use bcrypt.compare
-      isMatch = await bcrypt.compare(password, user.password);
-    } else if (process.env.NODE_ENV === 'development') {
-      // DEVELOPMENT ONLY: Allow plaintext password comparison for debugging
-      console.log('DEVELOPMENT MODE: Comparing plaintext passwords');
-      isMatch = (password === user.password);
-    }
-  } catch (err) {
-    console.error('Error comparing passwords:', err);
-    // Continue with isMatch = false
-  }
-  
-  console.log('Password match result:', isMatch);
-  
-  if (!isMatch) {
-    // Record the failed attempt
-    await recordFailedLoginAttempt(loginIdentifier);
-    console.log('Password does not match');
-    throw authErrors.invalidCredentials();
-  }
-  
-  // Reset failed login attempts on successful login
-  if (user.failed_login_attempts > 0) {
-    console.log('Resetting failed login attempts');
-    await pool.query('UPDATE users SET failed_login_attempts = 0 WHERE id = $1', [user.id]);
-  }
-  
-  // Check if email is verified
-  if (!user.is_verified) {
     return res.status(401).json({
       success: false,
-      message: 'Please verify your email before logging in',
-      needsVerification: true,
-      email: user.email
+      message: 'Invalid credentials'
     });
   }
+
+  const user = userResult.rows[0];
+
+  // Verify password
+  const isValidPassword = await bcrypt.compare(password, user.password);
+  if (!isValidPassword) {
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
+    });
+  }
+
+  // TEMPORARILY DISABLED: Check if email is verified
+  // if (!user.is_verified) {
+  //   return res.status(401).json({
+  //     success: false,
+  //     message: 'Please verify your email before logging in',
+  //     needsVerification: true,
+  //     email: user.email
+  //   });
+  // }
   
   // Generate JWT token
   console.log('Generating JWT token');
