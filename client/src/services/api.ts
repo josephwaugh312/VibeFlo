@@ -265,8 +265,20 @@ const apiService = (() => {
       }
     },
 
-    createPlaylist: async (name: string, description?: string) => {
-      const response = await api.post('/api/playlists', { name, description });
+    createPlaylist: async (name: string, tracks: Track[] = [], description?: string) => {
+      const response = await api.post('/api/playlists', { 
+        name,
+        description,
+        tracks: tracks.map(track => ({
+          id: track.id,
+          title: track.title,
+          artist: track.artist,
+          url: track.url,
+          artwork: track.artwork || '',
+          duration: track.duration || 0,
+          source: track.source
+        }))
+      });
       return response.data;
     },
     
