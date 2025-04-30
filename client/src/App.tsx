@@ -119,15 +119,29 @@ const AppRoutes = () => {
   const { isAuthenticated, isLoading, initializeAuth } = useAuth();
   const navigate = useNavigate();
   
-  // Initialize auth state
+  // Initialize auth state once on component mount
   useEffect(() => {
-    initializeAuth();
+    console.log('AppRoutes: Initializing auth state');
+    
+    const initAuth = async () => {
+      try {
+        await initializeAuth();
+        console.log('AppRoutes: Auth initialization complete');
+      } catch (error) {
+        console.error('AppRoutes: Auth initialization failed:', error);
+      }
+    };
+    
+    initAuth();
   }, [initializeAuth]);
   
   // Redirect to login if not authenticated
   useEffect(() => {
     // Don't redirect during the initial loading
-    if (isLoading) return;
+    if (isLoading) {
+      console.log('AppRoutes: Still loading auth state, not redirecting');
+      return;
+    }
     
     // If not authenticated and not on an allowed public page, redirect to login
     if (!isAuthenticated && window.location.pathname !== '/login' && 
@@ -139,7 +153,11 @@ const AppRoutes = () => {
         window.location.pathname !== '/about' &&
         window.location.pathname !== '/oauth-callback' &&
         window.location.pathname !== '/') {
+      console.log('AppRoutes: Not authenticated, redirecting to login');
       navigate('/login');
+    } else {
+      console.log('AppRoutes: Authentication state:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
+      console.log('AppRoutes: Current path:', window.location.pathname);
     }
   }, [isAuthenticated, navigate, isLoading]);
   

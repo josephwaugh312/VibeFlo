@@ -208,8 +208,27 @@ const apiService = (() => {
     },
     
     getCurrentUser: async () => {
-      const response = await api.get('/auth/me');
-      return response.data;
+      try {
+        console.log('API Service: Calling getCurrentUser endpoint');
+        console.log('API Service: Current authorization header:', api.defaults.headers.common['Authorization']);
+        
+        const response = await api.get('/auth/me');
+        console.log('API Service: getCurrentUser response:', response.data);
+        return response.data;
+      } catch (error: any) {
+        console.error('API Service: getCurrentUser error:', error.message);
+        
+        // Log additional error details
+        if (error.response) {
+          console.error('API Service: Error status:', error.response.status);
+          console.error('API Service: Error data:', error.response.data);
+          console.error('API Service: Error headers:', error.response.headers);
+        } else if (error.request) {
+          console.error('API Service: No response received:', error.request);
+        }
+        
+        throw error;
+      }
     },
     
     checkVerificationStatus: async () => {
