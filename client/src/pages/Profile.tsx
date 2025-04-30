@@ -61,7 +61,7 @@ const formatDate = (dateString?: string): string => {
 };
 
 const Profile: React.FC = () => {
-  const { user, updateProfile, changePassword, deleteAccount, isLoading, refreshUserData } = useAuth();
+  const { user, updateProfile, changePassword, deleteAccount, isLoading, refreshUserData, isAuthenticated } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [passwordEditMode, setPasswordEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
