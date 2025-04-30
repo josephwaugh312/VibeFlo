@@ -58,40 +58,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Configure axios and API service with the token
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         apiService.setToken(token);
+        console.log('Auth initialization: Token found and set in headers');
 
         if (storedUser) {
           // If we have stored user data, use it immediately
           const userData = JSON.parse(storedUser);
           setUser(userData);
           setIsAuthenticated(true);
+          console.log('Auth initialization: Using stored user data', userData.username);
         }
 
         try {
           // Verify token and refresh user data
-          console.log('Verifying token and refreshing user data');
+          console.log('Auth initialization: Verifying token and refreshing user data');
+          
+          // Add delay before token verification to ensure any previous requests are complete
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
           const response = await apiService.auth.getCurrentUser();
-          console.log('User data refreshed:', response);
+          console.log('Auth initialization: User data refreshed successfully:', response);
           
           localStorage.setItem('user', JSON.stringify(response));
           setUser(response);
           setIsAuthenticated(true);
           setRefreshAttempts(0); // Reset attempts on success
-        } catch (error) {
-          console.error('Error refreshing user data:', error);
+        } catch (error: any) {
+          console.error('Auth initialization: Error refreshing user data:', error);
+          console.log('Auth initialization: Error status:', error.response?.status);
+          console.log('Auth initialization: Error data:', error.response?.data);
           
-          // Only clear auth state if we've tried multiple times
-          if (refreshAttempts >= 3) {
-            console.log('Max refresh attempts reached, clearing auth state');
+          // Check if the token is invalid
+          if (error.response?.status === 401) {
+            console.log('Auth initialization: Token invalid or expired, clearing auth state');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
+            apiService.setToken(null);
             setUser(null);
             setIsAuthenticated(false);
             setRefreshAttempts(0);
           } else {
-            setRefreshAttempts(prev => prev + 1);
+            // For other errors, keep using stored user data but increment attempts
+            if (refreshAttempts >= 3) {
+              console.log('Auth initialization: Max refresh attempts reached, clearing auth state');
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              setUser(null);
+              setIsAuthenticated(false);
+              setRefreshAttempts(0);
+            } else {
+              console.log('Auth initialization: Keeping stored user data, incrementing attempts');
+              setRefreshAttempts(prev => prev + 1);
+            }
           }
         }
       } else {
+        console.log('Auth initialization: No token found, not authenticated');
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -124,29 +145,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Store the token
         localStorage.setItem('token', response.token);
         apiService.setToken(response.token);
+        console.log('Login successful: Token stored and set in headers');
         
         // If we have user data, store it
         if (response.user) {
+          console.log('User data received with login response, storing it');
           localStorage.setItem('user', JSON.stringify(response.user));
           setUser(response.user);
           setIsAuthenticated(true);
+          return response;
         } else {
           // If no user data, fetch it
+          console.log('No user data in login response, fetching it separately');
           try {
+            // Add a small delay before fetching user data to ensure token is properly set
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
             const userData = await apiService.auth.getCurrentUser();
+            console.log('User data fetched after login:', userData);
+            
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
             setIsAuthenticated(true);
-          } catch (error) {
-            console.error('Error fetching user data after login:', error);
-            // Clear the token if we can't get user data
-            localStorage.removeItem('token');
-            apiService.setToken(null);
-            setUser(null);
-            setIsAuthenticated(false);
+            
             return {
-              success: false,
-              message: 'Failed to fetch user data after login'
+              ...response,
+              user: userData
+            };
+          } catch (error: any) {
+            console.error('Error fetching user data after login:', error);
+            console.log('Status:', error.response?.status);
+            console.log('Response data:', error.response?.data);
+            
+            // If we get a 401, the token is invalid
+            if (error.response?.status === 401) {
+              console.error('Token validation failed, clearing auth state');
+              localStorage.removeItem('token');
+              apiService.setToken(null);
+              setUser(null);
+              setIsAuthenticated(false);
+              return {
+                success: false,
+                message: 'Authentication failed: Invalid token'
+              };
+            }
+            
+            // For other errors, we'll still return success but with a warning
+            // This allows the user to continue with the login flow, and we'll retry fetching profile later
+            console.log('Continuing with login despite profile fetch error');
+            setIsAuthenticated(true);
+            
+            return {
+              ...response,
+              message: response.message || 'Logged in, but profile information could not be loaded'
             };
           }
         }
