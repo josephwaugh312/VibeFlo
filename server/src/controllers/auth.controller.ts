@@ -122,122 +122,89 @@ export const register = handleAsync(async (req: Request, res: Response) => {
  * Login user and return JWT token
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { login, email, password } = req.body;
-  
-  console.log('Login attempt with:', { email, login, passwordProvided: !!password });
-  
-  // Validate input
-  if (!password) {
-    console.log('Password not provided');
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials'
-    });
+  const { email, password } = req.body;
+
+  // Simple validation
+  if (!email || !password) {
+    return res.status(400).json({ message: 'Please provide email and password' });
   }
 
-  if (!login && !email) {
-    console.log('Neither login nor email provided');
-    return res.status(401).json({
-      success: false,
-      message: 'Email or username is required'
-    });
-  }
-
-  // Find user by email or login
-  const userResult = await pool.query(
-    'SELECT * FROM users WHERE email = $1 OR username = $1',
-    [login || email]
-  );
-
-  if (userResult.rows.length === 0) {
-    console.log('User not found for identifier:', login || email);
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials'
-    });
-  }
-
-  const user = userResult.rows[0];
-  console.log('User found:', { 
-    id: user.id, 
-    email: user.email, 
-    username: user.username,
-    passwordHash: user.password ? user.password.substring(0, 15) + '...' : 'None'
-  });
-
-  // Verify password 
-  console.log('Attempting password comparison');
   try {
-    if (!user.password) {
-      console.log('User has no password stored - might be using OAuth');
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials - try using OAuth login'
-      });
-    }
-    
-    console.log('Password from request length:', password?.length || 0);
-    console.log('Stored password hash type:', typeof user.password);
-    console.log('First 15 chars of hash:', user.password?.substring(0, 15));
-    
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    console.log('Password comparison result:', isValidPassword);
-    
-    if (!isValidPassword) {
-      console.log('Invalid password for user:', user.email);
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-  } catch (error) {
-    console.error('Error during password comparison:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'An error occurred during authentication'
-    });
-  }
+    // Get user from database
+    const result = await pool.query(
+      'SELECT * FROM users WHERE email = $1',
+      [email.toLowerCase()]
+    );
 
-  // TEMPORARILY DISABLED: Check if email is verified
-  // if (!user.is_verified) {
-  //   return res.status(401).json({
-  //     success: false,
-  //     message: 'Please verify your email before logging in',
-  //     needsVerification: true,
-  //     email: user.email
-  //   });
-  // }
-  
-  // Generate JWT token
-  console.log('Generating JWT token');
-  const token = generateToken(user);
-  
-  // Set token in HTTP-only cookie
-  res.cookie('jwt', token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60 * 1000 // 1 day
-  });
-  
-  console.log('Login successful for user:', user.email);
-  
-  // Return user information (excluding sensitive data)
-  res.status(200).json({
-    success: true,
-    message: 'Login successful',
-    user: {
-      id: user.id,
-      name: user.name,
-      username: user.username,
-      email: user.email,
-      avatarUrl: user.avatar_url,
-      bio: user.bio,
-      created_at: user.created_at,
-      updated_at: user.updated_at
-    },
-    token
-  });
+    // Check if user exists
+    if (result.rows.length === 0) {
+      await recordFailedLoginAttempt(email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const user = result.rows[0];
+
+    // Check if account is locked due to too many failed attempts
+    if (user.is_locked && user.lock_until && new Date(user.lock_until) > new Date()) {
+      const remainingTime = Math.ceil(
+        (new Date(user.lock_until).getTime() - new Date().getTime()) / 1000 / 60
+      );
+      return res.status(403).json({
+        message: `Account is temporarily locked due to too many failed login attempts. Please try again in ${remainingTime} minutes.`,
+        isLocked: true,
+        lockUntil: user.lock_until
+      });
+    }
+
+    // Check if password is correct
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      // Record failed login attempt
+      await recordFailedLoginAttempt(email);
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // TEMPORARILY DISABLED: Check if email is verified
+    // if (!user.is_verified) {
+    //   return res.status(401).json({
+    //     message: 'Please verify your email before logging in',
+    //     verificationRequired: true
+    //   });
+    // }
+
+    // Reset failed login attempts on successful login
+    await pool.query(
+      'UPDATE users SET failed_login_attempts = 0, is_locked = false, lock_until = NULL WHERE id = $1',
+      [user.id]
+    );
+
+    // Generate auth token
+    const token = generateToken(user);
+
+    // Remove sensitive data before sending response
+    const { password: _, failed_login_attempts, is_locked, lock_until, ...userWithoutSensitiveData } = user;
+
+    // Record successful login
+    await recordSuccessfulLogin(user.id, req);
+
+    // Set token as HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    });
+
+    return res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: userWithoutSensitiveData,
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ message: 'Server error during login' });
+  }
 });
 
 /**
