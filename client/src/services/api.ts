@@ -156,12 +156,23 @@ const apiService = (() => {
   const auth = {
     login: async (loginIdentifier: string, password: string) => {
       try {
-        console.log('Attempting login with:', { loginIdentifier });
+        console.log('Attempting login with:', { loginIdentifier, passwordProvided: !!password });
+        
+        // Validate inputs client-side
+        if (!loginIdentifier || !password) {
+          console.error('Login failed: Missing credentials');
+          return {
+            success: false,
+            message: 'Email/username and password are required'
+          };
+        }
+        
         const response = await api.post('/api/auth/login', { 
           email: loginIdentifier,
           login: loginIdentifier,
           password 
         });
+        
         console.log('Login response:', response.data);
         
         // Ensure the response has the expected format

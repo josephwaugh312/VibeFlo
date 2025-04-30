@@ -123,6 +123,25 @@ export const register = handleAsync(async (req: Request, res: Response) => {
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
   const { login, email, password } = req.body;
+  
+  console.log('Login attempt with:', { email, login, passwordProvided: !!password });
+  
+  // Validate input
+  if (!password) {
+    console.log('Password not provided');
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials'
+    });
+  }
+
+  if (!login && !email) {
+    console.log('Neither login nor email provided');
+    return res.status(401).json({
+      success: false,
+      message: 'Email or username is required'
+    });
+  }
 
   // Find user by email or login
   const userResult = await pool.query(
@@ -131,6 +150,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   );
 
   if (userResult.rows.length === 0) {
+    console.log('User not found for identifier:', login || email);
     return res.status(401).json({
       success: false,
       message: 'Invalid credentials'
@@ -138,13 +158,26 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   }
 
   const user = userResult.rows[0];
+  console.log('User found:', { id: user.id, email: user.email, username: user.username });
 
   // Verify password
-  const isValidPassword = await bcrypt.compare(password, user.password);
-  if (!isValidPassword) {
-    return res.status(401).json({
+  console.log('Attempting password comparison');
+  try {
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    console.log('Password comparison result:', isValidPassword);
+    
+    if (!isValidPassword) {
+      console.log('Invalid password for user:', user.email);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+  } catch (error) {
+    console.error('Error during password comparison:', error);
+    return res.status(500).json({
       success: false,
-      message: 'Invalid credentials'
+      message: 'An error occurred during authentication'
     });
   }
 
@@ -174,6 +207,7 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   
   // Return user information (excluding sensitive data)
   res.status(200).json({
+    success: true,
     message: 'Login successful',
     user: {
       id: user.id,
