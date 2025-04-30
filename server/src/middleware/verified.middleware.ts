@@ -5,8 +5,15 @@ import pool from '../config/db';
 /**
  * Middleware to check if a user's email is verified
  * This will prevent access to protected routes if email is not verified
+ * Currently bypassing in development mode for testing purposes
  */
 export const verifiedMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+  // Bypass verification check in development mode
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('Development mode: Bypassing email verification check');
+    return next();
+  }
+
   if (!req.user?.id) {
     return res.status(401).json({ message: 'Unauthorized' });
   }

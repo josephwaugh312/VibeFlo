@@ -158,11 +158,28 @@ export const login = handleAsync(async (req: Request, res: Response) => {
   }
 
   const user = userResult.rows[0];
-  console.log('User found:', { id: user.id, email: user.email, username: user.username });
+  console.log('User found:', { 
+    id: user.id, 
+    email: user.email, 
+    username: user.username,
+    passwordHash: user.password ? user.password.substring(0, 15) + '...' : 'None'
+  });
 
-  // Verify password
+  // Verify password 
   console.log('Attempting password comparison');
   try {
+    if (!user.password) {
+      console.log('User has no password stored - might be using OAuth');
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials - try using OAuth login'
+      });
+    }
+    
+    console.log('Password from request length:', password?.length || 0);
+    console.log('Stored password hash type:', typeof user.password);
+    console.log('First 15 chars of hash:', user.password?.substring(0, 15));
+    
     const isValidPassword = await bcrypt.compare(password, user.password);
     console.log('Password comparison result:', isValidPassword);
     
@@ -281,37 +298,73 @@ const clearFailedLoginAttempts = async (loginIdentifier: string, ipAddress: stri
  * Get current authenticated user
  */
 export const getCurrentUser = handleAsync(async (req: AuthRequest, res: Response) => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('getCurrentUser called');
+    console.log('User in request:', req.user ? `ID: ${req.user.id}` : 'No user');
+  }
+  
   if (!req.user) {
+    console.error('getCurrentUser: No user found in request');
     return res.status(401).json({ message: 'Not authenticated' });
   }
   
   const userId = req.user.id;
   
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('getCurrentUser: Fetching data for user ID:', userId);
+  }
+  
   // Get user data from database
   const userQuery = `
-    SELECT id, name, username, email, bio, avatar_url, created_at, updated_at 
+    SELECT id, name, username, email, bio, avatar_url, created_at, updated_at, is_verified
     FROM users 
     WHERE id = $1
   `;
-  const result = await pool.query(userQuery, [userId]);
   
-  if (result.rows.length === 0) {
-    return res.status(404).json({ message: 'User not found' });
+  try {
+    const result = await pool.query(userQuery, [userId]);
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('getCurrentUser query result rows:', result.rows.length);
+    }
+    
+    if (result.rows.length === 0) {
+      console.error('getCurrentUser: No user found in database with ID:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const user = result.rows[0];
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('getCurrentUser: User found in database:', {
+        id: user.id,
+        username: user.username,
+        is_verified: user.is_verified
+      });
+    }
+    
+    // Return user information (excluding sensitive data)
+    const userData = {
+      id: user.id,
+      name: user.name,
+      username: user.username,
+      email: user.email,
+      bio: user.bio,
+      avatarUrl: user.avatar_url,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      is_verified: user.is_verified
+    };
+    
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('getCurrentUser: Returning user data');
+    }
+    
+    res.json(userData);
+  } catch (error) {
+    console.error('Error in getCurrentUser:', error);
+    throw error;
   }
-  
-  const user = result.rows[0];
-  
-  // Return user information (excluding sensitive data)
-  res.json({
-    id: user.id,
-    name: user.name,
-    username: user.username,
-    email: user.email,
-    bio: user.bio,
-    avatarUrl: user.avatar_url,
-    created_at: user.created_at,
-    updated_at: user.updated_at
-  });
 });
 
 /**
