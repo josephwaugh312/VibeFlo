@@ -167,7 +167,7 @@ const apiService = (() => {
           };
         }
         
-        const response = await api.post('/api/auth/login', { 
+        const response = await api.post('/auth/login', { 
           email: loginIdentifier,
           login: loginIdentifier,
           password 
@@ -203,37 +203,37 @@ const apiService = (() => {
     },
     
     register: async (name: string, username: string, email: string, password: string) => {
-      const response = await api.post('/api/auth/register', { name, username, email, password });
+      const response = await api.post('/auth/register', { name, username, email, password });
       return response.data;
     },
     
     getCurrentUser: async () => {
-      const response = await api.get('/api/auth/me');
+      const response = await api.get('/auth/me');
       return response.data;
     },
     
     checkVerificationStatus: async () => {
-      const response = await api.get('/api/auth/verification-status');
+      const response = await api.get('/auth/verification-status');
       return response.data;
     },
     
     updateProfile: async (userData: any) => {
-      const response = await api.put('/api/users/me', userData);
+      const response = await api.put('/users/me', userData);
       return response.data;
     },
     
     changePassword: async (currentPassword: string, newPassword: string) => {
-      const response = await api.post('/api/users/password', { currentPassword, newPassword });
+      const response = await api.post('/users/password', { currentPassword, newPassword });
       return response.data;
     },
     
     deleteAccount: async (password: string) => {
-      const response = await api.delete('/api/users/delete', { data: { password } });
+      const response = await api.delete('/users/delete', { data: { password } });
       return response.data;
     },
     
     requestPasswordReset: async (email: string) => {
-      const response = await api.post('/api/auth/forgot-password', { email });
+      const response = await api.post('/auth/forgot-password', { email });
       return response.data;
     },
     
@@ -243,7 +243,7 @@ const apiService = (() => {
     },
     
     resetPassword: async (token: string, newPassword: string) => {
-      const response = await api.post('/api/auth/reset-password', { token, newPassword });
+      const response = await api.post('/auth/reset-password', { token, newPassword });
       return response.data;
     },
     
@@ -253,7 +253,7 @@ const apiService = (() => {
     },
     
     resendVerificationEmail: async (email: string) => {
-      const response = await api.post('/api/auth/resend-verification', { email });
+      const response = await api.post('/auth/resend-verification', { email });
       return response.data;
     },
   };
@@ -261,7 +261,7 @@ const apiService = (() => {
   // Playlist API methods
   const playlists = {
     getUserPlaylists: async () => {
-      const response = await api.get('/api/playlists');
+      const response = await api.get('/playlists');
       return response.data;
     },
     
@@ -278,7 +278,7 @@ const apiService = (() => {
     },
 
     createPlaylist: async (name: string, tracks: Track[] = [], description?: string) => {
-      const response = await api.post('/api/playlists', { 
+      const response = await api.post('/playlists', { 
         name,
         description,
         tracks: tracks.map(track => ({
@@ -339,12 +339,12 @@ const apiService = (() => {
   // Settings API methods
   const settings = {
     getUserSettings: async () => {
-      const response = await api.get('/api/settings');
+      const response = await api.get('/settings');
       return response.data;
     },
     
     updateUserSettings: async (settingsData: any) => {
-      const response = await api.put('/api/settings', settingsData);
+      const response = await api.put('/settings', settingsData);
       return response.data;
     },
   };
@@ -352,12 +352,12 @@ const apiService = (() => {
   // Pomodoro API methods
   const pomodoro = {
     getAllSessions: async () => {
-      const response = await api.get('/api/pomodoro/sessions');
+      const response = await api.get('/pomodoro/sessions');
       return response.data;
     },
     
     createSession: async (sessionData: any) => {
-      const response = await api.post('/api/pomodoro/sessions', sessionData);
+      const response = await api.post('/pomodoro/sessions', sessionData);
       return response.data;
     },
     
@@ -372,18 +372,18 @@ const apiService = (() => {
     },
     
     getStats: async () => {
-      const response = await api.get('/api/pomodoro/stats');
+      const response = await api.get('/pomodoro/stats');
       return response.data;
     },
 
     // Todo items API methods
     getAllTodos: async () => {
-      const response = await api.get('/api/pomodoro/todos');
+      const response = await api.get('/pomodoro/todos');
       return response.data;
     },
     
     saveTodos: async (todos: any[]) => {
-      const response = await api.post('/api/pomodoro/todos', { todos });
+      const response = await api.post('/pomodoro/todos', { todos });
       return response.data;
     },
     
@@ -401,7 +401,7 @@ const apiService = (() => {
   // Theme API methods
   const themes = {
     getAllThemes: async () => {
-      const response = await api.get('/api/themes');
+      const response = await api.get('/themes');
       return response.data;
     },
     
@@ -411,17 +411,17 @@ const apiService = (() => {
     },
     
     getPublicCustomThemes: async () => {
-      const response = await api.get('/api/themes/custom/public');
+      const response = await api.get('/themes/custom/public');
       return response.data;
     },
     
     getUserCustomThemes: async () => {
-      const response = await api.get('/api/themes/custom/user');
+      const response = await api.get('/themes/custom/user');
       return response.data;
     },
     
     createCustomTheme: async (themeData: any) => {
-      const response = await api.post('/api/themes/custom', themeData);
+      const response = await api.post('/themes/custom', themeData);
       return response.data;
     },
     
@@ -436,12 +436,12 @@ const apiService = (() => {
     },
     
     setUserTheme: async (themeId: number) => {
-      const response = await api.put('/api/themes/user', { theme_id: themeId });
+      const response = await api.put('/themes/user', { theme_id: themeId });
       return response.data;
     },
     
     getUserTheme: async () => {
-      const response = await api.get('/api/themes/user');
+      const response = await api.get('/themes/user');
       return response.data;
     },
   };
