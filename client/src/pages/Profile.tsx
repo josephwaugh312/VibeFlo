@@ -61,7 +61,7 @@ const formatDate = (dateString?: string): string => {
 };
 
 const Profile: React.FC = () => {
-  const { user, updateProfile, changePassword, deleteAccount, isLoading } = useAuth();
+  const { user, updateProfile, changePassword, deleteAccount, isLoading, refreshUserData } = useAuth();
   const [editMode, setEditMode] = useState(false);
   const [passwordEditMode, setPasswordEditMode] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -345,6 +345,48 @@ const Profile: React.FC = () => {
         <Box display="flex" justifyContent="center" my={4}>
           <Typography>Please log in to view your profile</Typography>
         </Box>
+        
+        {/* Debug section for development */}
+        {process.env.NODE_ENV !== 'production' && (
+          <Paper elevation={3} sx={{ p: 3, mt: 4, bgcolor: 'rgba(30, 30, 30, 0.9)', color: 'white', borderRadius: 2 }}>
+            <Typography variant="h6" gutterBottom>Debug Information</Typography>
+            <Typography variant="body2">
+              Auth State: {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}
+            </Typography>
+            <Typography variant="body2">
+              Loading: {isLoading ? 'True' : 'False'}
+            </Typography>
+            <Typography variant="body2">
+              Token: {localStorage.getItem('token') ? 'Present' : 'Not found'}
+            </Typography>
+            <Typography variant="body2">
+              User in localStorage: {localStorage.getItem('user') ? 'Present' : 'Not found'}
+            </Typography>
+            <Box mt={2}>
+              <Button 
+                variant="contained" 
+                color="primary" 
+                onClick={() => window.location.reload()}
+                size="small"
+                sx={{ mr: 1 }}
+              >
+                Refresh Page
+              </Button>
+              <Button 
+                variant="outlined" 
+                color="secondary" 
+                onClick={() => {
+                  localStorage.removeItem('token');
+                  localStorage.removeItem('user');
+                  window.location.reload();
+                }}
+                size="small"
+              >
+                Clear Local Storage
+              </Button>
+            </Box>
+          </Paper>
+        )}
       </Container>
     );
   }
@@ -354,6 +396,52 @@ const Profile: React.FC = () => {
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 4, color: 'white', textAlign: 'center' }}>
         My Profile
       </Typography>
+
+      {/* Debug section for development */}
+      {process.env.NODE_ENV !== 'production' && (
+        <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'rgba(30, 30, 30, 0.9)', color: 'white', borderRadius: 2 }}>
+          <Typography variant="h6" gutterBottom>Debug Information</Typography>
+          <Typography variant="body2">User ID: {user.id}</Typography>
+          <Typography variant="body2">Username: {user.username}</Typography>
+          <Typography variant="body2">Email: {user.email}</Typography>
+          <Typography variant="body2">Verified: {user.is_verified ? 'Yes' : 'No'}</Typography>
+          <Typography variant="body2">Name: {user.name || 'Not set'}</Typography>
+          <Typography variant="body2">Bio: {user.bio || 'Not set'}</Typography>
+          <Typography variant="body2">Avatar URL: {user.avatarUrl || 'Not set'}</Typography>
+          <Typography variant="body2">Created: {user.created_at ? new Date(user.created_at).toLocaleString() : 'Unknown'}</Typography>
+          <Box mt={2}>
+            <Button 
+              variant="contained" 
+              color="primary" 
+              onClick={async () => {
+                try {
+                  const refreshedUser = await refreshUserData();
+                  if (refreshedUser) {
+                    toast.success('User data refreshed successfully');
+                  } else {
+                    toast.error('Failed to refresh user data');
+                  }
+                } catch (error) {
+                  toast.error('Error refreshing user data');
+                  console.error('Error refreshing user data:', error);
+                }
+              }}
+              size="small"
+              sx={{ mr: 1 }}
+            >
+              Refresh User Data
+            </Button>
+            <Button 
+              variant="outlined" 
+              color="secondary" 
+              onClick={() => window.location.reload()}
+              size="small"
+            >
+              Reload Page
+            </Button>
+          </Box>
+        </Paper>
+      )}
 
       {/* Profile Overview Card */}
       <Paper elevation={3} sx={{ p: 4, mb: 4, bgcolor: 'rgba(30, 30, 30, 0.9)', color: 'white', borderRadius: 2 }}>

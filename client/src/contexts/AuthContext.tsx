@@ -34,6 +34,7 @@ interface AuthContextType {
   setIsAuthenticated: (value: boolean) => void;
   logout: () => void;
   initializeAuth: () => Promise<void>;
+  refreshUserData: () => Promise<User | null>;
   login: (identifier: string, password: string, rememberMe?: boolean) => Promise<LoginResponse>;
   register: (email: string, username: string, password: string, confirmPassword: string) => Promise<void>;
   updateProfile: (userData: Partial<User>) => Promise<User>;
@@ -271,6 +272,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
   };
 
+  const refreshUserData = async (): Promise<User | null> => {
+    try {
+      console.log('Auth Context: Manually refreshing user data');
+      
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        console.log('Auth Context: No token found, cannot refresh user data');
+        return null;
+      }
+      
+      // Ensure token is set in API service
+      apiService.setToken(token);
+      
+      // Fetch user data
+      const userData = await apiService.auth.getCurrentUser();
+      console.log('Auth Context: User data refreshed successfully:', userData);
+      
+      // Update state and localStorage
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+      
+      return userData;
+    } catch (error) {
+      console.error('Auth Context: Error refreshing user data:', error);
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -281,6 +312,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsAuthenticated,
         logout,
         initializeAuth,
+        refreshUserData,
         login,
         register,
         updateProfile,
