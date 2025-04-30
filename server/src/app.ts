@@ -63,6 +63,12 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session()); // This line is necessary for persistent login sessions
 
+// Import auth routes directly
+import authRoutes from './routes/auth.routes';
+
+// Mount auth routes directly at /auth
+app.use('/auth', authRoutes);
+
 // Mount API routes
 app.use('/api', apiRoutes);
 
@@ -94,8 +100,8 @@ if (process.env.NODE_ENV === 'production') {
   if (buildPath) {
     // Log all paths being accessed for debugging - but AFTER the API routes
     app.use((req, res, next) => {
-      // Skip all /api requests for logging - they should have been handled already
-      if (req.path.startsWith('/api/')) {
+      // Skip all /api and /auth requests for logging - they should have been handled already
+      if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
         return next();
       }
       console.log(`Non-API request path: ${req.method} ${req.path}`);
@@ -104,8 +110,8 @@ if (process.env.NODE_ENV === 'production') {
     
     // IMPORTANT: Only serve static files for non-API routes
     app.use((req, res, next) => {
-      // Skip all /api requests - they should go to API handlers, not static files
-      if (req.path.startsWith('/api/')) {
+      // Skip all /api and /auth requests - they should go to API handlers, not static files
+      if (req.path.startsWith('/api/') || req.path.startsWith('/auth/')) {
         return next();
       }
       // For all other requests, serve static files
@@ -125,7 +131,7 @@ if (process.env.NODE_ENV === 'production') {
     // Serve index.html for ANY route that isn't a static file or API route
     app.use((req, res, next) => {
       // Skip API routes and static file requests
-      if (req.path.startsWith('/api/') || req.path.includes('.')) {
+      if (req.path.startsWith('/api/') || req.path.startsWith('/auth/') || req.path.includes('.')) {
         return next();
       }
       
