@@ -158,8 +158,8 @@ const apiService = (() => {
       try {
         console.log('Attempting login with:', { loginIdentifier });
         const response = await api.post('/api/auth/login', { 
-          email: loginIdentifier, 
-          login: loginIdentifier, 
+          email: loginIdentifier,
+          login: loginIdentifier,
           password 
         });
         console.log('Login response:', response.data);
@@ -178,12 +178,13 @@ const apiService = (() => {
         }
       } catch (error) {
         console.error('Login error:', error);
-        if (error instanceof AxiosError && error.response?.data) {
+        if (error instanceof AxiosError) {
+          const errorData = error.response?.data || {};
           return {
             success: false,
-            message: error.response.data.message,
-            needsVerification: error.response.data.needsVerification,
-            email: error.response.data.email
+            message: errorData.message || 'Login failed',
+            needsVerification: errorData.needsVerification,
+            email: errorData.email || loginIdentifier
           };
         }
         throw error;
