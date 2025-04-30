@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { Track } from '../components/music/MusicPlayer';
 import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 
@@ -69,7 +69,7 @@ const apiService = (() => {
 
   // Add a request interceptor to include the token
   api.interceptors.request.use(
-    (config) => {
+    (config: InternalAxiosRequestConfig) => {
       // Get token from localStorage
       const token = localStorage.getItem('token');
       
@@ -81,6 +81,7 @@ const apiService = (() => {
         console.warn('No token found for request to:', config.url);
       }
       
+      console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`, config);
       return config;
     },
     (error) => {
@@ -91,40 +92,18 @@ const apiService = (() => {
 
   // Add a response interceptor to handle common error patterns
   api.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      // Log the error but don't clear auth token automatically
-      if (error.response?.status === 401) {
-        console.warn(`401 Unauthorized received from ${error.config?.url} - auth handling delegated to context`);
-        
-        // Check if the error is specifically about an invalid token
-        if (error.response?.data?.message === 'Invalid token') {
-          console.log('Invalid token detected - clearing auth state');
-          localStorage.removeItem('token');
-          api.defaults.headers.common['Authorization'] = '';
-          window.location.href = '/login';
-        }
+    (response: AxiosResponse) => {
+      console.log(`API Response: ${response.status} ${response.config.url}`, response.data);
+      return response;
+    },
+    (error) => {
+      if (error.response) {
+        console.error('API Error Response:', error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error('API No Response:', error.request);
+      } else {
+        console.error('API Error:', error.message);
       }
-      
-      // Network error or timeout - retry once with backoff if it's a GET request
-      if (!error.response && error.config && error.config.method === 'get' && !error.config.__isRetry) {
-        console.warn(`Network error occurred for ${error.config.url}, attempting retry...`);
-        
-        // Mark as retry attempt to prevent infinite loops
-        error.config.__isRetry = true;
-        
-        try {
-          // Wait for a moment before retrying
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          
-          // Retry the request
-          return api(error.config);
-        } catch (retryError) {
-          console.error(`Retry failed for ${error.config.url}:`, retryError);
-          return Promise.reject(retryError);
-        }
-      }
-      
       return Promise.reject(error);
     }
   );

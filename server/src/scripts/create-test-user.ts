@@ -1,75 +1,70 @@
-import { Pool } from 'pg';
-import dotenv from 'dotenv';
+import pool from '../config/db';
 import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Create a connection pool
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-});
-
-// Test user details - you can change these
-const testUser = {
-  name: 'Test User',
-  username: 'testuser',
-  email: 'test@example.com',
-  password: 'TestPassword123',
-  isVerified: true
-};
+const email = 'joseph.waugh312@gmail.com';
+const username = 'josephwaugh';
+const password = 'testPassword123'; // Change this to your desired password
+const name = 'Joseph Waugh';
 
 async function createTestUser() {
-  const client = await pool.connect();
   try {
-    // Check if user with this email already exists
-    const emailCheck = await client.query('SELECT * FROM users WHERE email = $1', [testUser.email]);
-    if (emailCheck.rows.length > 0) {
-      console.log(`A user with email ${testUser.email} already exists. Please use a different email.`);
-      return;
-    }
-
-    // Check if user with this username already exists
-    const usernameCheck = await client.query('SELECT * FROM users WHERE username = $1', [testUser.username]);
-    if (usernameCheck.rows.length > 0) {
-      console.log(`A user with username ${testUser.username} already exists. Please use a different username.`);
-      return;
-    }
-
-    // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(testUser.password, salt);
-
-    // Begin transaction
-    await client.query('BEGIN');
-
-    // Create new user
-    const newUser = await client.query(
-      'INSERT INTO users (name, username, email, password, is_verified) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [testUser.name, testUser.username, testUser.email, hashedPassword, testUser.isVerified]
+    console.log('Checking if user already exists:', email);
+    
+    // First check if the user already exists
+    const existingUser = await pool.query(
+      'SELECT * FROM users WHERE email = $1 OR username = $2',
+      [email, username]
     );
-
-    const user = newUser.rows[0];
     
-    // Commit transaction
-    await client.query('COMMIT');
+    if (existingUser.rows.length > 0) {
+      console.log('User already exists, updating password instead');
+      
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Update the user's password
+      await pool.query(
+        'UPDATE users SET password = $1, is_verified = true WHERE email = $2',
+        [hashedPassword, email]
+      );
+      
+      console.log('Password updated successfully');
+      console.log('User can now login with:');
+      console.log('Email:', email);
+      console.log('Password:', password);
+      return;
+    }
     
-    console.log('Test user created successfully:');
-    console.log(`- ID: ${user.id}`);
-    console.log(`- Name: ${user.name}`);
-    console.log(`- Username: ${user.username}`);
-    console.log(`- Email: ${user.email}`);
-    console.log(`- Password: ${testUser.password} (plaintext for your reference only)`);
-    console.log(`- Verified: ${user.is_verified}`);
-    console.log('\nYou can now log in with these credentials to test the account deletion feature.');
-  } catch (err) {
-    // Rollback transaction in case of error
-    await client.query('ROLLBACK');
-    console.error('Error creating test user:', err);
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+    console.log('Password hash created');
+    
+    // Create a new user
+    const result = await pool.query(
+      `INSERT INTO users (email, username, password, name, is_verified) 
+       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [email, username, hashedPassword, name, true]
+    );
+    
+    const newUser = result.rows[0];
+    console.log('Test user created successfully:', { 
+      id: newUser.id,
+      email: newUser.email,
+      username: newUser.username,
+      is_verified: newUser.is_verified
+    });
+    console.log('User can now login with:');
+    console.log('Email:', email);
+    console.log('Password:', password);
+    
+  } catch (error) {
+    console.error('Error:', error);
   } finally {
-    client.release();
-    process.exit(0);
+    process.exit();
   }
 }
 
-// Run the function
 createTestUser(); 

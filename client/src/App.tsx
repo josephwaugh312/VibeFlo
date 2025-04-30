@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { ThemeProvider as MuiThemeProvider, CssBaseline, Box } from '@mui/material';
 import { theme } from './theme';
 import './App.css'; // Import App CSS 
@@ -117,9 +117,9 @@ const OAuthCallback = lazy(() => import('./pages/OAuthCallback'));
 // Root component that handles auth state and routing
 const AppRoutes = () => {
   const { isAuthenticated, isLoading, initializeAuth } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
   
-  // Initialize auth state once on component mount
   useEffect(() => {
     console.log('AppRoutes: Initializing auth state');
     
@@ -133,7 +133,7 @@ const AppRoutes = () => {
     };
     
     initAuth();
-  }, [initializeAuth]);
+  }, []);
   
   // Redirect to login if not authenticated
   useEffect(() => {

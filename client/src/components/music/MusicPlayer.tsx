@@ -517,14 +517,14 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
           {!isMinimized && (
             <>
               {/* Tabs */}
-              <div className="border-b border-gray-700">
-                <div className="flex">
+              <div className="border-b border-gray-700 bg-gray-800 px-1">
+                <div className="flex w-full gap-1">
                   <button
                     onClick={() => setCurrentTab('nowPlaying')}
-                    className={`flex-1 py-2 text-center text-sm ${
+                    className={`flex-1 py-2 text-center text-sm font-medium transition-all duration-200 ${
                       currentTab === 'nowPlaying' 
-                        ? 'text-white border-b-2 border-purple-500' 
-                        : 'text-gray-400 hover:text-white'
+                        ? 'text-white border-b-2 border-blue-400' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
                     }`}
                     data-testid="tab-nowPlaying"
                   >
@@ -532,10 +532,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   </button>
                   <button
                     onClick={() => setCurrentTab('playlist')}
-                    className={`flex-1 py-2 text-center text-sm ${
+                    className={`flex-1 py-2 text-center text-sm font-medium transition-all duration-200 ${
                       currentTab === 'playlist' 
-                        ? 'text-white border-b-2 border-purple-500' 
-                        : 'text-gray-400 hover:text-white'
+                        ? 'text-white border-b-2 border-blue-400' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
                     }`}
                     data-testid="tab-playlist"
                   >
@@ -543,10 +543,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   </button>
                   <button
                     onClick={() => setCurrentTab('search')}
-                    className={`flex-1 py-2 text-center text-sm ${
+                    className={`flex-1 py-2 text-center text-sm font-medium transition-all duration-200 ${
                       currentTab === 'search' 
-                        ? 'text-white border-b-2 border-purple-500' 
-                        : 'text-gray-400 hover:text-white'
+                        ? 'text-white border-b-2 border-blue-400' 
+                        : 'text-gray-400 hover:text-white hover:bg-gray-700'
                     }`}
                     data-testid="tab-search"
                   >
