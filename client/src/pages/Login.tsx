@@ -355,7 +355,7 @@ const Login: React.FC = () => {
                 variant="outlined"
                 startIcon={<GoogleIcon />}
                 fullWidth
-                href={`${API_BASE_URL}/api/auth/google`}
+                href={`${API_BASE_URL}/auth/google`}
                 sx={{
                   borderColor: 'rgba(255, 255, 255, 0.2)',
                   color: 'text.primary',
@@ -372,7 +372,7 @@ const Login: React.FC = () => {
                 variant="outlined"
                 startIcon={<GithubIcon />}
                 fullWidth
-                href={`${API_BASE_URL}/api/auth/github`}
+                href={`${API_BASE_URL}/auth/github`}
                 sx={{
                   borderColor: 'rgba(255, 255, 255, 0.2)',
                   color: 'text.primary',

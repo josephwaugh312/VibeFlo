@@ -6,43 +6,55 @@ dotenv.config();
 // Configure SendGrid with API key from environment variables
 const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM || 'joseph.waugh312@gmail.com';
+const NODE_ENV = process.env.NODE_ENV || 'development';
+const IS_DEV = NODE_ENV === 'development';
 
-// Validate required environment variables
+// Check for SendGrid API key
 if (!SENDGRID_API_KEY) {
-  console.error('SENDGRID_API_KEY is not set in environment variables');
-  throw new Error('SendGrid API key is required for email functionality');
+  console.warn('SENDGRID_API_KEY is not set in environment variables');
+  if (!IS_DEV) {
+    // Only throw error in production
+    throw new Error('SendGrid API key is required for email functionality in production');
+  }
 }
 
 if (!FROM_EMAIL) {
-  console.error('EMAIL_FROM is not set in environment variables');
-  throw new Error('Sender email address is required for email functionality');
+  console.warn('EMAIL_FROM is not set in environment variables');
+  if (!IS_DEV) {
+    // Only throw error in production
+    throw new Error('Sender email address is required for email functionality in production');
+  }
 }
 
 const CLIENT_URL = process.env.CLIENT_URL || 'https://vibeflo.app';
 
-// Initialize SendGrid
-sgMail.setApiKey(SENDGRID_API_KEY);
-console.log('SendGrid configured successfully with sender:', FROM_EMAIL);
-
-// Test SendGrid configuration
-sgMail.send({
-  to: FROM_EMAIL,
-  from: FROM_EMAIL,
-  subject: 'SendGrid Test',
-  text: 'Testing SendGrid configuration',
-  html: '<p>Testing SendGrid configuration</p>'
-}).then(() => {
-  console.log('SendGrid test email sent successfully');
-}).catch((error) => {
-  console.error('SendGrid test email failed:', error);
-  if (error.response) {
-    console.error('SendGrid API Response:', {
-      statusCode: error.response.statusCode,
-      body: error.response.body,
-      headers: error.response.headers
-    });
-  }
-});
+// Initialize SendGrid if API key is available
+if (SENDGRID_API_KEY) {
+  sgMail.setApiKey(SENDGRID_API_KEY);
+  console.log('SendGrid configured successfully with sender:', FROM_EMAIL);
+  
+  // Test SendGrid configuration
+  sgMail.send({
+    to: FROM_EMAIL,
+    from: FROM_EMAIL,
+    subject: 'SendGrid Test',
+    text: 'Testing SendGrid configuration',
+    html: '<p>Testing SendGrid configuration</p>'
+  }).then(() => {
+    console.log('SendGrid test email sent successfully');
+  }).catch((error) => {
+    console.error('SendGrid test email failed:', error);
+    if (error.response) {
+      console.error('SendGrid API Response:', {
+        statusCode: error.response.statusCode,
+        body: error.response.body,
+        headers: error.response.headers
+      });
+    }
+  });
+} else {
+  console.log('SendGrid not configured - email functionality will use mock implementation in development');
+}
 
 /**
  * Base email service providing methods for sending various types of emails
@@ -57,7 +69,7 @@ class EmailService {
   async sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
     try {
       if (!SENDGRID_API_KEY) {
-        console.warn('Skipping verification email - SendGrid API key not configured');
+        console.log('Skipping verification email - SendGrid API key not configured');
         // Still log the token for testing environments
         console.log(`[DEV] Verification token for ${to}: ${token}`);
         console.log(`[DEV] Verification link: ${CLIENT_URL}/verify/${token}`);
