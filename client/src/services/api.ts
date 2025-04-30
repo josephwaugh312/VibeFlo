@@ -92,7 +92,7 @@ const apiService = (() => {
   // Add a response interceptor to handle common error patterns
   api.interceptors.response.use(
     (response) => response,
-    (error) => {
+    async (error) => {
       // Log the error but don't clear auth token automatically
       if (error.response?.status === 401) {
         console.warn(`401 Unauthorized received from ${error.config?.url} - auth handling delegated to context`);
@@ -103,6 +103,25 @@ const apiService = (() => {
           localStorage.removeItem('token');
           api.defaults.headers.common['Authorization'] = '';
           window.location.href = '/login';
+        }
+      }
+      
+      // Network error or timeout - retry once with backoff if it's a GET request
+      if (!error.response && error.config && error.config.method === 'get' && !error.config.__isRetry) {
+        console.warn(`Network error occurred for ${error.config.url}, attempting retry...`);
+        
+        // Mark as retry attempt to prevent infinite loops
+        error.config.__isRetry = true;
+        
+        try {
+          // Wait for a moment before retrying
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Retry the request
+          return api(error.config);
+        } catch (retryError) {
+          console.error(`Retry failed for ${error.config.url}:`, retryError);
+          return Promise.reject(retryError);
         }
       }
       
