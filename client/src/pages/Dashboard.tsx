@@ -64,17 +64,20 @@ const Dashboard: React.FC = () => {
         </Paper>
       )}
       
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div>
+      {/* Main content area with Pomodoro Timer and Recent Sessions side by side */}
+      <div className="flex flex-col md:flex-row md:space-x-6 space-y-6 md:space-y-0">
+        {/* Pomodoro Timer Column */}
+        <div className="md:w-1/2">
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Pomodoro Timer</h2>
           <PomodoroTimer />
         </div>
         
-        <div>
+        {/* Recent Sessions Column */}
+        <div className="md:w-1/2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-white drop-shadow-md">Recent Sessions</h2>
           </div>
-          <div className="bg-gray-800 bg-opacity-80 rounded-lg shadow-lg p-4">
+          <div className="bg-gray-800 bg-opacity-80 rounded-lg shadow-lg p-4 h-full">
             {loading ? (
               <div className="p-4 flex justify-center items-center min-h-[200px]">
                 <div className="animate-pulse flex space-x-4">
@@ -97,7 +100,7 @@ const Dashboard: React.FC = () => {
                 <p className="text-sm">Complete a Pomodoro session to see it here!</p>
               </div>
             ) : (
-              <ul className="space-y-3 min-h-[200px]">
+              <ul className="space-y-3">
                 {recentSessions.map((session, index) => (
                   <li 
                     key={session.id || `temp-session-${index}`} 

@@ -31,7 +31,12 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
   const { isAuthenticated } = useAuth();
   const { settings, updateSettings } = useSettings();
   
-  const [timeLeft, setTimeLeft] = useState<number>(settings.pomodoro_duration * 60);
+  // Ensure default duration if settings is undefined
+  const DEFAULT_POMODORO_DURATION = 25;
+  const pomodoroMinutes = settings?.pomodoro_duration || DEFAULT_POMODORO_DURATION;
+  
+  // Initialize with valid number to prevent NaN:NaN
+  const [timeLeft, setTimeLeft] = useState<number>(pomodoroMinutes * 60);
   const [timerState, setTimerState] = useState<TimerState>(TimerState.IDLE);
   const [timerType, setTimerType] = useState<TimerType>(TimerType.POMODORO);
   const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
@@ -88,20 +93,20 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  // Set the initial timer based on the timer type
+  // Ensure timeLeft is updated when settings change
   useEffect(() => {
     if (!settings) return;
     
     let duration = 0;
     if (timerType === TimerType.POMODORO) {
-      duration = settings.pomodoro_duration * 60;
+      duration = settings.pomodoro_duration || DEFAULT_POMODORO_DURATION;
     } else if (timerType === TimerType.SHORT_BREAK) {
-      duration = settings.short_break_duration * 60;
+      duration = settings.short_break_duration || 5;
     } else if (timerType === TimerType.LONG_BREAK) {
-      duration = settings.long_break_duration * 60;
+      duration = settings.long_break_duration || 15;
     }
     
-    setTimeLeft(duration);
+    setTimeLeft(duration * 60);
   }, [timerType, settings]);
 
   // Save todos to localStorage when they change
@@ -162,7 +167,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
         const elapsedMinutes = Math.round((endTime - startTime) / 60000); // Convert ms to minutes
         
         // Use actual elapsed time, fallback to settings duration if something went wrong
-        const actualDuration = startTime > 0 ? elapsedMinutes : settings.pomodoro_duration;
+        const actualDuration = startTime > 0 ? elapsedMinutes : pomodoroMinutes;
         
         console.log(`Recording session with actual duration: ${actualDuration} minutes (from ${startTime} to ${endTime})`);
         
@@ -197,7 +202,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
       console.error('Error in recordCompletedTasks:', error);
       toast.error('Failed to record session');
     }
-  }, [task, todoItems, isAuthenticated, addSession, refreshStats, settings.pomodoro_duration]);
+  }, [task, todoItems, isAuthenticated, addSession, refreshStats, pomodoroMinutes]);
 
   // Request notification permission when component mounts
   useEffect(() => {
@@ -313,13 +318,13 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     // Reset the time based on current timer type
     switch (timerType) {
       case TimerType.POMODORO:
-        setTimeLeft(settings.pomodoro_duration * 60);
+        setTimeLeft(pomodoroMinutes * 60);
         break;
       case TimerType.SHORT_BREAK:
-        setTimeLeft(settings.short_break_duration * 60);
+        setTimeLeft(5 * 60);
         break;
       case TimerType.LONG_BREAK:
-        setTimeLeft(settings.long_break_duration * 60);
+        setTimeLeft(15 * 60);
         break;
     }
     
@@ -346,8 +351,11 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     }
   };
 
-  // Format seconds to MM:SS
+  // Format seconds to MM:SS - Add protection against NaN
   const formatTime = (seconds: number): string => {
+    if (!seconds || isNaN(seconds)) {
+      return '25:00'; // Default display if seconds is invalid
+    }
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
@@ -456,16 +464,15 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           className="w-full px-4 py-2 border border-gray-300 bg-black/20 text-white placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
           readOnly // Make it read-only so clicking opens the task list instead of typing
         />
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-300">
-          <button 
-            onClick={() => setIsTodoListOpen(true)} 
-            className="hover:text-white focus:outline-none"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-            </svg>
-          </button>
-        </div>
+        <button 
+          onClick={() => setIsTodoListOpen(true)} 
+          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-white focus:outline-none"
+          style={{ height: '20px', width: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+          </svg>
+        </button>
       </div>
 
       <div className="flex space-x-4 mb-6">
