@@ -365,11 +365,11 @@ const Stats: React.FC = () => {
   // Render tab buttons without refresh controls
   const renderTabButtons = () => (
     <div className="flex flex-col sm:flex-row justify-between border-b border-white/20 mb-6">
-      <div className="flex overflow-x-auto">
+      <div className="flex overflow-x-auto space-x-6">
         <button
-          className={`py-2 px-4 font-medium text-sm ${
+          className={`py-2 px-4 font-medium text-sm rounded transition-all duration-200 ease-in-out ${
             activeTab === 'overview' 
-              ? 'text-white border-b-2 border-purple-500' 
+              ? 'bg-purple-600 text-white' 
               : 'text-white/70 hover:text-white'
           }`}
           onClick={() => setActiveTab('overview')}
@@ -377,9 +377,9 @@ const Stats: React.FC = () => {
           Overview
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm ${
+          className={`py-2 px-4 font-medium text-sm rounded transition-all duration-200 ease-in-out ${
             activeTab === 'trends' 
-              ? 'text-white border-b-2 border-purple-500' 
+              ? 'bg-purple-600 text-white' 
               : 'text-white/70 hover:text-white'
           }`}
           onClick={() => setActiveTab('trends')}
@@ -387,9 +387,9 @@ const Stats: React.FC = () => {
           Trends
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm ${
+          className={`py-2 px-4 font-medium text-sm rounded transition-all duration-200 ease-in-out ${
             activeTab === 'details' 
-              ? 'text-white border-b-2 border-purple-500' 
+              ? 'bg-purple-600 text-white' 
               : 'text-white/70 hover:text-white'
           }`}
           onClick={() => setActiveTab('details')}
@@ -525,25 +525,40 @@ const Stats: React.FC = () => {
     return (
       <>
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg text-center">
-              <h2 className="text-xl font-semibold text-white drop-shadow-md mb-2">Total Sessions</h2>
-              <p className="text-3xl font-bold text-white">{stats.totalSessions}</p>
+          <div className="flex flex-wrap justify-center gap-10 mb-8">
+            <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg text-center w-72 h-72 flex flex-col items-center justify-center">
+              <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Total Sessions</h2>
+              <p className="text-6xl font-bold text-white mb-4">{stats.totalSessions}</p>
+              <div className="mt-4 text-purple-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
             </div>
             
-            <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg text-center">
-              <h2 className="text-xl font-semibold text-white drop-shadow-md mb-2">Completed Sessions</h2>
-              <p className="text-3xl font-bold text-white">{stats.completedSessions}</p>
-              <p className="text-sm text-white/90 mt-1">
+            <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg text-center w-72 h-72 flex flex-col items-center justify-center">
+              <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Completed Sessions</h2>
+              <p className="text-6xl font-bold text-white mb-4">{stats.completedSessions}</p>
+              <p className="text-sm text-white/90 mt-2">
                 {stats.totalSessions > 0 
                   ? `${Math.round((stats.completedSessions / stats.totalSessions) * 100)}% completion rate` 
                   : 'No sessions yet'}
               </p>
+              <div className="mt-4 text-green-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
             </div>
             
-            <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg text-center">
-              <h2 className="text-xl font-semibold text-white drop-shadow-md mb-2">Total Focus Time</h2>
-              <p className="text-3xl font-bold text-white">{formatDuration(stats.totalFocusTime)}</p>
+            <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg text-center w-72 h-72 flex flex-col items-center justify-center">
+              <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Total Focus Time</h2>
+              <p className="text-5xl font-bold text-white mb-4">{formatDuration(stats.totalFocusTime)}</p>
+              <div className="mt-4 text-blue-400">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-14 w-14" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
             </div>
           </div>
         )}
@@ -591,57 +606,57 @@ const Stats: React.FC = () => {
         {/* Performance Insights Section */}
         <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Performance Insights</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-md font-medium text-white">Current Streak</h3>
+          <div className="flex flex-wrap justify-center gap-6">
+            <div className="bg-gray-700 bg-opacity-80 p-5 rounded-lg w-56 h-56 flex flex-col items-center text-center justify-center">
+              <div className="flex items-center justify-center mb-3">
                 <span className="text-purple-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
                   </svg>
                 </span>
               </div>
-              <p className="text-2xl font-bold text-white">{stats?.currentStreak ?? metrics.currentStreak} days</p>
-              <p className="text-xs text-white/70 mt-1">Consecutive days with completed sessions</p>
+              <h3 className="text-md font-medium text-white mb-2">Current Streak</h3>
+              <p className="text-3xl font-bold text-white mb-2">{stats?.currentStreak ?? metrics.currentStreak} days</p>
+              <p className="text-xs text-white/70">Consecutive days with completed sessions</p>
             </div>
             
-            <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-md font-medium text-white">Avg. Session Duration</h3>
-                <span className="text-purple-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <div className="bg-gray-700 bg-opacity-80 p-5 rounded-lg w-56 h-56 flex flex-col items-center text-center justify-center">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-green-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
                 </span>
               </div>
-              <p className="text-2xl font-bold text-white">{formatDuration(stats?.averageSessionDuration || metrics.longestSession)}</p>
-              <p className="text-xs text-white/70 mt-1">Average duration of your focus sessions</p>
+              <h3 className="text-md font-medium text-white mb-2">Avg. Session Duration</h3>
+              <p className="text-2xl font-bold text-white mb-2">{formatDuration(stats?.averageSessionDuration || metrics.longestSession)}</p>
+              <p className="text-xs text-white/70">Average duration of your focus sessions</p>
             </div>
             
-            <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-md font-medium text-white">Most Productive Day</h3>
-                <span className="text-purple-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <div className="bg-gray-700 bg-opacity-80 p-5 rounded-lg w-56 h-56 flex flex-col items-center text-center justify-center">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-blue-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
                   </svg>
                 </span>
               </div>
-              <p className="text-2xl font-bold text-white">{stats?.mostProductiveDay?.day || metrics.mostProductiveDay.day}</p>
-              <p className="text-xs text-white/70 mt-1">{formatDuration(stats?.mostProductiveDay?.minutes || metrics.mostProductiveDay.minutes)} of focus time</p>
+              <h3 className="text-md font-medium text-white mb-2">Most Productive Day</h3>
+              <p className="text-2xl font-bold text-white mb-2">{stats?.mostProductiveDay?.day || metrics.mostProductiveDay.day}</p>
+              <p className="text-xs text-white/70">{formatDuration(stats?.mostProductiveDay?.minutes || metrics.mostProductiveDay.minutes)} of focus time</p>
             </div>
             
-            <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-md font-medium text-white">Daily Average</h3>
-                <span className="text-purple-400">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <div className="bg-gray-700 bg-opacity-80 p-5 rounded-lg w-56 h-56 flex flex-col items-center text-center justify-center">
+              <div className="flex items-center justify-center mb-3">
+                <span className="text-orange-400">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                   </svg>
                 </span>
               </div>
-              <p className="text-2xl font-bold text-white">{stats?.averageDailySessions || '0'} sessions</p>
-              <p className="text-xs text-white/70 mt-1">Average sessions per active day</p>
+              <h3 className="text-md font-medium text-white mb-2">Daily Average</h3>
+              <p className="text-3xl font-bold text-white mb-2">{stats?.averageDailySessions || '0'} sessions</p>
+              <p className="text-xs text-white/70">Average sessions per active day</p>
             </div>
           </div>
         </div>

@@ -18,9 +18,10 @@ import SportsEsportsIcon from '@mui/icons-material/SportsEsports';
 import MusicNoteIcon from '@mui/icons-material/MusicNote';
 import Diversity3Icon from '@mui/icons-material/Diversity3';
 import LocalFireDepartmentIcon from '@mui/icons-material/LocalFireDepartment';
+import { SvgIconProps } from '@mui/material/SvgIcon';
 
-// Map of icon identifiers to icon components (fixed to use component types, not JSX elements)
-const iconMap: { [key: string]: React.ComponentType } = {
+// Map of icon identifiers to icon components
+const iconMap: { [key: string]: React.ComponentType<SvgIconProps> } = {
   'person': PersonIcon,
   'emoji': EmojiEmotionsIcon,
   'face': FaceIcon,
@@ -33,6 +34,12 @@ const iconMap: { [key: string]: React.ComponentType } = {
   'music': MusicNoteIcon,
   'diversity': Diversity3Icon,
   'fire': LocalFireDepartmentIcon,
+};
+
+// Custom icon component with proper typing
+const DynamicIcon: React.FC<{ iconName: string }> = ({ iconName }) => {
+  const IconComponent = iconMap[iconName] || PersonIcon;
+  return <IconComponent sx={{ fontSize: 50 }} />;
 };
 
 const formatDate = (dateString?: string): string => {
@@ -230,61 +237,25 @@ const Profile: React.FC = () => {
 
   // Render the avatar display element as a memoized component
   const AvatarDisplay = React.useMemo(() => {
-    // Return a React component
     return function AvatarDisplayComponent() {
-      // Early return if user is null
-      if (!user) {
-        return (
-          <Avatar
-            sx={{ 
-              width: 100, 
-              height: 100,
-              bgcolor: 'secondary.main',
-              fontSize: '2rem'
-            }}
-          />
-        );
-      }
-
-      console.log('Avatar URL in getAvatarDisplayElement:', formData.avatarUrl);
-      
       if (formData.avatarUrl) {
-        if (formData.avatarUrl.startsWith('#')) {
-          // It's a color avatar
-          console.log('Rendering color avatar:', formData.avatarUrl);
+        if (formData.avatarUrl.startsWith('icon:')) {
+          // It's an icon avatar
+          const iconKey = formData.avatarUrl.replace('icon:', '');
           return (
             <Avatar
               sx={{ 
                 width: 100, 
                 height: 100,
-                bgcolor: formData.avatarUrl,
-                fontSize: '2rem'
+                bgcolor: 'primary.main',
+                color: 'white'
               }}
             >
-              {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
-            </Avatar>
-          );
-        } else if (formData.avatarUrl.startsWith('icon:')) {
-          // It's an icon
-          const iconKey = formData.avatarUrl.substring(5); // Remove "icon:" prefix
-          console.log('Rendering icon avatar. Icon key:', iconKey, 'Icon exists:', !!iconMap[iconKey]);
-          const IconComponent = iconMap[iconKey];
-          return (
-            <Avatar
-              sx={{ 
-                width: 100, 
-                height: 100,
-                bgcolor: '#333',
-                color: 'white',
-                fontSize: '2rem'
-              }}
-            >
-              {IconComponent ? <IconComponent /> : `?${iconKey}?`}
+              <DynamicIcon iconName={iconKey} />
             </Avatar>
           );
         } else if (formData.avatarUrl.startsWith('linear-gradient')) {
           // It's a gradient
-          console.log('Rendering gradient avatar:', formData.avatarUrl);
           return (
             <Avatar
               sx={{ 
@@ -294,12 +265,11 @@ const Profile: React.FC = () => {
                 fontSize: '2rem'
               }}
             >
-              {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
+              {user!.name?.charAt(0) || user!.username?.charAt(0) || '?'}
             </Avatar>
           );
         } else {
           // It's a regular URL avatar
-          console.log('Rendering URL avatar:', formData.avatarUrl);
           return (
             <Avatar
               src={formData.avatarUrl}
@@ -312,7 +282,6 @@ const Profile: React.FC = () => {
         }
       } else {
         // Default: Show initials
-        console.log('Rendering default avatar (no avatarUrl)');
         return (
           <Avatar
             sx={{ 
@@ -322,7 +291,7 @@ const Profile: React.FC = () => {
               fontSize: '2rem'
             }}
           >
-            {user.name?.charAt(0) || user.username?.charAt(0) || '?'}
+            {user!.name?.charAt(0) || user!.username?.charAt(0) || '?'}
           </Avatar>
         );
       }
@@ -345,48 +314,6 @@ const Profile: React.FC = () => {
         <Box display="flex" justifyContent="center" my={4}>
           <Typography>Please log in to view your profile</Typography>
         </Box>
-        
-        {/* Debug section for development */}
-        {process.env.NODE_ENV !== 'production' && (
-          <Paper elevation={3} sx={{ p: 3, mt: 4, bgcolor: 'rgba(30, 30, 30, 0.9)', color: 'white', borderRadius: 2 }}>
-            <Typography variant="h6" gutterBottom>Debug Information</Typography>
-            <Typography variant="body2">
-              Auth State: {isAuthenticated ? 'Authenticated' : 'Not Authenticated'}
-            </Typography>
-            <Typography variant="body2">
-              Loading: {isLoading ? 'True' : 'False'}
-            </Typography>
-            <Typography variant="body2">
-              Token: {localStorage.getItem('token') ? 'Present' : 'Not found'}
-            </Typography>
-            <Typography variant="body2">
-              User in localStorage: {localStorage.getItem('user') ? 'Present' : 'Not found'}
-            </Typography>
-            <Box mt={2}>
-              <Button 
-                variant="contained" 
-                color="primary" 
-                onClick={() => window.location.reload()}
-                size="small"
-                sx={{ mr: 1 }}
-              >
-                Refresh Page
-              </Button>
-              <Button 
-                variant="outlined" 
-                color="secondary" 
-                onClick={() => {
-                  localStorage.removeItem('token');
-                  localStorage.removeItem('user');
-                  window.location.reload();
-                }}
-                size="small"
-              >
-                Clear Local Storage
-              </Button>
-            </Box>
-          </Paper>
-        )}
       </Container>
     );
   }
@@ -396,52 +323,6 @@ const Profile: React.FC = () => {
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 4, color: 'white', textAlign: 'center' }}>
         My Profile
       </Typography>
-
-      {/* Debug section for development */}
-      {process.env.NODE_ENV !== 'production' && (
-        <Paper elevation={3} sx={{ p: 3, mb: 4, bgcolor: 'rgba(30, 30, 30, 0.9)', color: 'white', borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>Debug Information</Typography>
-          <Typography variant="body2">User ID: {user.id}</Typography>
-          <Typography variant="body2">Username: {user.username}</Typography>
-          <Typography variant="body2">Email: {user.email}</Typography>
-          <Typography variant="body2">Verified: {user.is_verified ? 'Yes' : 'No'}</Typography>
-          <Typography variant="body2">Name: {user.name || 'Not set'}</Typography>
-          <Typography variant="body2">Bio: {user.bio || 'Not set'}</Typography>
-          <Typography variant="body2">Avatar URL: {user.avatarUrl || 'Not set'}</Typography>
-          <Typography variant="body2">Created: {user.created_at ? new Date(user.created_at).toLocaleString() : 'Unknown'}</Typography>
-          <Box mt={2}>
-            <Button 
-              variant="contained" 
-              color="primary" 
-              onClick={async () => {
-                try {
-                  const refreshedUser = await refreshUserData();
-                  if (refreshedUser) {
-                    toast.success('User data refreshed successfully');
-                  } else {
-                    toast.error('Failed to refresh user data');
-                  }
-                } catch (error) {
-                  toast.error('Error refreshing user data');
-                  console.error('Error refreshing user data:', error);
-                }
-              }}
-              size="small"
-              sx={{ mr: 1 }}
-            >
-              Refresh User Data
-            </Button>
-            <Button 
-              variant="outlined" 
-              color="secondary" 
-              onClick={() => window.location.reload()}
-              size="small"
-            >
-              Reload Page
-            </Button>
-          </Box>
-        </Paper>
-      )}
 
       {/* Profile Overview Card */}
       <Paper elevation={3} sx={{ p: 4, mb: 4, bgcolor: 'rgba(30, 30, 30, 0.9)', color: 'white', borderRadius: 2 }}>

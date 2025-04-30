@@ -59,9 +59,9 @@ export const SortableTodo: React.FC<TodoProps> = ({
               <button
                 onClick={() => onToggleComplete(todo.id)}
                 className={`
-                  flex-shrink-0 w-6 h-6 mt-1 rounded-full border-2 
+                  flex-shrink-0 w-7 h-7 mt-1 rounded-full border-2 flex items-center justify-center
                   ${todo.completed 
-                    ? 'bg-green-500 border-green-400 text-white flex items-center justify-center' 
+                    ? 'bg-green-500 border-green-400 text-white' 
                     : 'border-gray-400 hover:border-purple-400'
                   }
                   transition-colors duration-200
@@ -69,8 +69,8 @@ export const SortableTodo: React.FC<TodoProps> = ({
                 aria-label={todo.completed ? "Mark as incomplete" : "Mark as complete"}
               >
                 {todo.completed && (
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor" stroke="white" strokeWidth="1">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
                 )}
               </button>

@@ -579,7 +579,7 @@ const ThemeSelector: React.FC = () => {
         borderColor: 'rgba(255, 255, 255, 0.2)', 
         mb: 4,
         '& .MuiTabs-indicator': {
-          backgroundColor: '#4d90fe'
+          display: 'none'
         }
       }}>
         <Tabs 
@@ -589,9 +589,20 @@ const ThemeSelector: React.FC = () => {
           sx={{
             '& .MuiTab-root': {
               color: 'rgba(255, 255, 255, 0.7)',
+              marginRight: '24px',
+              padding: '8px 16px',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+              borderBottom: '2px solid transparent',
               '&.Mui-selected': {
                 color: '#ffffff',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                borderBottom: '2px solid #9333ea'
+              },
+              '&:hover': {
+                color: '#ffffff',
+                opacity: 1
               }
             }
           }}

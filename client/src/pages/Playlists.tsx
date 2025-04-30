@@ -184,32 +184,26 @@ const Playlists: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-wrap gap-5">
           {playlists.map((playlist) => (
-            <div key={playlist.id} className="bg-gray-800 bg-opacity-80 rounded-lg shadow-lg overflow-hidden">
-              <div className="p-5">
-                <h2 className="text-xl font-semibold text-white mb-2">{playlist.name}</h2>
-                {playlist.description && <p className="text-white/80 mb-4">{playlist.description}</p>}
-                <div className="flex justify-between items-center mt-2">
-                  <div className="flex space-x-4">
-                    <Link
-                      to={`/playlist/${playlist.id}`}
-                      className="text-blue-300 hover:text-blue-100 font-medium"
-                      data-cy="view-songs-button"
-                      onClick={(e) => {
-                        // Remove the validation that was rejecting UUIDs
-                        console.log('Navigating to playlist:', playlist.id, 'Type:', typeof playlist.id);
-                      }}
-                    >
-                      View Songs
-                    </Link>
-                    <button
-                      onClick={() => handleDeletePlaylist(playlist.id)}
-                      className="text-red-300 hover:text-red-100 font-medium"
-                    >
-                      Delete
-                    </button>
-                  </div>
+            <div key={playlist.id} className="bg-gray-800 bg-opacity-80 rounded-lg shadow-lg overflow-hidden w-[300px] h-[220px]">
+              <div className="p-5 flex flex-col h-full">
+                <h2 className="text-xl font-semibold text-white mb-3 line-clamp-1">{playlist.name}</h2>
+                {playlist.description && <p className="text-white/80 mb-4 text-sm line-clamp-2 flex-grow">{playlist.description}</p>}
+                <div className="flex justify-between items-center mt-auto w-full">
+                  <Link
+                    to={`/playlist/${playlist.id}`}
+                    className="text-blue-300 hover:text-blue-100 font-medium"
+                    data-cy="view-songs-button"
+                  >
+                    View Songs
+                  </Link>
+                  <button
+                    onClick={() => handleDeletePlaylist(playlist.id)}
+                    className="text-red-300 hover:text-red-100 font-medium"
+                  >
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>

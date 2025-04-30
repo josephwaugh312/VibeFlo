@@ -388,6 +388,7 @@ router.get('/stats', protect, handleAsync(async (req: Request, res: Response) =>
   const statsResponse = {
     totalSessions: parseInt(totalSessions.rows[0].count, 10),
     completedSessions: parseInt(completedSessions.rows[0].count, 10),
+    totalFocusTime: parseInt(totalFocusTime.rows[0].sum, 10) || 0,
     totalFocusTimeMinutes: parseInt(totalFocusTime.rows[0].sum, 10) || 0,
     averageSessionDurationMinutes: parseInt(avgSessionDuration.rows[0].avg_duration, 10) || 0,
     mostProductiveDay: mostProductiveDay.rows[0] ? {

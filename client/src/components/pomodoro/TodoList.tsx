@@ -191,7 +191,7 @@ const TodoList: React.FC<TodoListProps> = ({
           {/* Reset button - fixed position */}
           <button 
             onClick={resetTodos}
-            className="absolute right-0 top-0 text-red-400 hover:text-white bg-transparent hover:bg-red-600 border border-red-500 rounded py-1 px-3 transition-colors text-sm font-medium"
+            className="absolute right-0 top-0 text-white hover:text-white bg-transparent hover:bg-red-600 border-2 border-red-600 rounded py-1 px-3 transition-colors text-base font-medium"
             aria-label="Reset Tasks"
             title="Reset all tasks"
           >
