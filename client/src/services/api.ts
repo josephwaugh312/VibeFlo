@@ -236,7 +236,7 @@ const apiService = (() => {
     },
     
     getCurrentUser: async (retries = 3, delay = 2000) => {
-      let lastError = null;
+      let lastError: AxiosError | null = null;
       
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
@@ -246,22 +246,24 @@ const apiService = (() => {
           const response = await api.get(prefixApiEndpoint('/auth/me'));
           console.log('API Service: getCurrentUser response:', response.data);
           return response.data;
-        } catch (error: any) {
-          lastError = error;
-          console.error(`API Service: getCurrentUser attempt ${attempt + 1} failed:`, error.message);
+        } catch (error) {
+          // Cast error to AxiosError
+          const axiosError = error as AxiosError;
+          lastError = axiosError;
+          console.error(`API Service: getCurrentUser attempt ${attempt + 1} failed:`, axiosError.message);
           
           // Log additional error details
-          if (error.response) {
-            console.error('API Service: Error status:', error.response.status);
-            console.error('API Service: Error data:', error.response.data);
-            console.error('API Service: Error headers:', error.response.headers);
+          if (axiosError.response) {
+            console.error('API Service: Error status:', axiosError.response.status);
+            console.error('API Service: Error data:', axiosError.response.data);
+            console.error('API Service: Error headers:', axiosError.response.headers);
             
             // If we get a 401 error, don't retry
-            if (error.response.status === 401) {
-              throw error;
+            if (axiosError.response.status === 401) {
+              throw axiosError;
             }
-          } else if (error.request) {
-            console.error('API Service: No response received:', error.request);
+          } else if (axiosError.request) {
+            console.error('API Service: No response received:', axiosError.request);
           }
           
           if (attempt < retries) {

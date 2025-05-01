@@ -308,7 +308,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // Fetch user data with retry
       let userData = null;
-      let lastError = null;
+      let lastError: AxiosError | null = null;
       
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
@@ -316,12 +316,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userData = await apiService.auth.getCurrentUser();
           break; // If successful, exit the loop
         } catch (error) {
-          console.error(`Auth Context: Attempt ${attempt + 1} failed:`, error);
-          lastError = error;
+          const axiosError = error as AxiosError;
+          console.error(`Auth Context: Attempt ${attempt + 1} failed:`, axiosError);
+          lastError = axiosError;
           
           // If we get a 401 error, don't retry
-          if (error.response?.status === 401) {
-            throw error;
+          if (axiosError.response?.status === 401) {
+            throw axiosError;
           }
           
           if (attempt < retries) {
