@@ -1101,15 +1101,16 @@ const PlaylistDetail: React.FC = () => {
         
         {/* YouTube Search Results */}
         {Array.isArray(youtubeSearchResults) && youtubeSearchResults.length > 0 && (
-          <div className="p-4 bg-gray-800 border-t border-gray-700">
-            <h3 className="text-lg font-medium mb-3 text-white">YouTube Search Results</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="p-6 bg-gray-800 border-t border-gray-700">
+            <h3 className="text-lg font-medium mb-4 text-white">YouTube Search Results</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
               {youtubeSearchResults.map((result) => {
                 // Safe access to videoId (handles both formats)
                 const videoId = typeof result.id === 'string' ? result.id : result.id.videoId;
                 
-                // Safe access to thumbnail URL
+                // Safe access to thumbnail URL - prioritize higher quality images
                 const thumbnailUrl = 
+                  result.snippet?.thumbnails?.high?.url || 
                   result.snippet?.thumbnails?.medium?.url || 
                   result.snippet?.thumbnails?.default?.url || 
                   result.thumbnail || 
@@ -1122,16 +1123,26 @@ const PlaylistDetail: React.FC = () => {
                 return (
                   <div
                     key={videoId}
-                    className="bg-gray-700 bg-opacity-80 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-600"
+                    className="bg-gray-700 bg-opacity-80 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-600 hover:border-purple-500 flex flex-col"
                   >
-                    <img
-                      src={thumbnailUrl}
-                      alt={title}
-                      className="w-full h-24 object-cover rounded-t-md"
-                    />
-                    <div className="p-2">
-                      <h4 className="font-semibold text-sm line-clamp-1 mb-1 text-white">{title}</h4>
-                      <p className="text-xs text-gray-300 mb-2 truncate">{channelTitle}</p>
+                    <div className="relative pt-[100%] w-full"> {/* This creates a square aspect ratio */}
+                      <img
+                        src={thumbnailUrl}
+                        alt={title}
+                        className="absolute top-0 left-0 w-full h-full object-cover rounded-t-md"
+                        loading="lazy"
+                        onError={(e) => {
+                          // Fallback if image fails to load
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/480x360?text=No+Thumbnail';
+                        }}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                        <p className="text-xs text-gray-300 truncate">{channelTitle}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 flex-grow flex flex-col justify-between">
+                      <h4 className="font-semibold text-sm line-clamp-2 mb-2 text-white h-10">{title}</h4>
                       <button
                         onClick={() => handleAddYouTubeTrack({
                           id: { videoId },
@@ -1147,7 +1158,7 @@ const PlaylistDetail: React.FC = () => {
                           }
                         })}
                         disabled={isAddingYoutubeTrack}
-                        className={`w-full py-1 px-2 rounded text-xs font-medium ${
+                        className={`w-full py-1.5 px-2 rounded text-sm font-medium ${
                           isAddingYoutubeTrack
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-purple-600 hover:bg-purple-700 text-white'

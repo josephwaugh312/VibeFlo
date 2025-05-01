@@ -286,12 +286,82 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return;
       }
       
+      // Get the current user ID if logged in
+      const token = localStorage.getItem('token');
+      let currentUserId = '';
+      
+      if (token) {
+        try {
+          // Try to decode the JWT token to get the user ID
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            currentUserId = payload.id || '';
+            console.log('Current user ID for theme filtering:', currentUserId);
+          }
+        } catch (e) {
+          console.warn('Could not decode token for user ID:', e);
+        }
+      }
+      
       console.log('Fetching public custom themes...');
       const response = await axios.get(`${serverUrl}/api/themes/custom/public`);
       
       if (response.data && Array.isArray(response.data)) {
         console.log('Public custom themes fetched:', response.data.length);
-        setPublicCustomThemes(response.data);
+        
+        // List of unwanted theme IDs (from your console log)
+        const unwantedThemeIds = [
+          // Numeric IDs
+          '24', '25', '26', '27', '28', '29', '30', '31', '32',
+          // Also include string representations of the same IDs
+          24, 25, 26, 27, 28, 29, 30, 31, 32
+        ];
+        
+        // Filter out unwanted themes
+        const filteredThemes = response.data.filter((theme: CustomTheme) => {
+          // Skip themes with IDs in the unwanted list
+          if (unwantedThemeIds.includes(theme.id) || unwantedThemeIds.includes(Number(theme.id))) {
+            console.log(`Filtering out unwanted theme: ${theme.name} (ID: ${theme.id})`);
+            return false;
+          }
+          
+          // Skip themes with names that match patterns of unwanted themes
+          const unwantedNames = ["Deep Purple", "Dark Theme", "Ocean Blue", "Forest Green", "Sunset Orange"];
+          if (unwantedNames.includes(theme.name)) {
+            // Only remove it if it's not created by the current user
+            if (theme.user_id !== currentUserId) {
+              console.log(`Filtering out unwanted theme by name: ${theme.name} (ID: ${theme.id})`);
+              return false;
+            }
+          }
+          
+          return true;
+        });
+        
+        console.log(`Filtered themes from ${response.data.length} to ${filteredThemes.length}`);
+        
+        // Create a map to store unique themes by name (to handle any remaining duplicates)
+        const themeMap = new Map<string, CustomTheme>();
+        
+        // First pass: add all themes to the map, prioritizing the current user's themes
+        filteredThemes.forEach((theme: CustomTheme) => {
+          const existingTheme = themeMap.get(theme.name);
+          
+          // If the theme doesn't exist in the map yet, or if this one belongs to the current user, add it
+          if (!existingTheme || theme.user_id === currentUserId) {
+            themeMap.set(theme.name, theme);
+          } else if (existingTheme && new Date(theme.created_at || 0) > new Date(existingTheme.created_at || 0)) {
+            // If neither belongs to the current user, keep the most recent one
+            themeMap.set(theme.name, theme);
+          }
+        });
+        
+        // Convert map back to array
+        const uniqueThemes = Array.from(themeMap.values());
+        console.log(`Final filtered public themes: ${uniqueThemes.length}`);
+        
+        setPublicCustomThemes(uniqueThemes);
       }
     } catch (error) {
       console.error('Error fetching public custom themes:', error);
