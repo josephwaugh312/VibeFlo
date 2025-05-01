@@ -322,7 +322,9 @@ const PlaylistDetail: React.FC = () => {
     setIsSearchingYoutube(true);
     try {
       console.log('Searching YouTube for:', query);
-      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/youtube/search`;
+      // Fix the API URL to ensure it's correctly pointing to the backend API
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const apiUrl = `${baseUrl}/api/youtube/search`;
       console.log('YouTube search API URL:', apiUrl);
       
       const token = localStorage.getItem('token');
@@ -334,7 +336,8 @@ const PlaylistDetail: React.FC = () => {
         params: { query },
         headers: {
           Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
       });
       
@@ -389,9 +392,20 @@ const PlaylistDetail: React.FC = () => {
 
   const getVideoDetails = async (youtubeId: string) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/youtube/video/${youtubeId}`, {
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const apiUrl = `${baseUrl}/api/youtube/video/${youtubeId}`;
+      console.log('Getting video details from:', apiUrl);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+      
+      const response = await axios.get(apiUrl, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         },
       });
       return response.data;
