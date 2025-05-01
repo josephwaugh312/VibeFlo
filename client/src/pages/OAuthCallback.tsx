@@ -45,12 +45,47 @@ const OAuthCallback: React.FC = () => {
         
         console.log('OAuth token received, processing authentication...');
         
-        // Store token in localStorage
-        localStorage.setItem('token', token);
-        
         // Update authentication state with minimal API calls
         try {
-          // Fetch the user info from the API
+          // Try a simpler approach that doesn't require API calls on callback
+          localStorage.setItem('token', token);
+          setIsAuthenticated(true);
+          
+          // Try to parse user info from JWT token
+          try {
+            const tokenParts = token.split('.');
+            if (tokenParts.length === 3) {
+              // Get the payload part of the JWT
+              const payload = JSON.parse(atob(tokenParts[1]));
+              console.log('Extracted user info from token:', payload);
+              
+              // Create minimal user object from token payload
+              const minimalUser = {
+                id: payload.id,
+                name: payload.name,
+                email: payload.email,
+                username: payload.username || payload.email?.split('@')[0] || payload.id,
+                // Add other fields to satisfy the User interface
+                bio: '',
+                avatar_url: '',
+                is_verified: true
+              };
+              
+              // Store minimal user data and redirect
+              localStorage.setItem('user', JSON.stringify(minimalUser));
+              setUser(minimalUser);
+              
+              // Redirect to dashboard immediately
+              navigate('/dashboard', { replace: true });
+              return;
+            }
+          } catch (tokenError) {
+            console.error('Error parsing token payload:', tokenError);
+            // Continue with API call if token parsing fails
+          }
+          
+          // Only fetch user data if token parsing fails
+          console.log('Attempting API call to fetch user data...');
           const response = await fetch('https://vibeflo-api.onrender.com/api/auth/me', {
             headers: {
               'Authorization': `Bearer ${token}`
@@ -66,21 +101,29 @@ const OAuthCallback: React.FC = () => {
           // Store user data
           localStorage.setItem('user', JSON.stringify(userData));
           setUser(userData);
-          setIsAuthenticated(true);
           
           // Redirect to dashboard on success
           navigate('/dashboard', { replace: true });
         } catch (error) {
           console.error('Error fetching user data:', error);
           
-          // If we fail to get user data but have a token, still mark as authenticated
-          // We can try to fetch the user data again later
-          setIsAuthenticated(true);
-          
-          // Redirect after a short delay
-          setTimeout(() => {
-            navigate('/dashboard', { replace: true });
-          }, 1000);
+          // Check for resource constraint errors
+          const err = error as Error;
+          if (err.message && (
+            err.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
+            err.message.includes('Network Error')
+          )) {
+            console.log('Detected resource constraint error, proceeding with limited user info');
+            // Still redirect to dashboard - we'll fetch user data there
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 500);
+          } else {
+            // For other types of errors, still try to proceed
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 1000);
+          }
         }
       } catch (error) {
         console.error('Error in OAuth callback processing:', error);
