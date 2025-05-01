@@ -76,22 +76,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         try {
-          // Verify token and refresh user data
+          // Verify token and refresh user data with retry logic
           console.log('Auth Context: Verifying token and refreshing user data');
           
           // Add delay before token verification to ensure any previous requests are complete
           await new Promise(resolve => setTimeout(resolve, 500));
           
-          console.log('Auth Context: Making API call to getCurrentUser');
-          console.log('Auth Context: Current headers:', axios.defaults.headers.common);
+          // Use the refreshUserData function which now has retry logic
+          const userData = await refreshUserData();
           
-          const response = await apiService.auth.getCurrentUser();
-          console.log('Auth Context: User data refreshed successfully:', response);
-          
-          localStorage.setItem('user', JSON.stringify(response));
-          setUser(response);
-          setIsAuthenticated(true);
-          setRefreshAttempts(0); // Reset attempts on success
+          if (userData) {
+            console.log('Auth Context: User data refreshed successfully with retry logic');
+            // The refreshUserData function already updates state and localStorage
+            setRefreshAttempts(0); // Reset attempts on success
+          } else {
+            throw new Error('Failed to refresh user data with retry logic');
+          }
         } catch (error: any) {
           console.error('Auth Context: Error refreshing user data:', error);
           console.error('Auth Context: Error message:', error.message);
@@ -292,7 +292,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsAuthenticated(false);
   };
 
-  const refreshUserData = async (): Promise<User | null> => {
+  const refreshUserData = async (retries = 3, delay = 2000): Promise<User | null> => {
     try {
       console.log('Auth Context: Manually refreshing user data');
       
@@ -306,8 +306,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Ensure token is set in API service
       apiService.setToken(token);
       
-      // Fetch user data
-      const userData = await apiService.auth.getCurrentUser();
+      // Fetch user data with retry
+      let userData = null;
+      let lastError = null;
+      
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          console.log(`Auth Context: Attempt ${attempt + 1} to fetch user data`);
+          userData = await apiService.auth.getCurrentUser();
+          break; // If successful, exit the loop
+        } catch (error) {
+          console.error(`Auth Context: Attempt ${attempt + 1} failed:`, error);
+          lastError = error;
+          
+          // If we get a 401 error, don't retry
+          if (error.response?.status === 401) {
+            throw error;
+          }
+          
+          if (attempt < retries) {
+            console.log(`Auth Context: Waiting ${delay}ms before next attempt`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
+        }
+      }
+      
+      if (!userData) {
+        // All attempts failed
+        throw lastError || new Error('Failed to fetch user data after multiple attempts');
+      }
+      
       console.log('Auth Context: User data refreshed successfully:', userData);
       
       // Update state and localStorage
