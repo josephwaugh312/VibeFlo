@@ -30,7 +30,7 @@ const apiService = (() => {
   // Create the base axios instance
   const api: AxiosInstance = axios.create({
     baseURL: getApiBaseUrl(),
-    timeout: 10000,
+    timeout: 60000,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -235,28 +235,44 @@ const apiService = (() => {
       return response.data;
     },
     
-    getCurrentUser: async () => {
-      try {
-        console.log('API Service: Calling getCurrentUser endpoint');
-        console.log('API Service: Current authorization header:', api.defaults.headers.common['Authorization']);
-        
-        const response = await api.get(prefixApiEndpoint('/auth/me'));
-        console.log('API Service: getCurrentUser response:', response.data);
-        return response.data;
-      } catch (error: any) {
-        console.error('API Service: getCurrentUser error:', error.message);
-        
-        // Log additional error details
-        if (error.response) {
-          console.error('API Service: Error status:', error.response.status);
-          console.error('API Service: Error data:', error.response.data);
-          console.error('API Service: Error headers:', error.response.headers);
-        } else if (error.request) {
-          console.error('API Service: No response received:', error.request);
+    getCurrentUser: async (retries = 3, delay = 2000) => {
+      let lastError = null;
+      
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          console.log(`API Service: Attempt ${attempt + 1} to fetch current user`);
+          console.log('API Service: Current authorization header:', api.defaults.headers.common['Authorization']);
+          
+          const response = await api.get(prefixApiEndpoint('/auth/me'));
+          console.log('API Service: getCurrentUser response:', response.data);
+          return response.data;
+        } catch (error: any) {
+          lastError = error;
+          console.error(`API Service: getCurrentUser attempt ${attempt + 1} failed:`, error.message);
+          
+          // Log additional error details
+          if (error.response) {
+            console.error('API Service: Error status:', error.response.status);
+            console.error('API Service: Error data:', error.response.data);
+            console.error('API Service: Error headers:', error.response.headers);
+            
+            // If we get a 401 error, don't retry
+            if (error.response.status === 401) {
+              throw error;
+            }
+          } else if (error.request) {
+            console.error('API Service: No response received:', error.request);
+          }
+          
+          if (attempt < retries) {
+            console.log(`API Service: Waiting ${delay}ms before next attempt`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+          }
         }
-        
-        throw error;
       }
+      
+      console.error('API Service: All getCurrentUser attempts failed');
+      throw lastError;
     },
     
     checkVerificationStatus: async () => {
