@@ -17,12 +17,12 @@ export const getApiBaseUrl = (): string => {
       window.location.hostname.includes('vibeflo') || 
       window.location.hostname.includes('render.com')) {
     console.log("Using Render API URL");
-    return 'https://vibeflo-api.onrender.com/api';
+    return 'https://vibeflo-api.onrender.com';
   }
   
   // For local development
   console.log("Using localhost API URL");
-  return 'http://localhost:5001/api';
+  return 'http://localhost:5001';
 };
 
 // Create the API service with token management and interceptors
@@ -123,6 +123,16 @@ const apiService = (() => {
     }
   };
 
+  // Helper function to prefix API routes
+  const prefixApiEndpoint = (endpoint: string): string => {
+    // Don't add /api prefix for auth routes
+    if (endpoint.startsWith('/auth/')) {
+      return endpoint;
+    }
+    // Add /api prefix for all other routes
+    return `/api${endpoint}`;
+  };
+
   // Clear token and auth headers
   const clearToken = () => {
     if (typeof localStorage !== 'undefined') {
@@ -201,7 +211,7 @@ const apiService = (() => {
     },
     
     register: async (name: string, username: string, email: string, password: string) => {
-      const response = await api.post('/auth/register', { name, username, email, password });
+      const response = await api.post(prefixApiEndpoint('/auth/register'), { name, username, email, password });
       return response.data;
     },
     
@@ -210,7 +220,7 @@ const apiService = (() => {
         console.log('API Service: Calling getCurrentUser endpoint');
         console.log('API Service: Current authorization header:', api.defaults.headers.common['Authorization']);
         
-        const response = await api.get('/auth/me');
+        const response = await api.get(prefixApiEndpoint('/auth/me'));
         console.log('API Service: getCurrentUser response:', response.data);
         return response.data;
       } catch (error: any) {
@@ -230,12 +240,12 @@ const apiService = (() => {
     },
     
     checkVerificationStatus: async () => {
-      const response = await api.get('/auth/verification-status');
+      const response = await api.get(prefixApiEndpoint('/auth/verification-status'));
       return response.data;
     },
     
     updateProfile: async (userData: any) => {
-      const response = await api.put('/users/me', userData);
+      const response = await api.put(prefixApiEndpoint('/users/me'), userData);
       return response.data;
     },
     
