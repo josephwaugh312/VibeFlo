@@ -109,10 +109,10 @@ const convertToMusicPlayerTracks = (songs: Song[]): Track[] => {
   }));
 };
 
-// YouTube search result interface
+// YouTube search result interface - with optional fields to handle both formats
 interface YouTubeSearchResult {
-  id: { videoId: string };
-  snippet: {
+  id: { videoId: string } | string;
+  snippet?: {
     title: string;
     channelTitle: string;
     description: string;
@@ -122,6 +122,10 @@ interface YouTubeSearchResult {
       high: { url: string; width: number; height: number };
     };
   };
+  // Server simplified format fields
+  title?: string;
+  channelTitle?: string;
+  thumbnail?: string;
 }
 
 const PlaylistDetail: React.FC = () => {
@@ -322,9 +326,10 @@ const PlaylistDetail: React.FC = () => {
     setIsSearchingYoutube(true);
     try {
       console.log('Searching YouTube for:', query);
-      // Fix the API URL to ensure it's correctly pointing to the backend API
+      
+      // Try the endpoint that should work
       const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
-      const apiUrl = `${baseUrl}/api/youtube/search`;
+      let apiUrl = `${baseUrl}/api/youtube/search`;
       console.log('YouTube search API URL:', apiUrl);
       
       const token = localStorage.getItem('token');
@@ -332,32 +337,56 @@ const PlaylistDetail: React.FC = () => {
         throw new Error('No authentication token available');
       }
       
-      const response = await axios.get(apiUrl, {
-        params: { query },
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-      });
-      
-      console.log('YouTube search response status:', response.status);
-      console.log('YouTube search response data:', response.data);
-      
-      // Ensure the response is array-like before setting it
-      if (response.data && Array.isArray(response.data.items)) {
-        setYoutubeSearchResults(response.data.items);
-        console.log('YouTube search results count:', response.data.items.length);
-      } else if (response.data && Array.isArray(response.data)) {
-        setYoutubeSearchResults(response.data);
-        console.log('YouTube search results count:', response.data.length);
-      } else {
-        console.error('YouTube search returned non-array response:', response.data);
-        setYoutubeSearchResults([]);
-        setSearchError('Invalid response format from YouTube API');
+      try {
+        // Using a more detailed error handler to see what's happening
+        const response = await axios.get(apiUrl, {
+          params: { query },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+        });
+        
+        console.log('YouTube search response status:', response.status);
+        console.log('YouTube search response data:', response.data);
+        
+        // Process the response
+        processYoutubeResponse(response.data);
+      } catch (error: any) {
+        console.error('Error with first YouTube search attempt:', error);
+        
+        // If the first approach fails, try the direct YouTube API (if that's what works in the music player)
+        if (process.env.REACT_APP_YOUTUBE_API_KEY) {
+          try {
+            console.log('Attempting direct YouTube API search as fallback');
+            const ytResponse = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+              params: {
+                part: 'snippet',
+                maxResults: 25,
+                q: query,
+                type: 'video',
+                key: process.env.REACT_APP_YOUTUBE_API_KEY
+              }
+            });
+            
+            console.log('Direct YouTube API response:', ytResponse.data);
+            // Convert to our expected format
+            const formattedResults = ytResponse.data.items.map((item: any) => ({
+              id: { videoId: item.id.videoId },
+              snippet: item.snippet
+            }));
+            setYoutubeSearchResults(formattedResults);
+            setSearchError(null);
+          } catch (fallbackError: any) {
+            console.error('Error with direct YouTube API fallback:', fallbackError);
+            throw fallbackError;
+          }
+        } else {
+          // Rethrow the error if we don't have a fallback
+          throw error;
+        }
       }
-      
-      setSearchError(null);
     } catch (error: any) {
       console.error('Error searching YouTube:', error);
       
@@ -371,6 +400,9 @@ const PlaylistDetail: React.FC = () => {
           localStorage.removeItem('token');
           toast('Session expired. Please log in again.', { icon: '❌' });
           setTimeout(() => navigate('/login?expired=true'), 2000);
+        } else if (error.response.status === 500) {
+          setSearchError(`Server error: ${error.response.data?.message || 'Unknown server error'}`);
+          toast(`YouTube search failed: ${error.response.data?.message || 'Server error'}`, { icon: '❌' });
         } else {
           setSearchError(`Error searching YouTube: ${error.response.data?.message || error.message}`);
         }
@@ -387,6 +419,45 @@ const PlaylistDetail: React.FC = () => {
       setYoutubeSearchResults([]);
     } finally {
       setIsSearchingYoutube(false);
+    }
+  };
+  
+  // Helper function to process YouTube response data
+  const processYoutubeResponse = (data: any) => {
+    // Ensure the response is array-like before setting it
+    if (data && Array.isArray(data.items)) {
+      // This is the standard YouTube API response format
+      setYoutubeSearchResults(data.items);
+      console.log('YouTube search results count:', data.items.length);
+    } else if (data && Array.isArray(data)) {
+      // This is the server's simplified format - convert it to the format we expect
+      const formattedResults = data.map((item: any) => {
+        // Check if the data is already in the expected format
+        if (item.snippet && item.id && item.id.videoId) {
+          return item;
+        }
+        
+        // If it's the server's simplified format, convert it
+        return {
+          id: { videoId: item.id },
+          snippet: {
+            title: item.title,
+            channelTitle: item.channelTitle,
+            thumbnails: {
+              default: { url: item.thumbnail },
+              medium: { url: item.thumbnail },
+              high: { url: item.thumbnail }
+            }
+          }
+        };
+      });
+      
+      setYoutubeSearchResults(formattedResults);
+      console.log('YouTube search results count:', formattedResults.length);
+    } else {
+      console.error('YouTube search returned non-array response:', data);
+      setYoutubeSearchResults([]);
+      setSearchError('Invalid response format from YouTube API');
     }
   };
 
@@ -419,25 +490,29 @@ const PlaylistDetail: React.FC = () => {
   const handleAddYouTubeTrack = async (video: YouTubeSearchResult) => {
     setIsLoading(true);
     try {
+      // Extract videoId safely
+      const videoId = typeof video.id === 'string' ? video.id : video.id.videoId;
+      
       // Get the best available thumbnail URL
-      const thumbnailUrl = video.snippet.thumbnails.high?.url || 
-                          video.snippet.thumbnails.medium?.url || 
-                          video.snippet.thumbnails.default?.url || 
+      const thumbnailUrl = video.snippet?.thumbnails?.high?.url || 
+                          video.snippet?.thumbnails?.medium?.url || 
+                          video.snippet?.thumbnails?.default?.url || 
+                          video.thumbnail ||
                           '';
                           
       // Create a song object from the YouTube video
       const song = {
         // Add a temporary ID for TypeScript compatibility
-        id: `temp-${video.id.videoId}`,
-        title: video.snippet.title,
-        artist: video.snippet.channelTitle,
-        url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
+        id: `temp-${videoId}`,
+        title: video.snippet?.title || video.title || '',
+        artist: video.snippet?.channelTitle || video.channelTitle || '',
+        url: `https://www.youtube.com/watch?v=${videoId}`,
         image_url: thumbnailUrl,
         duration: 0, // YouTube search doesn't provide duration
-        audio_url: `https://www.youtube.com/watch?v=${video.id.videoId}`,
+        audio_url: `https://www.youtube.com/watch?v=${videoId}`,
         cover_url: thumbnailUrl,
         source: 'youtube', // Add source property required by Track interface
-        youtube_id: video.id.videoId // Pass YouTube ID directly
+        youtube_id: videoId // Pass YouTube ID directly
       };
       
       // Ensure id is a string
@@ -1029,33 +1104,61 @@ const PlaylistDetail: React.FC = () => {
           <div className="p-4 bg-gray-800 border-t border-gray-700">
             <h3 className="text-lg font-medium mb-3 text-white">YouTube Search Results</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {youtubeSearchResults.map((result) => (
-                <div
-                  key={result.id.videoId}
-                  className="bg-gray-700 bg-opacity-80 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-600"
-                >
-                  <img
-                    src={result.snippet.thumbnails.medium.url}
-                    alt={result.snippet.title}
-                    className="w-full h-24 object-cover rounded-t-md"
-                  />
-                  <div className="p-2">
-                    <h4 className="font-semibold text-sm line-clamp-1 mb-1 text-white">{result.snippet.title}</h4>
-                    <p className="text-xs text-gray-300 mb-2 truncate">{result.snippet.channelTitle}</p>
-                    <button
-                      onClick={() => handleAddYouTubeTrack(result)}
-                      disabled={isAddingYoutubeTrack}
-                      className={`w-full py-1 px-2 rounded text-xs font-medium ${
-                        isAddingYoutubeTrack
-                          ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                          : 'bg-purple-600 hover:bg-purple-700 text-white'
-                      }`}
-                    >
-                      {isAddingYoutubeTrack ? 'Adding...' : 'Add to Playlist'}
-                    </button>
+              {youtubeSearchResults.map((result) => {
+                // Safe access to videoId (handles both formats)
+                const videoId = typeof result.id === 'string' ? result.id : result.id.videoId;
+                
+                // Safe access to thumbnail URL
+                const thumbnailUrl = 
+                  result.snippet?.thumbnails?.medium?.url || 
+                  result.snippet?.thumbnails?.default?.url || 
+                  result.thumbnail || 
+                  'https://via.placeholder.com/480x360?text=No+Thumbnail';
+                
+                // Safe access to title and channel
+                const title = result.snippet?.title || result.title || 'Unknown Title';
+                const channelTitle = result.snippet?.channelTitle || result.channelTitle || 'Unknown Channel';
+                
+                return (
+                  <div
+                    key={videoId}
+                    className="bg-gray-700 bg-opacity-80 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-200 overflow-hidden border border-gray-600"
+                  >
+                    <img
+                      src={thumbnailUrl}
+                      alt={title}
+                      className="w-full h-24 object-cover rounded-t-md"
+                    />
+                    <div className="p-2">
+                      <h4 className="font-semibold text-sm line-clamp-1 mb-1 text-white">{title}</h4>
+                      <p className="text-xs text-gray-300 mb-2 truncate">{channelTitle}</p>
+                      <button
+                        onClick={() => handleAddYouTubeTrack({
+                          id: { videoId },
+                          snippet: {
+                            title,
+                            channelTitle,
+                            description: result.snippet?.description || '',
+                            thumbnails: {
+                              default: { url: thumbnailUrl, width: 120, height: 90 },
+                              medium: { url: thumbnailUrl, width: 320, height: 180 },
+                              high: { url: thumbnailUrl, width: 480, height: 360 }
+                            }
+                          }
+                        })}
+                        disabled={isAddingYoutubeTrack}
+                        className={`w-full py-1 px-2 rounded text-xs font-medium ${
+                          isAddingYoutubeTrack
+                            ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                            : 'bg-purple-600 hover:bg-purple-700 text-white'
+                        }`}
+                      >
+                        {isAddingYoutubeTrack ? 'Adding...' : 'Add to Playlist'}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
