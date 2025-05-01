@@ -1,149 +1,179 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import axios from 'axios';
-import { CircularProgress, Box, Typography, Paper } from '@mui/material';
-import apiService from '../services/api';
+import { Box, Typography, CircularProgress, Paper, Alert, Button } from '@mui/material';
+import { useTheme } from '../context/ThemeContext';
 
 const OAuthCallback: React.FC = () => {
-  const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(true);
-  const navigate = useNavigate();
   const location = useLocation();
-  const { setUser, setIsAuthenticated, initializeAuth } = useAuth();
+  const navigate = useNavigate();
+  const { setUser, setIsAuthenticated } = useAuth();
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const { currentTheme } = useTheme();
+  
+  // Parse URL parameters
+  const getUrlParams = () => {
+    const searchParams = new URLSearchParams(location.search);
+    return {
+      token: searchParams.get('token'),
+      error: searchParams.get('error'),
+    };
+  };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const errorParam = params.get('error');
-    
-    if (errorParam) {
-      console.error('OAuth error from server:', errorParam);
-      setError(`Authentication error: ${errorParam}`);
-      setIsProcessing(false);
-      setTimeout(() => navigate('/login'), 3000);
-    }
-  }, [location.search, navigate]);
-  
-  useEffect(() => {
-    const processOAuthCallback = async () => {
+    const processOAuth = async () => {
       try {
-        console.log('OAuth Callback: Started processing callback');
-        const params = new URLSearchParams(location.search);
-        const token = params.get('token');
+        const { token, error } = getUrlParams();
         
-        if (!token) {
-          console.error('OAuth Callback: No token in callback URL');
-          console.error('OAuth Callback: Location search params:', location.search);
-          setError('No authentication token received');
+        // Handle error from OAuth provider
+        if (error) {
+          console.error('OAuth error:', error);
+          setError(`Authentication failed: ${error}`);
           setIsProcessing(false);
-          setTimeout(() => navigate('/login'), 3000);
           return;
         }
         
-        console.log('OAuth Callback: Token received (length):', token.length);
-        console.log('OAuth Callback: Initializing authentication...');
+        // Check if token exists
+        if (!token) {
+          console.error('No token received from OAuth provider');
+          setError('No authentication token received. Please try again.');
+          setIsProcessing(false);
+          return;
+        }
         
-        // Store the token and initialize auth context
+        console.log('OAuth token received, processing authentication...');
+        
+        // Store token in localStorage
         localStorage.setItem('token', token);
         
-        // Configure axios and API service with the token
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        apiService.setToken(token);
-        
+        // Update authentication state with minimal API calls
         try {
-          console.log('OAuth Callback: Calling initializeAuth to validate token and fetch user data');
-          // Initialize auth context which will fetch and validate user data
-          await initializeAuth();
-          console.log('OAuth Callback: Authentication initialized successfully');
+          // Fetch the user info from the API
+          const response = await fetch('https://vibeflo-api.onrender.com/api/auth/me', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
           
-          // If initialization succeeds, redirect to dashboard
-          console.log('OAuth Callback: Redirecting to dashboard');
+          if (!response.ok) {
+            throw new Error(`Failed to fetch user data: ${response.status}`);
+          }
+          
+          const userData = await response.json();
+          
+          // Store user data
+          localStorage.setItem('user', JSON.stringify(userData));
+          setUser(userData);
+          setIsAuthenticated(true);
+          
+          // Redirect to dashboard on success
+          navigate('/dashboard', { replace: true });
+        } catch (error) {
+          console.error('Error fetching user data:', error);
+          
+          // If we fail to get user data but have a token, still mark as authenticated
+          // We can try to fetch the user data again later
+          setIsAuthenticated(true);
+          
+          // Redirect after a short delay
           setTimeout(() => {
-            navigate('/dashboard');
+            navigate('/dashboard', { replace: true });
           }, 1000);
-        } catch (authError: any) {
-          console.error('OAuth Callback: Error initializing authentication:', authError);
-          console.error('OAuth Callback: Error message:', authError.message);
-          console.error('OAuth Callback: Error response:', authError.response?.data);
-          console.error('OAuth Callback: Error status:', authError.response?.status);
-          
-          // Clear any invalid data
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          axios.defaults.headers.common['Authorization'] = '';
-          apiService.setToken(null);
-          
-          setError('Failed to complete authentication. Please try again.');
-          setIsProcessing(false);
-          setTimeout(() => navigate('/login'), 3000);
         }
-      } catch (err: any) {
-        console.error('OAuth Callback: Processing error:', err);
-        console.error('OAuth Callback: Error message:', err.message);
-        console.error('OAuth Callback: Error response:', err.response?.data);
-        console.error('OAuth Callback: Error stack:', err.stack);
-        setError(err.response?.data?.message || 'Authentication failed');
+      } catch (error) {
+        console.error('Error in OAuth callback processing:', error);
+        setError('An unexpected error occurred. Please try again.');
         setIsProcessing(false);
-        setTimeout(() => navigate('/login'), 3000);
       }
     };
-    
-    processOAuthCallback();
-  }, [location, navigate, setUser, setIsAuthenticated, initializeAuth]);
+
+    if (isProcessing && attempts < 3) {
+      processOAuth();
+      setAttempts(prev => prev + 1);
+    }
+  }, [location, navigate, setUser, setIsAuthenticated, isProcessing, attempts]);
+
+  // Handle retry
+  const handleRetry = () => {
+    setIsProcessing(true);
+    setError(null);
+    setAttempts(0);
+  };
+
+  // Handle manual login
+  const handleManualLogin = () => {
+    navigate('/login', { replace: true });
+  };
 
   return (
     <Box
-      display="flex"
-      flexDirection="column"
-      alignItems="center"
-      justifyContent="center"
-      minHeight="100vh"
-      p={3}
-      data-cy="oauth-callback-container"
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        p: 2,
+        background: 'transparent',
+      }}
     >
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 4, 
-          maxWidth: 500, 
-          width: '100%', 
-          textAlign: 'center',
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      <Paper
+        elevation={3}
+        sx={{
+          p: 4,
+          width: '100%',
+          maxWidth: 400,
+          borderRadius: 2,
           backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
-          color: 'white'
+          boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37)',
         }}
       >
-        {error ? (
-          <>
-            <Typography variant="h5" color="error" gutterBottom data-cy="auth-error-title">
-              Authentication Error
+        <Typography
+          variant="h5"
+          component="h1"
+          sx={{ textAlign: 'center', mb: 4 }}
+        >
+          {error ? 'Authentication Failed' : 'Processing Authentication'}
+        </Typography>
+
+        {isProcessing && !error ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <CircularProgress size={60} />
+            <Typography>
+              Processing your authentication...
             </Typography>
-            <Typography color="rgba(255, 255, 255, 0.7)" data-cy="auth-error-message">
+          </Box>
+        ) : error ? (
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
+            </Alert>
+            <Typography variant="body2" sx={{ mb: 2 }}>
+              This could be due to server resource constraints or an authentication error.
             </Typography>
-            <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.5)' }}>
-              Redirecting to login...
-            </Typography>
-          </>
-        ) : (
-          <>
-            <CircularProgress 
-              size={60} 
-              thickness={4} 
-              sx={{ 
-                mb: 3,
-                color: theme => theme.palette.primary.main
-              }} 
-            />
-            <Typography variant="h5" gutterBottom sx={{ color: 'white' }}>
-              Completing Authentication
-            </Typography>
-            <Typography sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Please wait while we finalize your sign-in...
-            </Typography>
-          </>
-        )}
+            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'space-between' }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleRetry}
+                sx={{ flex: 1 }}
+              >
+                Try Again
+              </Button>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleManualLogin}
+                sx={{ flex: 1 }}
+              >
+                Use Email Login
+              </Button>
+            </Box>
+          </Box>
+        ) : null}
       </Paper>
     </Box>
   );
