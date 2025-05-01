@@ -175,7 +175,7 @@ const apiService = (() => {
           };
         }
         
-        const response = await api.post('/auth/login', { 
+        const response = await api.post(prefixApiEndpoint('/auth/login'), { 
           email: loginIdentifier,
           login: loginIdentifier,
           password 
@@ -250,37 +250,37 @@ const apiService = (() => {
     },
     
     changePassword: async (currentPassword: string, newPassword: string) => {
-      const response = await api.post('/users/password', { currentPassword, newPassword });
+      const response = await api.post(prefixApiEndpoint('/users/password'), { currentPassword, newPassword });
       return response.data;
     },
     
     deleteAccount: async (password: string) => {
-      const response = await api.delete('/users/delete', { data: { password } });
+      const response = await api.delete(prefixApiEndpoint('/users/delete'), { data: { password } });
       return response.data;
     },
     
     requestPasswordReset: async (email: string) => {
-      const response = await api.post('/auth/forgot-password', { email });
+      const response = await api.post(prefixApiEndpoint('/auth/forgot-password'), { email });
       return response.data;
     },
     
     verifyResetToken: async (token: string) => {
-      const response = await api.get(`/auth/verify-reset-token/${token}`);
+      const response = await api.get(prefixApiEndpoint(`/auth/verify-reset-token/${token}`));
       return response.data;
     },
     
     resetPassword: async (token: string, newPassword: string) => {
-      const response = await api.post('/auth/reset-password', { token, newPassword });
+      const response = await api.post(prefixApiEndpoint('/auth/reset-password'), { token, newPassword });
       return response.data;
     },
     
     verifyEmail: async (token: string) => {
-      const response = await api.get(`/auth/verify-email/${token}`);
+      const response = await api.get(prefixApiEndpoint(`/auth/verify-email/${token}`));
       return response.data;
     },
     
     resendVerificationEmail: async (email: string) => {
-      const response = await api.post('/auth/resend-verification', { email });
+      const response = await api.post(prefixApiEndpoint('/auth/resend-verification'), { email });
       return response.data;
     },
   };
@@ -288,7 +288,7 @@ const apiService = (() => {
   // Playlist API methods
   const playlists = {
     getUserPlaylists: async () => {
-      const response = await api.get('/playlists');
+      const response = await api.get(prefixApiEndpoint('/playlists'));
       return response.data;
     },
     
@@ -296,7 +296,7 @@ const apiService = (() => {
       try {
         // Don't attempt to convert UUID strings to numbers
         // The server error shows it expects a UUID format
-        const response = await api.get(`/playlists/${id}`);
+        const response = await api.get(prefixApiEndpoint(`/playlists/${id}`));
         return response.data;
       } catch (error) {
         console.error('Error fetching playlist:', error);
@@ -305,7 +305,7 @@ const apiService = (() => {
     },
 
     createPlaylist: async (name: string, tracks: Track[] = [], description?: string) => {
-      const response = await api.post('/playlists', { 
+      const response = await api.post(prefixApiEndpoint('/playlists'), { 
         name,
         description,
         tracks: tracks.map(track => ({
@@ -324,7 +324,7 @@ const apiService = (() => {
     updatePlaylist: async (id: string, data: any) => {
       try {
         // Don't attempt to convert UUID strings to numbers
-        const response = await api.put(`/playlists/${id}`, data);
+        const response = await api.put(prefixApiEndpoint(`/playlists/${id}`), data);
         return response.data;
       } catch (error) {
         console.error('Error updating playlist:', error);
@@ -335,7 +335,7 @@ const apiService = (() => {
     deletePlaylist: async (id: string) => {
       try {
         // Don't attempt to convert UUID strings to numbers
-        const response = await api.delete(`/playlists/${id}`);
+        const response = await api.delete(prefixApiEndpoint(`/playlists/${id}`));
         return response.data;
       } catch (error) {
         console.error('Error deleting playlist:', error);
@@ -347,7 +347,7 @@ const apiService = (() => {
       try {
         // Don't attempt to convert UUID strings to numbers
         // Use the correct endpoint: /songs instead of /tracks
-        const response = await api.post(`/playlists/${playlistId}/songs`, {
+        const response = await api.post(prefixApiEndpoint(`/playlists/${playlistId}/songs`), {
           title: track.title,
           artist: track.artist,
           url: track.url,
@@ -366,12 +366,12 @@ const apiService = (() => {
   // Settings API methods
   const settings = {
     getUserSettings: async () => {
-      const response = await api.get('/settings');
+      const response = await api.get(prefixApiEndpoint('/settings'));
       return response.data;
     },
     
     updateUserSettings: async (settingsData: any) => {
-      const response = await api.put('/settings', settingsData);
+      const response = await api.put(prefixApiEndpoint('/settings'), settingsData);
       return response.data;
     },
   };
@@ -379,48 +379,48 @@ const apiService = (() => {
   // Pomodoro API methods
   const pomodoro = {
     getAllSessions: async () => {
-      const response = await api.get('/pomodoro/sessions');
+      const response = await api.get(prefixApiEndpoint('/pomodoro/sessions'));
       return response.data;
     },
     
     createSession: async (sessionData: any) => {
-      const response = await api.post('/pomodoro/sessions', sessionData);
+      const response = await api.post(prefixApiEndpoint('/pomodoro/sessions'), sessionData);
       return response.data;
     },
     
     updateSession: async (sessionId: number, sessionData: any) => {
-      const response = await api.put(`/pomodoro/sessions/${sessionId}`, sessionData);
+      const response = await api.put(prefixApiEndpoint(`/pomodoro/sessions/${sessionId}`), sessionData);
       return response.data;
     },
     
     deleteSession: async (sessionId: number) => {
-      const response = await api.delete(`/pomodoro/sessions/${sessionId}`);
+      const response = await api.delete(prefixApiEndpoint(`/pomodoro/sessions/${sessionId}`));
       return response.data;
     },
     
     getStats: async () => {
-      const response = await api.get('/pomodoro/stats');
+      const response = await api.get(prefixApiEndpoint('/pomodoro/stats'));
       return response.data;
     },
 
     // Todo items API methods
     getAllTodos: async () => {
-      const response = await api.get('/pomodoro/todos');
+      const response = await api.get(prefixApiEndpoint('/pomodoro/todos'));
       return response.data;
     },
     
     saveTodos: async (todos: any[]) => {
-      const response = await api.post('/pomodoro/todos', { todos });
+      const response = await api.post(prefixApiEndpoint('/pomodoro/todos'), { todos });
       return response.data;
     },
     
     updateTodo: async (todoId: string, todoData: any) => {
-      const response = await api.put(`/pomodoro/todos/${todoId}`, todoData);
+      const response = await api.put(prefixApiEndpoint(`/pomodoro/todos/${todoId}`), todoData);
       return response.data;
     },
     
     deleteTodo: async (todoId: string) => {
-      const response = await api.delete(`/pomodoro/todos/${todoId}`);
+      const response = await api.delete(prefixApiEndpoint(`/pomodoro/todos/${todoId}`));
       return response.data;
     },
   };
@@ -428,47 +428,47 @@ const apiService = (() => {
   // Theme API methods
   const themes = {
     getAllThemes: async () => {
-      const response = await api.get('/themes');
+      const response = await api.get(prefixApiEndpoint('/themes'));
       return response.data;
     },
     
     getThemeById: async (id: number) => {
-      const response = await api.get(`/themes/${id}`);
+      const response = await api.get(prefixApiEndpoint(`/themes/${id}`));
       return response.data;
     },
     
     getPublicCustomThemes: async () => {
-      const response = await api.get('/themes/custom/public');
+      const response = await api.get(prefixApiEndpoint('/themes/custom/public'));
       return response.data;
     },
     
     getUserCustomThemes: async () => {
-      const response = await api.get('/themes/custom/user');
+      const response = await api.get(prefixApiEndpoint('/themes/custom/user'));
       return response.data;
     },
     
     createCustomTheme: async (themeData: any) => {
-      const response = await api.post('/themes/custom', themeData);
+      const response = await api.post(prefixApiEndpoint('/themes/custom'), themeData);
       return response.data;
     },
     
     updateCustomTheme: async (id: number, themeData: any) => {
-      const response = await api.put(`/themes/custom/${id}`, themeData);
+      const response = await api.put(prefixApiEndpoint(`/themes/custom/${id}`), themeData);
       return response.data;
     },
     
     deleteCustomTheme: async (id: number) => {
-      const response = await api.delete(`/themes/custom/${id}`);
+      const response = await api.delete(prefixApiEndpoint(`/themes/custom/${id}`));
       return response.data;
     },
     
     setUserTheme: async (themeId: number) => {
-      const response = await api.put('/themes/user', { theme_id: themeId });
+      const response = await api.put(prefixApiEndpoint('/themes/user'), { theme_id: themeId });
       return response.data;
     },
     
     getUserTheme: async () => {
-      const response = await api.get('/themes/user');
+      const response = await api.get(prefixApiEndpoint('/themes/user'));
       return response.data;
     },
   };
