@@ -99,6 +99,26 @@ const apiService = (() => {
     (error) => {
       if (error.response) {
         console.error('API Error Response:', error.response.status, error.response.data);
+        
+        // Handle unauthorized errors (expired token)
+        if (error.response.status === 401) {
+          console.warn('Authentication error detected. Token may be expired.');
+          
+          // Clear token from localStorage
+          if (typeof localStorage !== 'undefined') {
+            localStorage.removeItem('token');
+          }
+          
+          // Remove token from headers
+          delete api.defaults.headers.common['Authorization'];
+          
+          // If not already on a login page, redirect to login
+          if (window.location.pathname !== '/login' && 
+              window.location.pathname !== '/register') {
+            console.log('Redirecting to login due to auth error');
+            window.location.href = '/login?session_expired=true';
+          }
+        }
       } else if (error.request) {
         console.error('API No Response:', error.request);
       } else {

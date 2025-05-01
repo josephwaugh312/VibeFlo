@@ -20,11 +20,13 @@ interface Song {
 }
 
 interface Playlist {
-  id: number;
+  id: string | number;
   name: string;
   description?: string;
-  user_id: number;
-  created_at: string;
+  cover_url?: string;
+  userId: string | number;
+  createdAt: string;
+  updatedAt?: string;
   tracks?: any[];
 }
 
@@ -140,113 +142,164 @@ const PlaylistDetail: React.FC = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<YouTubeSearchResult[]>([]);
 
-  const fetchPlaylistAndSongs = async () => {
-    if (!id) {
-      console.error('No playlist ID in URL parameters');
-      setError('No playlist ID provided');
-      return;
+  // Function to check token validity
+  const checkTokenValidity = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found in localStorage');
+      return false;
     }
     
+    try {
+      // Simple token structure check (assuming it's a JWT)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.error('Token does not appear to be a valid JWT');
+        return false;
+      }
+      
+      // Check for token expiration if possible
+      try {
+        const payload = JSON.parse(atob(parts[1]));
+        if (payload.exp && typeof payload.exp === 'number') {
+          const expiryDate = new Date(payload.exp * 1000);
+          const now = new Date();
+          if (expiryDate < now) {
+            console.error('Token has expired', expiryDate);
+            return false;
+          }
+          console.log('Token is valid until', expiryDate);
+        }
+      } catch (e) {
+        console.warn('Could not decode token payload', e);
+      }
+      
+      return true;
+    } catch (e) {
+      console.error('Error validating token', e);
+      return false;
+    }
+  };
+
+  const fetchPlaylistAndSongs = async () => {
     setIsLoading(true);
     try {
-      // Check if we have a token
+      // Check token validity first
+      if (!checkTokenValidity()) {
+        console.warn('Invalid or expired token detected');
+        toast('Your session has expired. Please log in again', { icon: '❌' });
+        localStorage.removeItem('token'); // Clear invalid token
+        navigate('/login?expired=true');
+        return;
+      }
+      
+      // Get the token from localStorage
       const token = localStorage.getItem('token');
+      console.log('API token (first 10 chars):', token ? token.substring(0, 10) + '...' : 'No token found');
+      
       if (!token) {
-        toast.error('Please log in to view playlists');
+        toast('You need to login to view playlists', { icon: '❌' });
         navigate('/login');
         return;
       }
 
-      // Log the request URL and ID type
-      console.log('Fetching playlist with ID:', id, 'Type:', typeof id);
+      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      const playlistUrl = `${baseUrl}/api/playlists/${id}`;
+      console.log('Fetching playlist data from:', playlistUrl);
       
-      // Use the ID as is - don't parse to number (UUID is a string)
-      const playlistId = id;
+      // Fetch the playlist
+      const playlistResponse = await fetch(playlistUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
       
+      if (!playlistResponse.ok) {
+        console.error(`Failed to fetch playlist: ${playlistResponse.status} ${playlistResponse.statusText}`);
+        const errorText = await playlistResponse.text();
+        console.error('Error response:', errorText);
+        throw new Error(`Failed to fetch playlist: ${playlistResponse.status}`);
+      }
+      
+      const playlistData = await playlistResponse.json();
+      console.log('API Response:', playlistResponse.status, playlistUrl, playlistData);
+      console.log('Raw playlist data:', playlistData);
+      
+      // Set the playlist data
+      setPlaylist({
+        id: playlistData.id,
+        name: playlistData.name,
+        description: playlistData.description || '',
+        cover_url: playlistData.cover_url || '',
+        userId: playlistData.user_id,
+        createdAt: playlistData.created_at,
+        updatedAt: playlistData.updated_at
+      });
+      
+      // Fetch the songs in the playlist
+      const songsUrl = `${baseUrl}/api/playlists/${id}/songs`;
+      console.log('Fetching songs data from:', songsUrl);
+
       try {
-        const playlistData = await apiService.playlists.getPlaylist(playlistId);
-        console.log('Raw playlist data:', playlistData);
+        const response = await fetch(songsUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
         
-        if (!playlistData) {
-          throw new Error('No playlist data received');
+        if (!response.ok) {
+          console.error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
+          const errorText = await response.text();
+          console.error('Error response text:', errorText);
+          throw new Error(`Failed to fetch songs: ${response.status}`);
         }
         
-        setPlaylist(playlistData);
+        // Check content type to ensure we're getting JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Error: Received non-JSON response:', contentType);
+          // Get the raw text to see what was returned
+          const text = await response.text();
+          console.error('Raw response text (first 200 chars):', text.substring(0, 200));
+          throw new Error('Server returned non-JSON response');
+        }
         
-        if (playlistData.tracks && Array.isArray(playlistData.tracks) && playlistData.tracks.length > 0) {
-          console.log('Using tracks from playlist data:', playlistData.tracks);
-          
-          const playlistSongs = playlistData.tracks.map((track: any) => ({
-            id: track.id || undefined,
-            title: track.title || 'Unknown Title',
-            artist: track.artist || 'Unknown Artist',
-            album: track.album,
-            duration: track.duration,
-            image_url: track.artwork || track.image_url || track.cover_url || '',
-            url: track.url || track.audio_url || '',
-            source: track.source || 'youtube'
+        const songsData = await response.json();
+        console.log('Songs data received:', songsData);
+        
+        if (songsData && Array.isArray(songsData)) {
+          const formattedSongs = songsData.map((song: any) => ({
+            id: song.id || undefined,
+            title: song.title || 'Unknown Title',
+            artist: song.artist || 'Unknown Artist',
+            album: song.album,
+            duration: song.duration,
+            image_url: song.image_url || song.artwork || song.cover_url || '',
+            url: song.url || song.audio_url || '',
+            source: song.source || 'youtube'
           }));
           
-          setSongs(playlistSongs);
-          console.log('Setting songs from playlist data:', playlistSongs.length, 'songs');
+          setSongs(formattedSongs);
         } else {
-          try {
-            const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/playlists/${playlistId}/songs`, {
-              headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            if (!response.ok) {
-              throw new Error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
-            }
-            
-            const songsData = await response.json();
-            
-            if (songsData && Array.isArray(songsData)) {
-              const formattedSongs = songsData.map((song: any) => ({
-                id: song.id || undefined,
-                title: song.title || 'Unknown Title',
-                artist: song.artist || 'Unknown Artist',
-                album: song.album,
-                duration: song.duration,
-                image_url: song.image_url || song.artwork || song.cover_url || '',
-                url: song.url || song.audio_url || '',
-                source: song.source || 'youtube'
-              }));
-              
-              setSongs(formattedSongs);
-            } else {
-              setSongs([]);
-              toast('This playlist has no songs yet', { icon: 'ℹ️' });
-            }
-          } catch (songError: any) {
-            console.error('Error fetching songs:', songError);
-            setSongs([]);
-            toast('Could not fetch songs for this playlist', { icon: 'ℹ️' });
-          }
+          setSongs([]);
+          toast('This playlist has no songs yet', { icon: 'ℹ️' });
         }
-        
-        // Reset dirty state after loading
-        setIsDirty(false);
-        
-      } catch (err: any) {
-        console.error('Error fetching playlist:', err);
-        
-        if (err.response?.status === 401) {
-          toast.error('Your session has expired. Please log in again.');
-          navigate('/login');
-          return;
-        }
-        
-        throw err;
+      } catch (songError: any) {
+        console.error('Error fetching songs:', songError);
+        setSongs([]);
+        toast('Could not fetch songs for this playlist', { icon: '❌' });
       }
+      
+      // Reset dirty state after loading
+      setIsDirty(false);
+      
     } catch (err: any) {
-      console.error('Error in playlist detail page:', err);
+      console.error('Error fetching playlist:', err);
       
       if (err.response?.status === 401) {
-        toast.error('Please log in to view playlists');
+        toast.error('Your session has expired. Please log in again.');
         navigate('/login');
       } else if (err.response?.status === 404) {
         setError('Playlist not found');
@@ -266,17 +319,59 @@ const PlaylistDetail: React.FC = () => {
   }, [id, navigate]);
 
   const searchYouTube = async (query: string) => {
+    setIsSearchingYoutube(true);
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/youtube/search`, {
+      console.log('Searching YouTube for:', query);
+      const apiUrl = `${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/youtube/search`;
+      console.log('YouTube search API URL:', apiUrl);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token available');
+      }
+      
+      const response = await axios.get(apiUrl, {
         params: { query },
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
         },
       });
-      setSearchResults(response.data);
-    } catch (err) {
-      console.error('Error searching YouTube:', err);
-      setSearchResults([]);
+      
+      console.log('YouTube search response status:', response.status);
+      console.log('YouTube search results count:', response.data?.length || 0);
+      
+      setYoutubeSearchResults(response.data);
+      setSearchError(null);
+    } catch (error: any) {
+      console.error('Error searching YouTube:', error);
+      
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        console.error('YouTube search error response:', error.response.status, error.response.data);
+        
+        if (error.response.status === 401) {
+          setSearchError('Your session has expired. Please log in again.');
+          localStorage.removeItem('token');
+          toast('Session expired. Please log in again.', { icon: '❌' });
+          setTimeout(() => navigate('/login?expired=true'), 2000);
+        } else {
+          setSearchError(`Error searching YouTube: ${error.response.data?.message || error.message}`);
+        }
+      } else if (error.request) {
+        // The request was made but no response was received
+        console.error('No response received from YouTube search API', error.request);
+        setSearchError('No response from server. Please try again later.');
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        console.error('YouTube search request setup error:', error.message);
+        setSearchError(`Error setting up search: ${error.message}`);
+      }
+      
+      setYoutubeSearchResults([]);
+    } finally {
+      setIsSearchingYoutube(false);
     }
   };
 
@@ -719,18 +814,14 @@ const PlaylistDetail: React.FC = () => {
   };
 
   const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    
-    try {
-      setIsSearchingYoutube(true);
-      setSearchError(null);
-      await searchYouTube(searchQuery);
-    } catch (error) {
-      console.error('Error searching YouTube:', error);
-      setSearchError('Error searching YouTube');
-    } finally {
-      setIsSearchingYoutube(false);
+    if (!searchQuery.trim()) {
+      setSearchError('Please enter a search term');
+      return;
     }
+    
+    // The searchYouTube function already handles all the loading state and errors
+    // so we just need to call it directly
+    await searchYouTube(searchQuery);
   };
 
   if (isLoading) {
