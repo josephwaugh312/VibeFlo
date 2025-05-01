@@ -339,9 +339,21 @@ const PlaylistDetail: React.FC = () => {
       });
       
       console.log('YouTube search response status:', response.status);
-      console.log('YouTube search results count:', response.data?.length || 0);
+      console.log('YouTube search response data:', response.data);
       
-      setYoutubeSearchResults(response.data);
+      // Ensure the response is array-like before setting it
+      if (response.data && Array.isArray(response.data.items)) {
+        setYoutubeSearchResults(response.data.items);
+        console.log('YouTube search results count:', response.data.items.length);
+      } else if (response.data && Array.isArray(response.data)) {
+        setYoutubeSearchResults(response.data);
+        console.log('YouTube search results count:', response.data.length);
+      } else {
+        console.error('YouTube search returned non-array response:', response.data);
+        setYoutubeSearchResults([]);
+        setSearchError('Invalid response format from YouTube API');
+      }
+      
       setSearchError(null);
     } catch (error: any) {
       console.error('Error searching YouTube:', error);
@@ -999,7 +1011,7 @@ const PlaylistDetail: React.FC = () => {
         </div>
         
         {/* YouTube Search Results */}
-        {youtubeSearchResults.length > 0 && (
+        {Array.isArray(youtubeSearchResults) && youtubeSearchResults.length > 0 && (
           <div className="p-4 bg-gray-800 border-t border-gray-700">
             <h3 className="text-lg font-medium mb-3 text-white">YouTube Search Results</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
