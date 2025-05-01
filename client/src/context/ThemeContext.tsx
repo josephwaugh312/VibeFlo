@@ -263,12 +263,52 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (response.data && Array.isArray(response.data)) {
         console.log('Custom themes fetched successfully:', response.data.length, 'custom themes');
         
-        // Filter out any standard themes that might have been returned
-        const nonStandardThemes = response.data.filter((theme: CustomTheme) => 
-          theme.is_standard !== true
-        );
+        // Get the current user ID by decoding the JWT token
+        let currentUserId = '';
+        try {
+          const tokenParts = token.split('.');
+          if (tokenParts.length === 3) {
+            const payload = JSON.parse(atob(tokenParts[1]));
+            currentUserId = payload.id || '';
+          }
+        } catch (e) {
+          console.warn('Could not decode token for user ID:', e);
+        }
         
-        setCustomThemes(nonStandardThemes);
+        // Filter out standard themes and unwanted themes
+        const unwantedThemeIds = [
+          // Numeric IDs
+          '24', '25', '26', '27', '28', '29', '30', '31', '32',
+          // Also include string representations of the same IDs
+          24, 25, 26, 27, 28, 29, 30, 31, 32
+        ];
+        
+        const unwantedNames = ["Deep Purple", "Dark Theme", "Ocean Blue", "Forest Green", "Sunset Orange"];
+        
+        console.log('Before filtering:', response.data.length, 'custom themes');
+        const filteredThemes = response.data.filter((theme: CustomTheme) => {
+          // Always keep standard themes
+          if (theme.is_standard === true) {
+            return true;
+          }
+          
+          // Filter out unwanted themes by ID
+          if (unwantedThemeIds.includes(theme.id) || unwantedThemeIds.includes(Number(theme.id))) {
+            console.log(`Filtering out unwanted theme from custom themes: ${theme.name} (ID: ${theme.id})`);
+            return false;
+          }
+          
+          // Filter out unwanted themes by name
+          if (unwantedNames.includes(theme.name)) {
+            console.log(`Filtering out unwanted theme by name from custom themes: ${theme.name} (ID: ${theme.id})`);
+            return false;
+          }
+          
+          return true;
+        });
+        console.log('After filtering:', filteredThemes.length, 'custom themes');
+        
+        setCustomThemes(filteredThemes);
       }
     } catch (error) {
       console.error('Error fetching custom themes:', error);
