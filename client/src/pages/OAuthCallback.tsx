@@ -27,18 +27,21 @@ const OAuthCallback: React.FC = () => {
   useEffect(() => {
     const processOAuthCallback = async () => {
       try {
+        console.log('OAuth Callback: Started processing callback');
         const params = new URLSearchParams(location.search);
         const token = params.get('token');
         
         if (!token) {
-          console.error('No token in callback URL');
+          console.error('OAuth Callback: No token in callback URL');
+          console.error('OAuth Callback: Location search params:', location.search);
           setError('No authentication token received');
           setIsProcessing(false);
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
         
-        console.log('OAuth token received, initializing authentication');
+        console.log('OAuth Callback: Token received (length):', token.length);
+        console.log('OAuth Callback: Initializing authentication...');
         
         // Store the token and initialize auth context
         localStorage.setItem('token', token);
@@ -48,15 +51,21 @@ const OAuthCallback: React.FC = () => {
         apiService.setToken(token);
         
         try {
+          console.log('OAuth Callback: Calling initializeAuth to validate token and fetch user data');
           // Initialize auth context which will fetch and validate user data
           await initializeAuth();
+          console.log('OAuth Callback: Authentication initialized successfully');
           
           // If initialization succeeds, redirect to dashboard
+          console.log('OAuth Callback: Redirecting to dashboard');
           setTimeout(() => {
             navigate('/dashboard');
           }, 1000);
         } catch (authError: any) {
-          console.error('Error initializing authentication:', authError);
+          console.error('OAuth Callback: Error initializing authentication:', authError);
+          console.error('OAuth Callback: Error message:', authError.message);
+          console.error('OAuth Callback: Error response:', authError.response?.data);
+          console.error('OAuth Callback: Error status:', authError.response?.status);
           
           // Clear any invalid data
           localStorage.removeItem('token');
@@ -69,7 +78,10 @@ const OAuthCallback: React.FC = () => {
           setTimeout(() => navigate('/login'), 3000);
         }
       } catch (err: any) {
-        console.error('OAuth callback processing error:', err);
+        console.error('OAuth Callback: Processing error:', err);
+        console.error('OAuth Callback: Error message:', err.message);
+        console.error('OAuth Callback: Error response:', err.response?.data);
+        console.error('OAuth Callback: Error stack:', err.stack);
         setError(err.response?.data?.message || 'Authentication failed');
         setIsProcessing(false);
         setTimeout(() => navigate('/login'), 3000);

@@ -52,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const initializeAuth = async () => {
     try {
+      console.log('Auth Context: Starting initializeAuth()');
       const token = localStorage.getItem('token');
       const storedUser = localStorage.getItem('user');
 
@@ -59,38 +60,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Configure axios and API service with the token
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         apiService.setToken(token);
-        console.log('Auth initialization: Token found and set in headers');
+        console.log('Auth Context: Token found and set in headers (length):', token.length);
 
         if (storedUser) {
           // If we have stored user data, use it immediately
-          const userData = JSON.parse(storedUser);
-          setUser(userData);
-          setIsAuthenticated(true);
-          console.log('Auth initialization: Using stored user data', userData.username);
+          try {
+            const userData = JSON.parse(storedUser);
+            setUser(userData);
+            setIsAuthenticated(true);
+            console.log('Auth Context: Using stored user data:', userData.username || userData.email);
+          } catch (parseError) {
+            console.error('Auth Context: Error parsing stored user data:', parseError);
+            localStorage.removeItem('user');
+          }
         }
 
         try {
           // Verify token and refresh user data
-          console.log('Auth initialization: Verifying token and refreshing user data');
+          console.log('Auth Context: Verifying token and refreshing user data');
           
           // Add delay before token verification to ensure any previous requests are complete
           await new Promise(resolve => setTimeout(resolve, 500));
           
+          console.log('Auth Context: Making API call to getCurrentUser');
+          console.log('Auth Context: Current headers:', axios.defaults.headers.common);
+          
           const response = await apiService.auth.getCurrentUser();
-          console.log('Auth initialization: User data refreshed successfully:', response);
+          console.log('Auth Context: User data refreshed successfully:', response);
           
           localStorage.setItem('user', JSON.stringify(response));
           setUser(response);
           setIsAuthenticated(true);
           setRefreshAttempts(0); // Reset attempts on success
         } catch (error: any) {
-          console.error('Auth initialization: Error refreshing user data:', error);
-          console.log('Auth initialization: Error status:', error.response?.status);
-          console.log('Auth initialization: Error data:', error.response?.data);
+          console.error('Auth Context: Error refreshing user data:', error);
+          console.error('Auth Context: Error message:', error.message);
+          
+          if (error.response) {
+            console.error('Auth Context: Error status:', error.response.status);
+            console.error('Auth Context: Error data:', error.response.data);
+            console.error('Auth Context: Request URL:', error.response.config?.url);
+            console.error('Auth Context: Request headers:', error.response.config?.headers);
+          } else if (error.request) {
+            console.error('Auth Context: No response received from server');
+            console.error('Auth Context: Request details:', error.request);
+          }
           
           // Check if the token is invalid
           if (error.response?.status === 401) {
-            console.log('Auth initialization: Token invalid or expired, clearing auth state');
+            console.log('Auth Context: Token invalid or expired, clearing auth state');
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             apiService.setToken(null);
@@ -100,29 +118,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           } else {
             // For other errors, keep using stored user data but increment attempts
             if (refreshAttempts >= 3) {
-              console.log('Auth initialization: Max refresh attempts reached, clearing auth state');
+              console.log('Auth Context: Max refresh attempts reached, clearing auth state');
               localStorage.removeItem('token');
               localStorage.removeItem('user');
               setUser(null);
               setIsAuthenticated(false);
               setRefreshAttempts(0);
             } else {
-              console.log('Auth initialization: Keeping stored user data, incrementing attempts');
+              console.log('Auth Context: Keeping stored user data, incrementing attempts');
               setRefreshAttempts(prev => prev + 1);
             }
           }
         }
       } else {
-        console.log('Auth initialization: No token found, not authenticated');
+        console.log('Auth Context: No token found, not authenticated');
         setUser(null);
         setIsAuthenticated(false);
       }
     } catch (error) {
-      console.error('Auth initialization error:', error);
+      console.error('Auth Context: Initialization error:', error);
+      console.error('Auth Context: Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       setUser(null);
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
+      console.log('Auth Context: initializeAuth completed');
     }
   };
 

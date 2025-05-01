@@ -23,6 +23,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { authAPI } from '../services/api';
 import { useTheme } from '../context/ThemeContext';
+import { getApiBaseUrl } from '../services/api';
 
 // SVG Icon components
 const GoogleIcon = (props: SvgIconProps) => (
@@ -65,8 +66,8 @@ const Login: React.FC = () => {
   const theme = useTheme();
   const muiTheme = useMuiTheme();
 
-  // Get the API base URL from environment or use default
-  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+  // Get the API base URL from the getApiBaseUrl function
+  const apiBaseUrl = getApiBaseUrl();
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -355,7 +356,7 @@ const Login: React.FC = () => {
                 variant="outlined"
                 startIcon={<GoogleIcon />}
                 fullWidth
-                href={`${API_BASE_URL}/auth/google`}
+                href={`${apiBaseUrl}/auth/google`}
                 sx={{
                   borderColor: 'rgba(255, 255, 255, 0.2)',
                   color: 'text.primary',
@@ -364,6 +365,7 @@ const Login: React.FC = () => {
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   },
                 }}
+                data-cy="google-login"
               >
                 Continue with Google
               </Button>
@@ -372,7 +374,7 @@ const Login: React.FC = () => {
                 variant="outlined"
                 startIcon={<GithubIcon />}
                 fullWidth
-                href={`${API_BASE_URL}/auth/github`}
+                href={`${apiBaseUrl}/auth/github`}
                 sx={{
                   borderColor: 'rgba(255, 255, 255, 0.2)',
                   color: 'text.primary',
@@ -381,6 +383,7 @@ const Login: React.FC = () => {
                     backgroundColor: 'rgba(255, 255, 255, 0.05)',
                   },
                 }}
+                data-cy="github-login"
               >
                 Continue with GitHub
               </Button>
