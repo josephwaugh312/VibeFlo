@@ -47,6 +47,57 @@ const FacebookIcon = (props: SvgIconProps) => (
   </SvgIcon>
 );
 
+// Update the OAuth buttons to use a more efficient approach
+interface OAuthButtonProps {
+  provider: string;
+  icon: React.ReactNode;
+  label: string;
+}
+
+const OAuthButton: React.FC<OAuthButtonProps> = ({ provider, icon, label }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const apiBaseUrl = getApiBaseUrl();
+  
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    // Use window.location.href instead of a button link to avoid React overhead
+    const authUrl = `${apiBaseUrl}/auth/${provider}`;
+    console.log(`Redirecting to ${provider} OAuth: ${authUrl}`);
+    
+    // Set a timeout to prevent multiple rapid attempts
+    setTimeout(() => {
+      window.location.href = authUrl;
+    }, 50);
+  };
+  
+  return (
+    <Button
+      variant="outlined"
+      startIcon={icon}
+      fullWidth
+      onClick={handleClick}
+      disabled={isLoading}
+      sx={{
+        borderColor: 'rgba(255, 255, 255, 0.2)',
+        color: 'text.primary',
+        '&:hover': {
+          borderColor: 'rgba(255, 255, 255, 0.3)',
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        },
+      }}
+      data-cy={`${provider}-login`}
+    >
+      {isLoading ? (
+        <CircularProgress size={20} color="inherit" />
+      ) : (
+        `Continue with ${label}`
+      )}
+    </Button>
+  );
+};
+
 const Login: React.FC = () => {
   const [loginIdentifier, setLoginIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -352,41 +403,16 @@ const Login: React.FC = () => {
             <Divider sx={{ my: 2 }}>or</Divider>
 
             <Stack spacing={2}>
-              <Button
-                variant="outlined"
-                startIcon={<GoogleIcon />}
-                fullWidth
-                href={`${apiBaseUrl}/auth/google`}
-                sx={{
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                  color: 'text.primary',
-                  '&:hover': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  },
-                }}
-                data-cy="google-login"
-              >
-                Continue with Google
-              </Button>
-
-              <Button
-                variant="outlined"
-                startIcon={<GithubIcon />}
-                fullWidth
-                href={`${apiBaseUrl}/auth/github`}
-                sx={{
-                  borderColor: 'rgba(255, 255, 255, 0.2)',
-                  color: 'text.primary',
-                  '&:hover': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
-                    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  },
-                }}
-                data-cy="github-login"
-              >
-                Continue with GitHub
-              </Button>
+              <OAuthButton 
+                provider="google" 
+                icon={<GoogleIcon />} 
+                label="Google" 
+              />
+              <OAuthButton 
+                provider="github" 
+                icon={<GithubIcon />} 
+                label="GitHub" 
+              />
             </Stack>
 
             <Box sx={{ textAlign: 'center', mt: 2 }}>
