@@ -189,6 +189,14 @@ const AppRoutes = () => {
   );
 };
 
+// Authenticated wrapper for MusicPlayer to only render when user is authenticated
+const AuthenticatedMusicPlayer = () => {
+  const { isAuthenticated } = useAuth();
+  
+  if (!isAuthenticated) return null;
+  return <MusicPlayer />;
+};
+
 const App: React.FC = () => {
   console.log('App component rendering');
 
@@ -259,7 +267,7 @@ const App: React.FC = () => {
                       >
                         <AppRoutes />
                       </Box>
-                      <MusicPlayer />
+                      <AuthenticatedMusicPlayer />
                     </Box>
                   </Router>
                 </MusicPlayerProvider>
