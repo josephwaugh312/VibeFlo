@@ -1074,13 +1074,13 @@ const PlaylistDetail: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search YouTube..."
-              className="flex-grow shadow appearance-none border rounded-l w-full py-1.5 px-3 bg-gray-700 text-white border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              className="flex-grow shadow appearance-none border rounded-l w-full py-2 px-3 bg-gray-700 text-white border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
             <button
               onClick={handleSearch}
               disabled={isSearchingYoutube || !searchQuery.trim()}
-              className={`font-bold py-1.5 px-4 rounded-r ${
+              className={`font-bold py-2 px-4 rounded-r ${
                 isSearchingYoutube || !searchQuery.trim()
                   ? 'bg-gray-400 cursor-not-allowed text-gray-600' 
                   : 'bg-purple-600 hover:bg-purple-700 text-white'
