@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import pool from '../config/db';
 import { User } from '../types';
 import bcrypt from 'bcrypt';
+import emailService from '../services/email.service';
 
 // Extend the Request type to include user
 interface AuthRequest extends Request {
@@ -187,6 +188,20 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
       [hashedPassword, userId]
     );
+    
+    // Send password change notification email
+    try {
+      await emailService.sendNotificationEmail(
+        user.email,
+        user.username || user.name || 'User',
+        'Your VibeFlo Password Has Been Changed',
+        'Your account password was recently changed. If you made this change, no further action is required. If you did not make this change, please contact support immediately.'
+      );
+      console.log(`Password change notification email sent to ${user.email}`);
+    } catch (emailError) {
+      // Log the error but don't fail the password change
+      console.error('Error sending password change notification email:', emailError);
+    }
     
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
