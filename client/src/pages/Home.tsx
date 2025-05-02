@@ -42,6 +42,10 @@ const Home: React.FC = () => {
         </div>
       </div>
 
+      {/* Feature boxes with improved responsive layout:
+          - Mobile (xs to sm): 1 column (stacked)
+          - Tablet (md to lg): 2 columns
+          - Desktop (xl and up): 3 columns in one row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8 mb-16">
         <div className="bg-gray-800 bg-opacity-80 p-6 md:p-8 rounded-xl shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 backdrop-blur-sm border border-gray-700">
           <div className="text-white mb-6">
