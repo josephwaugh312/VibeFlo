@@ -134,22 +134,22 @@ const Dashboard: React.FC = () => {
       )}
       
       {/* Improved responsive layout:
-          - Mobile (under 768px): Stacked layout (full width)
-          - Tablet (768-1023px): Stacked layout (full width)
-          - Desktop (1024px+): Side-by-side with 2 columns */}
-      <div className="block lg:grid lg:grid-cols-2 lg:gap-5">
+          - Mobile (under 640px): Stacked layout (full width)
+          - Tablet (640px-1023px): Stacked layout with more spacing
+          - Desktop (1024px+): Side-by-side layout with flexible width columns */}
+      <div className="flex flex-col md:flex-row md:gap-6 md:flex-wrap lg:flex-nowrap">
         {/* Pomodoro Timer */}
-        <div className="mb-6 lg:mb-0">
+        <div className="mb-6 md:mb-6 md:flex-grow lg:flex-grow-0 lg:mb-0 lg:basis-1/2">
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Pomodoro Timer</h2>
           <PomodoroTimer />
         </div>
         
         {/* Recent Sessions */}
-        <div>
+        <div className="lg:basis-1/2 md:flex-grow">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-white drop-shadow-md">Recent Sessions</h2>
           </div>
-          <div className="bg-gray-800 bg-opacity-80 rounded-lg shadow-lg p-4">
+          <div className="bg-gray-800 bg-opacity-80 rounded-lg shadow-lg p-4 h-full">
             {renderSessionsList()}
             
             <div className="mt-4 text-center">

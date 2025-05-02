@@ -408,10 +408,10 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
   return (
     <div className="flex flex-col items-center p-6 backdrop-blur-sm bg-white/30 rounded-lg shadow-lg w-full max-w-md">
       <div className="w-full flex justify-between items-center mb-4">
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 flex-grow overflow-x-auto hide-scrollbar">
           <button
             onClick={() => setTimerType(TimerType.POMODORO)}
-            className={`px-3 py-1.5 rounded-md text-sm ${
+            className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
               timerType === TimerType.POMODORO
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-800/40 text-white hover:bg-gray-700/50'
@@ -421,7 +421,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           </button>
           <button
             onClick={() => setTimerType(TimerType.SHORT_BREAK)}
-            className={`px-3 py-1.5 rounded-md text-sm ${
+            className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
               timerType === TimerType.SHORT_BREAK
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-800/40 text-white hover:bg-gray-700/50'
@@ -431,7 +431,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           </button>
           <button
             onClick={() => setTimerType(TimerType.LONG_BREAK)}
-            className={`px-3 py-1.5 rounded-md text-sm ${
+            className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
               timerType === TimerType.LONG_BREAK
                 ? 'bg-blue-600 text-white'
                 : 'bg-gray-800/40 text-white hover:bg-gray-700/50'
@@ -442,7 +442,7 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
         </div>
         <button
           onClick={() => setIsSettingsOpen(true)}
-          className="text-white hover:text-indigo-200 p-1 focus:outline-none"
+          className="text-white hover:text-indigo-200 p-1 focus:outline-none ml-3"
           aria-label="Settings"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -451,6 +451,19 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           </svg>
         </button>
       </div>
+
+      {/* Add CSS to handle scrollbar hiding */}
+      <style>{`
+        @media (max-width: 425px) {
+          .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+          }
+          .hide-scrollbar {
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
+          }
+        }
+      `}</style>
 
       <div className="text-7xl font-bold my-8 text-white drop-shadow-lg">{formatTime(timeLeft)}</div>
 
