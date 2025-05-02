@@ -133,10 +133,13 @@ const Dashboard: React.FC = () => {
         </Paper>
       )}
       
-      {/* Responsive layout - Desktop is grid, Mobile is stacked */}
-      <div className="block md:grid md:grid-cols-2 md:gap-5">
+      {/* Improved responsive layout:
+          - Mobile (under 768px): Stacked layout (full width)
+          - Tablet (768-1023px): Stacked layout (full width)
+          - Desktop (1024px+): Side-by-side with 2 columns */}
+      <div className="block lg:grid lg:grid-cols-2 lg:gap-5">
         {/* Pomodoro Timer */}
-        <div className="mb-6 md:mb-0">
+        <div className="mb-6 lg:mb-0">
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Pomodoro Timer</h2>
           <PomodoroTimer />
         </div>
