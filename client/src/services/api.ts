@@ -1,6 +1,7 @@
 import axios, { AxiosInstance, AxiosError, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { Track } from '../components/music/MusicPlayer';
 import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
+import { User, Theme, Playlist, Song } from '../types';
 
 // Function to get the API base URL
 export const getApiBaseUrl = (): string => {
@@ -182,9 +183,9 @@ const apiService = (() => {
   
   // Authentication API methods
   const auth = {
-    login: async (loginIdentifier: string, password: string) => {
+    login: async (loginIdentifier: string, password: string, rememberMe: boolean = true) => {
       try {
-        console.log('Attempting login with:', { loginIdentifier, passwordProvided: !!password });
+        console.log('Attempting login with:', { loginIdentifier, passwordProvided: !!password, rememberMe });
         
         // Validate inputs client-side
         if (!loginIdentifier || !password) {
@@ -198,7 +199,8 @@ const apiService = (() => {
         const response = await api.post(prefixApiEndpoint('/auth/login'), { 
           email: loginIdentifier,
           login: loginIdentifier,
-          password 
+          password,
+          rememberMe 
         });
         
         console.log('Login response:', response.data);
@@ -237,11 +239,21 @@ const apiService = (() => {
     
     getCurrentUser: async (retries = 3, delay = 2000) => {
       let lastError: AxiosError | null = null;
+      let backoffDelay = delay;
       
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
           console.log(`API Service: Attempt ${attempt + 1} to fetch current user`);
           console.log('API Service: Current authorization header:', api.defaults.headers.common['Authorization']);
+          
+          // Add a circuit breaker to prevent repeated requests during ERR_INSUFFICIENT_RESOURCES
+          if (attempt > 0 && lastError && lastError.message && 
+             (lastError.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
+              lastError.message.includes('Network Error'))) {
+            // Exponential backoff with jitter
+            backoffDelay = Math.min(30000, backoffDelay * 1.5 * (1 + Math.random() * 0.2));
+            console.log(`API Service: Resource error detected, using exponential backoff: ${backoffDelay}ms`);
+          }
           
           const response = await api.get(prefixApiEndpoint('/auth/me'));
           console.log('API Service: getCurrentUser response:', response.data);
@@ -264,11 +276,16 @@ const apiService = (() => {
             }
           } else if (axiosError.request) {
             console.error('API Service: No response received:', axiosError.request);
+            
+            // Check for specific resource constraint errors
+            if (axiosError.message && axiosError.message.includes('ERR_INSUFFICIENT_RESOURCES')) {
+              console.error('API Service: Insufficient resources error detected');
+            }
           }
           
           if (attempt < retries) {
-            console.log(`API Service: Waiting ${delay}ms before next attempt`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            console.log(`API Service: Waiting ${backoffDelay}ms before next attempt`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
           }
         }
       }
