@@ -159,7 +159,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       }
       
-      const response = await authAPI.login(identifier, password);
+      const response = await authAPI.login(identifier, password, rememberMe);
       console.log('Login response in auth context:', response);
       
       if (response.success && response.token) {
@@ -309,15 +309,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Fetch user data with retry
       let userData = null;
       let lastError: AxiosError | null = null;
+      let backoffDelay = delay;
       
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
           console.log(`Auth Context: Attempt ${attempt + 1} to fetch user data`);
+          
+          // Implement circuit breaker pattern for resource errors
+          if (attempt > 0 && lastError && lastError.message && 
+              (lastError.message.includes('ERR_INSUFFICIENT_RESOURCES') || 
+               lastError.message.includes('Network Error'))) {
+            // Exponential backoff with jitter
+            backoffDelay = Math.min(30000, backoffDelay * 1.5 * (1 + Math.random() * 0.2));
+            console.log(`Auth Context: Resource error detected, using exponential backoff: ${backoffDelay}ms`);
+          }
+          
           userData = await apiService.auth.getCurrentUser();
           break; // If successful, exit the loop
         } catch (error) {
           const axiosError = error as AxiosError;
-          console.error(`Auth Context: Attempt ${attempt + 1} failed:`, axiosError);
+          console.error(`Auth Context: Attempt ${attempt + 1} failed:`, axiosError.message);
+          
+          // Log additional details
+          if (axiosError.response) {
+            console.error('Auth Context: Error status:', axiosError.response.status);
+            console.error('Auth Context: Error data:', axiosError.response.data);
+          } else if (axiosError.request) {
+            console.error('Auth Context: No response received:', axiosError.request);
+            
+            // Handle resource constraint errors
+            if (axiosError.message && axiosError.message.includes('ERR_INSUFFICIENT_RESOURCES')) {
+              console.error('Auth Context: Insufficient resources error detected');
+            }
+          }
+          
           lastError = axiosError;
           
           // If we get a 401 error, don't retry
@@ -326,8 +351,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           
           if (attempt < retries) {
-            console.log(`Auth Context: Waiting ${delay}ms before next attempt`);
-            await new Promise(resolve => setTimeout(resolve, delay));
+            console.log(`Auth Context: Waiting ${backoffDelay}ms before next attempt`);
+            await new Promise(resolve => setTimeout(resolve, backoffDelay));
           }
         }
       }

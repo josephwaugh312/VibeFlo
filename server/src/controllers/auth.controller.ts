@@ -122,18 +122,21 @@ export const register = handleAsync(async (req: Request, res: Response) => {
  * Login user and return JWT token
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { email, password, rememberMe } = req.body;
+  const { email, login, password, rememberMe } = req.body;
+  
+  // Get the login identifier (could be email or username)
+  const loginIdentifier = login || email;
 
   // Simple validation
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Please provide email and password' });
+  if (!loginIdentifier || !password) {
+    return res.status(400).json({ message: 'Please provide email/username and password' });
   }
 
   try {
-    // Get user from database
+    // Get user from database by email or username
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1',
-      [email.toLowerCase()]
+      'SELECT * FROM users WHERE email = $1 OR username = $1',
+      [loginIdentifier.toLowerCase()]
     );
 
     // Check if user exists

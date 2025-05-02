@@ -291,25 +291,38 @@ const Login: React.FC = () => {
         <form onSubmit={handleSubmit}>
           <Stack spacing={3}>
             <TextField
-              label="Email or Username"
               variant="outlined"
+              margin="normal"
+              required
               fullWidth
+              id="loginIdentifier"
+              label="Email or Username"
+              name="loginIdentifier"
+              autoComplete="email username"
+              autoFocus
               value={loginIdentifier}
               onChange={(e) => setLoginIdentifier(e.target.value)}
-              required
+              disabled={isLoading}
               sx={{
                 '& .MuiOutlinedInput-root': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.05)',
-                  borderRadius: 1,
                   '& fieldset': {
                     borderColor: 'rgba(255, 255, 255, 0.2)',
                   },
                   '&:hover fieldset': {
-                    borderColor: 'rgba(255, 255, 255, 0.3)',
+                    borderColor: 'rgba(255, 255, 255, 0.4)',
                   },
                   '&.Mui-focused fieldset': {
-                    borderColor: 'primary.main',
+                    borderColor: muiTheme.palette.primary.main,
                   },
+                },
+                '& input': {
+                  color: 'white',
+                },
+                '& label': {
+                  color: 'rgba(255, 255, 255, 0.7)',
+                },
+                '& label.Mui-focused': {
+                  color: muiTheme.palette.primary.main,
                 },
               }}
             />
