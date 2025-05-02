@@ -122,7 +122,7 @@ export const register = handleAsync(async (req: Request, res: Response) => {
  * Login user and return JWT token
  */
 export const login = handleAsync(async (req: Request, res: Response) => {
-  const { email, password } = req.body;
+  const { email, password, rememberMe } = req.body;
 
   // Simple validation
   if (!email || !password) {
@@ -163,8 +163,13 @@ export const login = handleAsync(async (req: Request, res: Response) => {
 
     // Skip resetting failed login attempts since the columns might not exist
 
-    // Generate auth token
-    const token = generateToken(user);
+    // Generate auth token with appropriate expiration
+    // Default (rememberMe=false): 1 day token
+    // Remember Me (rememberMe=true): 30 days token
+    const tokenExpiration = rememberMe ? '30d' : '1d';
+    const token = generateToken(user, tokenExpiration);
+
+    console.log(`Login with rememberMe=${rememberMe}, token expiration: ${tokenExpiration}`);
 
     // Remove sensitive data before sending response
     const { password: _, ...userWithoutSensitiveData } = user;
@@ -172,11 +177,15 @@ export const login = handleAsync(async (req: Request, res: Response) => {
     // Skip recording successful login since the table might not exist
 
     // Set token as HTTP-only cookie
+    const cookieMaxAge = rememberMe 
+      ? 30 * 24 * 60 * 60 * 1000  // 30 days
+      : 24 * 60 * 60 * 1000;      // 1 day
+      
     res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: cookieMaxAge,
     });
 
     return res.status(200).json({
