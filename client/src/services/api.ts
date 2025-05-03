@@ -146,12 +146,8 @@ const apiService = (() => {
 
   // Helper function to prefix API routes
   const prefixApiEndpoint = (endpoint: string): string => {
-    // Don't add /api prefix for auth routes
-    if (endpoint.startsWith('/auth/')) {
-      return endpoint;
-    }
-    // Add /api prefix for all other routes
-    return `/api${endpoint}`;
+    // Don't add any prefix for API routes - the server correctly handles these already
+    return endpoint;
   };
 
   // Clear token and auth headers
