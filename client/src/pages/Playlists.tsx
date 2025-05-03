@@ -31,8 +31,26 @@ const Playlists: React.FC = () => {
         console.log('Fetching user playlists...');
         const data = await apiService.playlists.getUserPlaylists();
         console.log('Received playlists:', data);
-        setPlaylists(data);
-        setError('');
+        
+        // Debug the data type
+        console.log('Playlists data type:', typeof data);
+        console.log('Is array?', Array.isArray(data));
+        
+        // Only set playlists if data is an array
+        if (Array.isArray(data)) {
+          setPlaylists(data);
+          setError('');
+        } else {
+          console.error('Playlist data is not an array:', data);
+          // If we got HTML instead of JSON, likely an API URL issue
+          if (typeof data === 'string' && data.includes('<!doctype html>')) {
+            setError('API error: Received HTML instead of playlist data. Please reload the page.');
+            console.error('Received HTML instead of playlist data');
+          } else {
+            setError('Invalid response format from server');
+          }
+          setPlaylists([]);
+        }
       } catch (err: any) {
         console.error('Error in fetchPlaylists:', err);
         if (err.response?.status === 500) {
@@ -40,6 +58,7 @@ const Playlists: React.FC = () => {
         } else {
           setError(err.response?.data?.message || 'Failed to load playlists');
         }
+        setPlaylists([]);
       } finally {
         setIsLoading(false);
       }

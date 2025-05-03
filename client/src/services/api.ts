@@ -146,8 +146,8 @@ const apiService = (() => {
 
   // Helper function to prefix API routes
   const prefixApiEndpoint = (endpoint: string): string => {
-    // Don't add any prefix for API routes - the server correctly handles these already
-    return endpoint;
+    // Add the /api prefix to all endpoints
+    return `/api${endpoint}`;
   };
 
   // Clear token and auth headers
@@ -177,6 +177,32 @@ const apiService = (() => {
     initializeAuth();
   }
   
+  // Helper function to check if response is HTML instead of JSON
+  const isHtmlResponse = (data: any): boolean => {
+    return typeof data === 'string' && 
+      (data.trim().startsWith('<!doctype html>') || 
+       data.trim().startsWith('<html') || 
+       data.trim().startsWith('<!DOCTYPE html>'));
+  };
+
+  // Helper function to safely process API responses
+  const safelyProcessResponse = (response: AxiosResponse): any => {
+    const data = response.data;
+    
+    // Check if we got HTML instead of JSON (likely a routing issue)
+    if (isHtmlResponse(data)) {
+      console.error('Received HTML response instead of JSON data', {
+        url: response.config.url,
+        method: response.config.method,
+        status: response.status
+      });
+      // For array responses, return empty array
+      return [];
+    }
+    
+    return data;
+  };
+
   // Authentication API methods
   const auth = {
     login: async (loginIdentifier: string, password: string, rememberMe: boolean = true) => {
@@ -252,8 +278,9 @@ const apiService = (() => {
           }
           
           const response = await api.get(prefixApiEndpoint('/auth/me'));
-          console.log('API Service: getCurrentUser response:', response.data);
-          return response.data;
+          const processedData = safelyProcessResponse(response);
+          console.log('API Service: getCurrentUser response:', processedData);
+          return processedData;
         } catch (error) {
           // Cast error to AxiosError
           const axiosError = error as AxiosError;
@@ -340,7 +367,7 @@ const apiService = (() => {
   const playlists = {
     getUserPlaylists: async () => {
       const response = await api.get(prefixApiEndpoint('/playlists'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     getPlaylist: async (id: string) => {
@@ -348,7 +375,7 @@ const apiService = (() => {
         // Don't attempt to convert UUID strings to numbers
         // The server error shows it expects a UUID format
         const response = await api.get(prefixApiEndpoint(`/playlists/${id}`));
-        return response.data;
+        return safelyProcessResponse(response);
       } catch (error) {
         console.error('Error fetching playlist:', error);
         throw error;
@@ -369,14 +396,14 @@ const apiService = (() => {
           source: track.source
         }))
       });
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     updatePlaylist: async (id: string, data: any) => {
       try {
         // Don't attempt to convert UUID strings to numbers
         const response = await api.put(prefixApiEndpoint(`/playlists/${id}`), data);
-        return response.data;
+        return safelyProcessResponse(response);
       } catch (error) {
         console.error('Error updating playlist:', error);
         throw error;
@@ -387,7 +414,7 @@ const apiService = (() => {
       try {
         // Don't attempt to convert UUID strings to numbers
         const response = await api.delete(prefixApiEndpoint(`/playlists/${id}`));
-        return response.data;
+        return safelyProcessResponse(response);
       } catch (error) {
         console.error('Error deleting playlist:', error);
         throw error;
@@ -418,12 +445,12 @@ const apiService = (() => {
   const settings = {
     getUserSettings: async () => {
       const response = await api.get(prefixApiEndpoint('/settings'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     updateUserSettings: async (settingsData: any) => {
       const response = await api.put(prefixApiEndpoint('/settings'), settingsData);
-      return response.data;
+      return safelyProcessResponse(response);
     },
   };
 
@@ -431,48 +458,48 @@ const apiService = (() => {
   const pomodoro = {
     getAllSessions: async () => {
       const response = await api.get(prefixApiEndpoint('/pomodoro/sessions'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     createSession: async (sessionData: any) => {
       const response = await api.post(prefixApiEndpoint('/pomodoro/sessions'), sessionData);
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     updateSession: async (sessionId: number, sessionData: any) => {
       const response = await api.put(prefixApiEndpoint(`/pomodoro/sessions/${sessionId}`), sessionData);
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     deleteSession: async (sessionId: number) => {
       const response = await api.delete(prefixApiEndpoint(`/pomodoro/sessions/${sessionId}`));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     getStats: async () => {
       const response = await api.get(prefixApiEndpoint('/pomodoro/stats'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
 
     // Todo items API methods
     getAllTodos: async () => {
       const response = await api.get(prefixApiEndpoint('/pomodoro/todos'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     saveTodos: async (todos: any[]) => {
       const response = await api.post(prefixApiEndpoint('/pomodoro/todos'), { todos });
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     updateTodo: async (todoId: string, todoData: any) => {
       const response = await api.put(prefixApiEndpoint(`/pomodoro/todos/${todoId}`), todoData);
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     deleteTodo: async (todoId: string) => {
       const response = await api.delete(prefixApiEndpoint(`/pomodoro/todos/${todoId}`));
-      return response.data;
+      return safelyProcessResponse(response);
     },
   };
 
@@ -480,47 +507,47 @@ const apiService = (() => {
   const themes = {
     getAllThemes: async () => {
       const response = await api.get(prefixApiEndpoint('/themes'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     getThemeById: async (id: number) => {
       const response = await api.get(prefixApiEndpoint(`/themes/${id}`));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     getPublicCustomThemes: async () => {
       const response = await api.get(prefixApiEndpoint('/themes/custom/public'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     getUserCustomThemes: async () => {
       const response = await api.get(prefixApiEndpoint('/themes/custom/user'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     createCustomTheme: async (themeData: any) => {
       const response = await api.post(prefixApiEndpoint('/themes/custom'), themeData);
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     updateCustomTheme: async (id: number, themeData: any) => {
       const response = await api.put(prefixApiEndpoint(`/themes/custom/${id}`), themeData);
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     deleteCustomTheme: async (id: number) => {
       const response = await api.delete(prefixApiEndpoint(`/themes/custom/${id}`));
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     setUserTheme: async (themeId: number) => {
       const response = await api.put(prefixApiEndpoint('/themes/user'), { theme_id: themeId });
-      return response.data;
+      return safelyProcessResponse(response);
     },
     
     getUserTheme: async () => {
       const response = await api.get(prefixApiEndpoint('/themes/user'));
-      return response.data;
+      return safelyProcessResponse(response);
     },
   };
 
