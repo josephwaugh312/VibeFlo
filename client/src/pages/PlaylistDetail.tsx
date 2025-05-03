@@ -146,6 +146,15 @@ const PlaylistDetail: React.FC = () => {
   const [searchError, setSearchError] = useState<string | null>(null);
   const [searchResults, setSearchResults] = useState<YouTubeSearchResult[]>([]);
 
+  // Redirect if ID is undefined
+  useEffect(() => {
+    if (!id) {
+      console.error('No playlist ID provided');
+      toast.error('No playlist ID provided');
+      navigate('/playlists');
+    }
+  }, [id, navigate]);
+
   // Function to check token validity
   const checkTokenValidity = () => {
     const token = localStorage.getItem('token');
@@ -187,15 +196,22 @@ const PlaylistDetail: React.FC = () => {
 
   const fetchPlaylistAndSongs = async () => {
     setIsLoading(true);
+    
+    // Exit early if no ID is provided
+    if (!id) {
+      console.error('Cannot fetch playlist: No playlist ID provided');
+      setError('No playlist ID provided');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
       // Check token validity first
-      if (!checkTokenValidity()) {
-        console.warn('Invalid or expired token detected');
-        toast('Your session has expired. Please log in again', { icon: '❌' });
-        localStorage.removeItem('token'); // Clear invalid token
-        navigate('/login?expired=true');
-        return;
-      }
+      await checkTokenValidity();
+
+      const baseUrl = getApiBaseUrl();
+      const playlistUrl = `${baseUrl}/playlists/${id}`;
+      const songsUrl = `${baseUrl}/playlists/${id}/songs`;
       
       // Get the token from localStorage
       const token = localStorage.getItem('token');
@@ -207,13 +223,6 @@ const PlaylistDetail: React.FC = () => {
         return;
       }
 
-      // Get the base URL for API calls
-      const baseUrl = getApiBaseUrl();
-      
-      // Construct the URLs with proper API prefix handling
-      const playlistUrl = `${baseUrl}/api/playlists/${id}`;
-      console.log('Fetching playlist data from:', playlistUrl);
-      
       // Fetch the playlist
       const playlistResponse = await fetch(playlistUrl, {
         headers: {
@@ -245,7 +254,6 @@ const PlaylistDetail: React.FC = () => {
       });
       
       // Fetch the songs in the playlist - also use the API helper for URL formatting
-      const songsUrl = `${baseUrl}/api/playlists/${id}/songs`;
       console.log('Fetching songs data from:', songsUrl);
 
       try {
@@ -322,7 +330,9 @@ const PlaylistDetail: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchPlaylistAndSongs();
+    if (id) {
+      fetchPlaylistAndSongs();
+    }
   }, [id, navigate]);
 
   const searchYouTube = async (query: string) => {
