@@ -207,7 +207,11 @@ const PlaylistDetail: React.FC = () => {
         return;
       }
 
-      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      // Import and use the getApiBaseUrl function from api.ts
+      const apiService = await import('../services/api');
+      const baseUrl = apiService.getApiBaseUrl();
+      
+      // Construct the URLs with proper API prefix handling
       const playlistUrl = `${baseUrl}/api/playlists/${id}`;
       console.log('Fetching playlist data from:', playlistUrl);
       
@@ -241,7 +245,7 @@ const PlaylistDetail: React.FC = () => {
         updatedAt: playlistData.updated_at
       });
       
-      // Fetch the songs in the playlist
+      // Fetch the songs in the playlist - also use the API helper for URL formatting
       const songsUrl = `${baseUrl}/api/playlists/${id}/songs`;
       console.log('Fetching songs data from:', songsUrl);
 
