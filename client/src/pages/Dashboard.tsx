@@ -133,18 +133,40 @@ const Dashboard: React.FC = () => {
         </Paper>
       )}
       
-      {/* Improved responsive layout:
-          - Mobile (under 768px): Stacked layout (full width)
-          - Desktop (768px+): Side-by-side layout with fixed widths to prevent overlap */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+      {/* Main content area with Pomodoro Timer and Recent Sessions */}
+      <div className="w-full dashboard-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr)',
+        gridTemplateAreas: `'pomodoro' 'sessions'`,
+        gap: '1.5rem',
+        margin: '0 auto',
+        maxWidth: '100%'
+      }}>
+        {/* Add CSS for media query directly in the head */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media (min-width: 768px) {
+            .dashboard-grid {
+              display: grid !important;
+              grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+              grid-template-areas: 'pomodoro sessions' !important;
+            }
+            .pomodoro-area {
+              grid-area: pomodoro !important;
+            }
+            .sessions-area {
+              grid-area: sessions !important;
+            }
+          }
+        `}} />
+        
         {/* Pomodoro Timer */}
-        <div className="md:col-span-6">
+        <div className="pomodoro-area" style={{ gridArea: 'pomodoro' }}>
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Pomodoro Timer</h2>
           <PomodoroTimer />
         </div>
         
         {/* Recent Sessions */}
-        <div className="md:col-span-6">
+        <div className="sessions-area" style={{ gridArea: 'sessions' }}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-white drop-shadow-md">Recent Sessions</h2>
           </div>
