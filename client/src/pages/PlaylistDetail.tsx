@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import apiService from '../services/api';
+import apiService, { getApiBaseUrl } from '../services/api';
 import toast from 'react-hot-toast';
 import { Track } from '../components/music/MusicPlayer';
 import axios from 'axios';
@@ -207,9 +207,8 @@ const PlaylistDetail: React.FC = () => {
         return;
       }
 
-      // Import and use the getApiBaseUrl function from api.ts
-      const apiService = await import('../services/api');
-      const baseUrl = apiService.getApiBaseUrl();
+      // Get the base URL for API calls
+      const baseUrl = getApiBaseUrl();
       
       // Construct the URLs with proper API prefix handling
       const playlistUrl = `${baseUrl}/api/playlists/${id}`;
@@ -331,8 +330,8 @@ const PlaylistDetail: React.FC = () => {
     try {
       console.log('Searching YouTube for:', query);
       
-      // Try the endpoint that should work
-      const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:5001';
+      // Use the proper API base URL without doubling the /api/ prefix
+      const baseUrl = getApiBaseUrl();
       let apiUrl = `${baseUrl}/api/youtube/search`;
       console.log('YouTube search API URL:', apiUrl);
       
