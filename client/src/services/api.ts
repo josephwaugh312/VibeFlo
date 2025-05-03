@@ -9,8 +9,11 @@ export const getApiBaseUrl = (): string => {
   
   // For production deployment
   if (process.env.REACT_APP_API_URL) {
-    console.log("Using REACT_APP_API_URL:", process.env.REACT_APP_API_URL);
-    return process.env.REACT_APP_API_URL;
+    // Check if the URL already ends with /api and remove it if it does
+    const apiUrl = process.env.REACT_APP_API_URL;
+    const normalizedUrl = apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
+    console.log("Using REACT_APP_API_URL:", normalizedUrl);
+    return normalizedUrl;
   }
   
   // For Render deployment
@@ -146,8 +149,21 @@ const apiService = (() => {
 
   // Helper function to prefix API routes
   const prefixApiEndpoint = (endpoint: string): string => {
-    // Add the /api prefix to all endpoints
-    return `/api${endpoint}`;
+    // Check if we're using REACT_APP_API_URL which already includes the /api prefix
+    const baseUrl = getApiBaseUrl();
+    let result;
+    
+    if (process.env.REACT_APP_API_URL) {
+      // In this case, don't add another /api prefix
+      result = endpoint;
+    } else {
+      // For other environments, add the /api prefix
+      result = `/api${endpoint}`;
+    }
+    
+    // Log the final endpoint for debugging
+    console.log(`API Endpoint: Original=${endpoint}, Final=${result}, BaseURL=${baseUrl}`);
+    return result;
   };
 
   // Clear token and auth headers
