@@ -9,6 +9,8 @@ interface Settings {
   auto_start_pomodoros: boolean;
   sound_enabled: boolean;
   notification_enabled: boolean;
+  dark_mode?: boolean;
+  timer_completion_sound?: string;
 }
 
 interface SettingsModalProps {
@@ -35,42 +37,74 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onSave,
   initialSettings = defaultSettings
 }) => {
-  // Local state for form inputs
-  const [pomodoroDuration, setPomodoroLength] = useState(initialSettings.pomodoro_duration);
-  const [shortBreakDuration, setShortBreakLength] = useState(initialSettings.short_break_duration);
-  const [longBreakDuration, setLongBreakLength] = useState(initialSettings.long_break_duration);
-  const [pomodorosUntilLongBreak, setPomodorosUntilLongBreak] = useState(initialSettings.pomodoros_until_long_break);
-  const [autoStartBreaks, setAutoStartBreaks] = useState(initialSettings.auto_start_breaks);
-  const [autoStartPomodoros, setAutoStartPomodoros] = useState(initialSettings.auto_start_pomodoros);
-  const [soundEnabled, setSoundEnabled] = useState(initialSettings.sound_enabled);
-  const [notificationEnabled, setNotificationEnabled] = useState(initialSettings.notification_enabled);
+  // Local state for form inputs - updated to allow string values for better UX
+  const [formValues, setFormValues] = useState<{
+    pomodoro_duration: number | string;
+    short_break_duration: number | string;
+    long_break_duration: number | string;
+    pomodoros_until_long_break: number | string;
+    auto_start_breaks: boolean;
+    auto_start_pomodoros: boolean;
+    dark_mode: boolean;
+    desktop_notifications: boolean;
+    audio_notifications: boolean;
+    timer_completion_sound: string;
+  }>({
+    pomodoro_duration: initialSettings.pomodoro_duration,
+    short_break_duration: initialSettings.short_break_duration,
+    long_break_duration: initialSettings.long_break_duration,
+    pomodoros_until_long_break: initialSettings.pomodoros_until_long_break,
+    auto_start_breaks: initialSettings.auto_start_breaks,
+    auto_start_pomodoros: initialSettings.auto_start_pomodoros,
+    dark_mode: false,
+    desktop_notifications: initialSettings.notification_enabled,
+    audio_notifications: initialSettings.sound_enabled,
+    timer_completion_sound: 'bell',
+  });
   const [saving, setSaving] = useState(false);
 
-  // Update local state when settings change
+  // Use effect to update form values when settings change
   useEffect(() => {
-    setPomodoroLength(initialSettings.pomodoro_duration);
-    setShortBreakLength(initialSettings.short_break_duration);
-    setLongBreakLength(initialSettings.long_break_duration);
-    setPomodorosUntilLongBreak(initialSettings.pomodoros_until_long_break);
-    setAutoStartBreaks(initialSettings.auto_start_breaks);
-    setAutoStartPomodoros(initialSettings.auto_start_pomodoros);
-    setSoundEnabled(initialSettings.sound_enabled);
-    setNotificationEnabled(initialSettings.notification_enabled);
+    if (initialSettings) {
+      setFormValues({
+        pomodoro_duration: typeof initialSettings.pomodoro_duration === 'number' ? initialSettings.pomodoro_duration : 25,
+        short_break_duration: typeof initialSettings.short_break_duration === 'number' ? initialSettings.short_break_duration : 5,
+        long_break_duration: typeof initialSettings.long_break_duration === 'number' ? initialSettings.long_break_duration : 15,
+        pomodoros_until_long_break: typeof initialSettings.pomodoros_until_long_break === 'number' ? initialSettings.pomodoros_until_long_break : 4,
+        auto_start_breaks: !!initialSettings.auto_start_breaks,
+        auto_start_pomodoros: !!initialSettings.auto_start_pomodoros,
+        dark_mode: !!initialSettings.dark_mode,
+        desktop_notifications: initialSettings.notification_enabled !== false,
+        audio_notifications: initialSettings.sound_enabled !== false,
+        timer_completion_sound: initialSettings.timer_completion_sound || 'bell',
+      });
+    }
   }, [initialSettings]);
 
   // Handle saving settings
   const handleSave = async () => {
     setSaving(true);
     try {
+      // Convert any string values back to numbers for submission
       const newSettings: Settings = {
-        pomodoro_duration: pomodoroDuration,
-        short_break_duration: shortBreakDuration,
-        long_break_duration: longBreakDuration,
-        pomodoros_until_long_break: pomodorosUntilLongBreak,
-        auto_start_breaks: autoStartBreaks,
-        auto_start_pomodoros: autoStartPomodoros,
-        sound_enabled: soundEnabled,
-        notification_enabled: notificationEnabled
+        pomodoro_duration: typeof formValues.pomodoro_duration === 'string' 
+          ? parseInt(formValues.pomodoro_duration) || 25 
+          : formValues.pomodoro_duration,
+        short_break_duration: typeof formValues.short_break_duration === 'string'
+          ? parseInt(formValues.short_break_duration) || 5
+          : formValues.short_break_duration,
+        long_break_duration: typeof formValues.long_break_duration === 'string'
+          ? parseInt(formValues.long_break_duration) || 15
+          : formValues.long_break_duration,
+        pomodoros_until_long_break: typeof formValues.pomodoros_until_long_break === 'string'
+          ? parseInt(formValues.pomodoros_until_long_break) || 4
+          : formValues.pomodoros_until_long_break,
+        auto_start_breaks: formValues.auto_start_breaks,
+        auto_start_pomodoros: formValues.auto_start_pomodoros,
+        sound_enabled: formValues.audio_notifications,
+        notification_enabled: formValues.desktop_notifications,
+        dark_mode: formValues.dark_mode,
+        timer_completion_sound: formValues.timer_completion_sound,
       };
       
       if (onSave) {
@@ -86,41 +120,109 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   const handleCancel = () => {
     // Reset form values to current settings
-    setPomodoroLength(initialSettings.pomodoro_duration);
-    setShortBreakLength(initialSettings.short_break_duration);
-    setLongBreakLength(initialSettings.long_break_duration);
-    setPomodorosUntilLongBreak(initialSettings.pomodoros_until_long_break);
-    setAutoStartBreaks(initialSettings.auto_start_breaks);
-    setAutoStartPomodoros(initialSettings.auto_start_pomodoros);
-    setSoundEnabled(initialSettings.sound_enabled);
-    setNotificationEnabled(initialSettings.notification_enabled);
+    setFormValues({
+      pomodoro_duration: initialSettings.pomodoro_duration,
+      short_break_duration: initialSettings.short_break_duration,
+      long_break_duration: initialSettings.long_break_duration,
+      pomodoros_until_long_break: initialSettings.pomodoros_until_long_break,
+      auto_start_breaks: initialSettings.auto_start_breaks,
+      auto_start_pomodoros: initialSettings.auto_start_pomodoros,
+      dark_mode: false,
+      desktop_notifications: initialSettings.notification_enabled,
+      audio_notifications: initialSettings.sound_enabled,
+      timer_completion_sound: 'bell',
+    });
     onClose();
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    
+    // For number inputs, ensure we don't set NaN values
+    if (type === 'number') {
+      const numValue = parseInt(value);
+      // Only update if it's a valid number, otherwise use default values
+      setFormValues({
+        ...formValues,
+        [name]: isNaN(numValue) ? (
+          name === 'pomodoro_duration' ? 25 :
+          name === 'short_break_duration' ? 5 :
+          name === 'long_break_duration' ? 15 :
+          name === 'pomodoros_until_long_break' ? 4 : 0
+        ) : numValue
+      });
+    } else {
+      setFormValues({
+        ...formValues,
+        [name]: type === 'checkbox' ? checked : value,
+      });
+    }
+  };
+
+  // New function to handle text input for timer durations
+  const handleDurationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    
+    // Allow empty input for better user experience
+    if (value === '') {
+      setFormValues({
+        ...formValues,
+        [name]: ''
+      });
+      return;
+    }
+    
+    // Only allow numeric input
+    if (/^\d+$/.test(value)) {
+      const numValue = parseInt(value);
+      
+      // Apply min/max constraints based on field name
+      let finalValue = numValue;
+      if (name === 'pomodoro_duration') {
+        finalValue = Math.min(Math.max(numValue, 1), 60);
+      } else if (name === 'short_break_duration') {
+        finalValue = Math.min(Math.max(numValue, 1), 30);
+      } else if (name === 'long_break_duration') {
+        finalValue = Math.min(Math.max(numValue, 1), 60);
+      } else if (name === 'pomodoros_until_long_break') {
+        finalValue = Math.min(Math.max(numValue, 1), 10);
+      }
+      
+      setFormValues({
+        ...formValues,
+        [name]: finalValue
+      });
+    }
   };
 
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Timer Settings</h2>
+      <div className="bg-white rounded-lg shadow-xl p-4 sm:p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4">Timer Settings</h2>
         
         <div className="mb-6">
           <h3 className="text-lg font-semibold text-gray-700 mb-3">Time (minutes)</h3>
           
-          <div className="grid grid-cols-3 gap-4 mb-4">
+          {/* Updated grid layout for better mobile responsiveness */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <div>
               <label htmlFor="pomodoro" className="block text-sm font-medium text-gray-700 mb-1">
                 Pomodoro
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="\d*"
                 id="pomodoro"
-                min="1"
-                max="60"
-                value={pomodoroDuration}
-                onChange={(e) => setPomodoroLength(parseInt(e.target.value))}
+                name="pomodoro_duration"
+                value={formValues.pomodoro_duration === '' ? '' : String(formValues.pomodoro_duration)}
+                onChange={handleDurationChange}
+                placeholder="25"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
+              <p className="text-xs text-gray-500 mt-1">1-60 minutes</p>
             </div>
             
             <div>
@@ -128,14 +230,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 Short Break
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="\d*"
                 id="shortBreak"
-                min="1"
-                max="30"
-                value={shortBreakDuration}
-                onChange={(e) => setShortBreakLength(parseInt(e.target.value))}
+                name="short_break_duration"
+                value={formValues.short_break_duration === '' ? '' : String(formValues.short_break_duration)}
+                onChange={handleDurationChange}
+                placeholder="5"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
+              <p className="text-xs text-gray-500 mt-1">1-30 minutes</p>
             </div>
             
             <div>
@@ -143,14 +248,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 Long Break
               </label>
               <input
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="\d*"
                 id="longBreak"
-                min="1"
-                max="60"
-                value={longBreakDuration}
-                onChange={(e) => setLongBreakLength(parseInt(e.target.value))}
+                name="long_break_duration"
+                value={formValues.long_break_duration === '' ? '' : String(formValues.long_break_duration)}
+                onChange={handleDurationChange}
+                placeholder="15"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
               />
+              <p className="text-xs text-gray-500 mt-1">1-60 minutes</p>
             </div>
           </div>
           
@@ -159,14 +267,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               Pomodoros until long break
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="\d*"
               id="pomodorosUntilLongBreak"
-              min="1"
-              max="10"
-              value={pomodorosUntilLongBreak}
-              onChange={(e) => setPomodorosUntilLongBreak(parseInt(e.target.value))}
+              name="pomodoros_until_long_break"
+              value={formValues.pomodoros_until_long_break === '' ? '' : String(formValues.pomodoros_until_long_break)}
+              onChange={handleDurationChange}
+              placeholder="4"
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
             />
+            <p className="text-xs text-gray-500 mt-1">1-10 pomodoros</p>
           </div>
         </div>
         
@@ -178,8 +289,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <input
                 type="checkbox"
                 id="autoStartBreaks"
-                checked={autoStartBreaks}
-                onChange={(e) => setAutoStartBreaks(e.target.checked)}
+                name="auto_start_breaks"
+                checked={formValues.auto_start_breaks}
+                onChange={handleChange}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="autoStartBreaks" className="ml-2 block text-sm text-gray-700">
@@ -191,8 +303,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <input
                 type="checkbox"
                 id="autoStartPomodoros"
-                checked={autoStartPomodoros}
-                onChange={(e) => setAutoStartPomodoros(e.target.checked)}
+                name="auto_start_pomodoros"
+                checked={formValues.auto_start_pomodoros}
+                onChange={handleChange}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="autoStartPomodoros" className="ml-2 block text-sm text-gray-700">
@@ -210,8 +323,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <input
                 type="checkbox"
                 id="soundEnabled"
-                checked={soundEnabled}
-                onChange={(e) => setSoundEnabled(e.target.checked)}
+                name="audio_notifications"
+                checked={formValues.audio_notifications}
+                onChange={handleChange}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="soundEnabled" className="ml-2 block text-sm text-gray-700">
@@ -224,8 +338,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               <input
                 type="checkbox"
                 id="notificationEnabled"
-                checked={notificationEnabled}
-                onChange={(e) => setNotificationEnabled(e.target.checked)}
+                name="desktop_notifications"
+                checked={formValues.desktop_notifications}
+                onChange={handleChange}
                 className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
               />
               <label htmlFor="notificationEnabled" className="ml-2 block text-sm text-gray-700">
