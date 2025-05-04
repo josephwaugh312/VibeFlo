@@ -489,17 +489,28 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Keep track of previous token and theme refresh time
     let prevToken = localStorage.getItem('token');
     let lastRefreshTime = 0;
-    const MIN_REFRESH_INTERVAL = 10000; // 10 seconds minimum between refreshes
+    const MIN_REFRESH_INTERVAL = 60000; // 60 seconds minimum between refreshes
+    let shouldAutoRefresh = true;
     
     // Create a function to check for authentication changes
     const checkAuthChanges = () => {
+      // Don't auto-refresh if user is on the themes page (to avoid constant refreshing)
+      const currentPath = window.location.pathname;
+      if (currentPath.includes('/themes')) {
+        shouldAutoRefresh = false;
+        return;
+      } else {
+        shouldAutoRefresh = true;
+      }
+      
       const token = localStorage.getItem('token');
       const currentTime = Date.now();
       
       // Only refresh if token changed from null to a value
       // or if enough time has passed since last refresh
-      if ((token && !prevToken) || 
-          (token && (currentTime - lastRefreshTime > MIN_REFRESH_INTERVAL))) {
+      if (shouldAutoRefresh && 
+          ((token && !prevToken) || 
+          (token && (currentTime - lastRefreshTime > MIN_REFRESH_INTERVAL)))) {
         console.log('User authentication detected or refresh interval passed, refreshing themes');
         fetchAllThemes();
         lastRefreshTime = currentTime;
@@ -512,8 +523,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Check immediately
     checkAuthChanges();
     
-    // Set up an interval to check for auth changes, but less frequently
-    const authCheckInterval = setInterval(checkAuthChanges, 5000);
+    // Set up an interval to check for auth changes, but infrequently
+    const authCheckInterval = setInterval(checkAuthChanges, 30000); // 30 seconds
     
     // Clean up interval on unmount
     return () => clearInterval(authCheckInterval);
