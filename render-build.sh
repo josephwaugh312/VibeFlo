@@ -158,6 +158,12 @@ node user-type-fix.js
 # Now build the server
 npm run build || echo "TypeScript compilation errors were encountered but proceeding with build"
 
+# Apply critical route fix to solve HTML responses for API routes
+echo "Applying server route fix for Render deployment..."
+cd ..
+node server-route-fix.js
+cd server
+
 # Create directory for client build in server dist
 echo "Copying client build to server dist directory..."
 mkdir -p dist/client
