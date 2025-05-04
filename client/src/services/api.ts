@@ -3,6 +3,10 @@ import { Track } from '../components/music/MusicPlayer';
 import { PomodoroStats, PomodoroSession } from '../contexts/StatsContext';
 import { User, Theme, Playlist, Song } from '../types';
 
+// Retry configuration
+const MAX_RETRIES = 3;
+const INITIAL_RETRY_DELAY = 1000; // 1 second
+
 // Function to get the API base URL
 export const getApiBaseUrl = (): string => {
   console.log("Getting API base URL");
@@ -29,12 +33,14 @@ export const getApiBaseUrl = (): string => {
   return 'http://localhost:5001';
 };
 
+export const API_TIMEOUT = 60000; // 60 seconds timeout
+
 // Create the API service with token management and interceptors
 const apiService = (() => {
   // Create the base axios instance
   const api: AxiosInstance = axios.create({
     baseURL: getApiBaseUrl(),
-    timeout: 60000,
+    timeout: API_TIMEOUT,
     headers: {
       'Content-Type': 'application/json',
     },
@@ -149,20 +155,38 @@ const apiService = (() => {
 
   // Helper function to prefix API routes
   const prefixApiEndpoint = (endpoint: string): string => {
-    // Check if we're using REACT_APP_API_URL which already includes the /api prefix
+    // Get the base URL for API calls
     const baseUrl = getApiBaseUrl();
-    let result;
+    let result = endpoint;
     
-    if (process.env.REACT_APP_API_URL) {
-      // In this case, don't add another /api prefix
-      result = endpoint;
-    } else {
-      // For other environments, add the /api prefix
-      result = `/api${endpoint}`;
+    // If endpoint doesn't start with a slash, add one
+    if (!endpoint.startsWith('/')) {
+      result = `/${endpoint}`;
     }
     
-    // Log the final endpoint for debugging
-    console.log(`API Endpoint: Original=${endpoint}, Final=${result}, BaseURL=${baseUrl}`);
+    // Check if we're in production/Render environment
+    const isProduction = process.env.REACT_APP_API_URL || 
+                        window.location.hostname === 'vibeflo.app' || 
+                        window.location.hostname.includes('vibeflo') ||
+                        window.location.hostname.includes('render.com');
+    
+    // Different handling for development vs production
+    if (isProduction) {
+      // In PRODUCTION: Always add /api prefix for Render deployment, regardless of endpoint
+      // Only skip if it already has /api prefix
+      if (!result.startsWith('/api')) {
+        result = `/api${result}`;
+      }
+    } else {
+      // In DEVELOPMENT: Auth endpoints don't need /api prefix, but other endpoints do
+      if (!result.startsWith('/api') && !result.startsWith('/auth')) {
+        result = `/api${result}`;
+      }
+    }
+    
+    // Log the endpoint construction for debugging
+    console.log(`API Endpoint: Original=${endpoint}, Final=${result}, BaseURL=${baseUrl}, IsProduction=${isProduction}`);
+    
     return result;
   };
 
@@ -219,55 +243,107 @@ const apiService = (() => {
     return data;
   };
 
-  // Authentication API methods
+  // Retry helper with exponential backoff
+  const retryRequest = async <T>(
+    fn: () => Promise<T>,
+    maxRetries: number = MAX_RETRIES,
+    initialDelay: number = INITIAL_RETRY_DELAY
+  ): Promise<T> => {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        console.log(`API Retry: Attempt ${attempt + 1} of ${maxRetries}`);
+        return await fn();
+      } catch (err) {
+        lastError = err as Error;
+        
+        // Don't retry for certain error types
+        if (err instanceof AxiosError) {
+          // Don't retry on 401 Unauthorized or 404 Not Found
+          if (err.response?.status === 401 || err.response?.status === 404) {
+            throw err;
+          }
+          
+          // For database timeouts, retry with backoff
+          if (
+            err.code === 'ECONNABORTED' || 
+            err.message.includes('timeout') ||
+            (err.response?.data && 
+             typeof err.response.data === 'object' && 
+             'code' in err.response.data && 
+             (err.response.data.code === 'ETIMEDOUT' || 
+              err.response.data.error?.includes('ETIMEDOUT')))
+          ) {
+            // Use exponential backoff
+            const delay = initialDelay * Math.pow(2, attempt) * (0.9 + Math.random() * 0.2);
+            console.log(`API Request timed out. Retrying in ${Math.floor(delay)}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            continue;
+          }
+        }
+        
+        // For other errors, or if we've exhausted retries, throw the error
+        throw err;
+      }
+    }
+    
+    // If we get here, we've exhausted retries
+    console.error('API Retry: All attempts failed');
+    throw lastError;
+  };
+
+  // Authentication API methods with retry
   const auth = {
     login: async (loginIdentifier: string, password: string, rememberMe: boolean = true) => {
-      try {
-        console.log('Attempting login with:', { loginIdentifier, passwordProvided: !!password, rememberMe });
-        
-        // Validate inputs client-side
-        if (!loginIdentifier || !password) {
-          console.error('Login failed: Missing credentials');
-          return {
-            success: false,
-            message: 'Email/username and password are required'
-          };
+      return retryRequest(async () => {
+        try {
+          console.log('Attempting login with:', { loginIdentifier, passwordProvided: !!password, rememberMe });
+          
+          // Validate inputs client-side
+          if (!loginIdentifier || !password) {
+            console.error('Login failed: Missing credentials');
+            return {
+              success: false,
+              message: 'Email/username and password are required'
+            };
+          }
+          
+          const response = await api.post(prefixApiEndpoint('/auth/login'), { 
+            email: loginIdentifier,
+            login: loginIdentifier,
+            password,
+            rememberMe 
+          });
+          
+          console.log('Login response:', response.data);
+          
+          // Ensure the response has the expected format
+          if (response.data && response.data.token) {
+            return {
+              success: true,
+              token: response.data.token,
+              user: response.data.user,
+              message: response.data.message
+            };
+          } else {
+            console.error('Invalid login response format:', response.data);
+            throw new Error('Invalid login response format');
+          }
+        } catch (error) {
+          console.error('Login error:', error);
+          if (error instanceof AxiosError) {
+            const errorData = error.response?.data || {};
+            return {
+              success: false,
+              message: errorData.message || 'Login failed',
+              needsVerification: errorData.needsVerification,
+              email: errorData.email || loginIdentifier
+            };
+          }
+          throw error;
         }
-        
-        const response = await api.post(prefixApiEndpoint('/auth/login'), { 
-          email: loginIdentifier,
-          login: loginIdentifier,
-          password,
-          rememberMe 
-        });
-        
-        console.log('Login response:', response.data);
-        
-        // Ensure the response has the expected format
-        if (response.data && response.data.token) {
-          return {
-            success: true,
-            token: response.data.token,
-            user: response.data.user,
-            message: response.data.message
-          };
-        } else {
-          console.error('Invalid login response format:', response.data);
-          throw new Error('Invalid login response format');
-        }
-      } catch (error) {
-        console.error('Login error:', error);
-        if (error instanceof AxiosError) {
-          const errorData = error.response?.data || {};
-          return {
-            success: false,
-            message: errorData.message || 'Login failed',
-            needsVerification: errorData.needsVerification,
-            email: errorData.email || loginIdentifier
-          };
-        }
-        throw error;
-      }
+      });
     },
     
     register: async (name: string, username: string, email: string, password: string) => {
@@ -379,11 +455,13 @@ const apiService = (() => {
     },
   };
 
-  // Playlist API methods
+  // Playlist API methods with retry
   const playlists = {
     getUserPlaylists: async () => {
-      const response = await api.get(prefixApiEndpoint('/playlists'));
-      return safelyProcessResponse(response);
+      return retryRequest(async () => {
+        const response = await api.get(prefixApiEndpoint('/playlists'));
+        return safelyProcessResponse(response);
+      });
     },
     
     getPlaylist: async (id: string) => {
@@ -457,16 +535,20 @@ const apiService = (() => {
     },
   };
 
-  // Settings API methods
+  // Settings API methods with retry
   const settings = {
     getUserSettings: async () => {
-      const response = await api.get(prefixApiEndpoint('/settings'));
-      return safelyProcessResponse(response);
+      return retryRequest(async () => {
+        const response = await api.get(prefixApiEndpoint('/settings'));
+        return safelyProcessResponse(response);
+      });
     },
     
     updateUserSettings: async (settingsData: any) => {
-      const response = await api.put(prefixApiEndpoint('/settings'), settingsData);
-      return safelyProcessResponse(response);
+      return retryRequest(async () => {
+        const response = await api.put(prefixApiEndpoint('/settings'), settingsData);
+        return safelyProcessResponse(response);
+      });
     },
   };
 
@@ -577,6 +659,7 @@ const apiService = (() => {
     settings,
     pomodoro,
     themes,
+    retryRequest, // Export the retry helper for other uses
   };
 })();
 
