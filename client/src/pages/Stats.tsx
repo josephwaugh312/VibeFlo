@@ -657,14 +657,20 @@ const Stats: React.FC = () => {
               <h3 className="text-md font-medium text-white mb-2">Daily Average</h3>
               <p className="text-3xl font-bold text-white mb-2">
                 {(() => {
-                  const avgSessions = stats?.averageDailySessions;
-                  if (typeof avgSessions === 'number') {
-                    return avgSessions.toFixed(2);
-                  } else if (typeof avgSessions === 'string' && !isNaN(parseFloat(avgSessions))) {
-                    return parseFloat(avgSessions).toFixed(2);
-                  } else {
-                    return '0';
+                  // Get the value or use a default
+                  const value = stats?.averageDailySessions || '0';
+                  // Try to convert to number and format if possible
+                  let formatted = '0';
+                  try {
+                    const num = Number(value);
+                    if (!isNaN(num)) {
+                      formatted = num.toFixed(2);
+                    }
+                  } catch (e) {
+                    // In case of any error, fall back to the original value or 0
+                    formatted = String(value);
                   }
+                  return formatted;
                 })()} sessions
               </p>
               <p className="text-xs text-white/70">Average sessions per active day</p>
