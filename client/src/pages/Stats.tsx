@@ -655,7 +655,7 @@ const Stats: React.FC = () => {
                 </span>
               </div>
               <h3 className="text-md font-medium text-white mb-2">Daily Average</h3>
-              <p className="text-3xl font-bold text-white mb-2">{stats?.averageDailySessions || '0'} sessions</p>
+              <p className="text-3xl font-bold text-white mb-2">{typeof stats?.averageDailySessions === 'number' ? stats.averageDailySessions.toFixed(2) : '0'} sessions</p>
               <p className="text-xs text-white/70">Average sessions per active day</p>
             </div>
           </div>
