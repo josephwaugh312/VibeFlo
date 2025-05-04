@@ -369,8 +369,8 @@ const Stats: React.FC = () => {
         <button
           className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
             activeTab === 'overview' 
-              ? 'text-white font-bold border-b-2 border-[#9333ea]' 
-              : 'text-white/70 hover:text-white border-b-2 border-transparent'
+              ? 'bg-[#9333ea] text-white font-bold border-b-2 border-[#9333ea]' 
+              : 'text-white/70 hover:text-white hover:bg-[#9333ea] border-b-2 border-transparent'
           }`}
           onClick={() => setActiveTab('overview')}
         >
@@ -379,8 +379,8 @@ const Stats: React.FC = () => {
         <button
           className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
             activeTab === 'trends' 
-              ? 'text-white font-bold border-b-2 border-[#9333ea]' 
-              : 'text-white/70 hover:text-white border-b-2 border-transparent'
+              ? 'bg-[#9333ea] text-white font-bold border-b-2 border-[#9333ea]' 
+              : 'text-white/70 hover:text-white hover:bg-[#9333ea] border-b-2 border-transparent'
           }`}
           onClick={() => setActiveTab('trends')}
         >
@@ -389,8 +389,8 @@ const Stats: React.FC = () => {
         <button
           className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
             activeTab === 'details' 
-              ? 'text-white font-bold border-b-2 border-[#9333ea]' 
-              : 'text-white/70 hover:text-white border-b-2 border-transparent'
+              ? 'bg-[#9333ea] text-white font-bold border-b-2 border-[#9333ea]' 
+              : 'text-white/70 hover:text-white hover:bg-[#9333ea] border-b-2 border-transparent'
           }`}
           onClick={() => setActiveTab('details')}
         >
