@@ -209,11 +209,7 @@ const PlaylistDetail: React.FC = () => {
       // Check token validity first
       await checkTokenValidity();
 
-      const baseUrl = getApiBaseUrl();
-      const playlistUrl = `${baseUrl}/playlists/${id}`;
-      const songsUrl = `${baseUrl}/playlists/${id}/songs`;
-      
-      // Get the token from localStorage
+      // Get token for authorization header
       const token = localStorage.getItem('token');
       console.log('API token (first 10 chars):', token ? token.substring(0, 10) + '...' : 'No token found');
       
@@ -223,107 +219,102 @@ const PlaylistDetail: React.FC = () => {
         return;
       }
 
-      // Fetch the playlist
-      const playlistResponse = await fetch(playlistUrl, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      if (!playlistResponse.ok) {
-        console.error(`Failed to fetch playlist: ${playlistResponse.status} ${playlistResponse.statusText}`);
-        const errorText = await playlistResponse.text();
-        console.error('Error response:', errorText);
-        throw new Error(`Failed to fetch playlist: ${playlistResponse.status}`);
-      }
-      
-      const playlistData = await playlistResponse.json();
-      console.log('API Response:', playlistResponse.status, playlistUrl, playlistData);
-      console.log('Raw playlist data:', playlistData);
-      
-      // Set the playlist data
-      setPlaylist({
-        id: playlistData.id,
-        name: playlistData.name,
-        description: playlistData.description || '',
-        cover_url: playlistData.cover_url || '',
-        userId: playlistData.user_id,
-        createdAt: playlistData.created_at,
-        updatedAt: playlistData.updated_at
-      });
-      
-      // Fetch the songs in the playlist - also use the API helper for URL formatting
-      console.log('Fetching songs data from:', songsUrl);
-
+      // Use apiService for playlist but manual fetch for songs (with proper URL)
       try {
-        const response = await fetch(songsUrl, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
+        // Fetch the playlist using apiService
+        const playlistData = await apiService.playlists.getPlaylist(id);
+        console.log('Playlist data received:', playlistData);
+        
+        // Set the playlist data
+        setPlaylist({
+          id: playlistData.id,
+          name: playlistData.name,
+          description: playlistData.description || '',
+          cover_url: playlistData.cover_url || '',
+          userId: playlistData.user_id,
+          createdAt: playlistData.created_at,
+          updatedAt: playlistData.updated_at
         });
         
-        if (!response.ok) {
-          console.error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
-          const errorText = await response.text();
-          console.error('Error response text:', errorText);
-          throw new Error(`Failed to fetch songs: ${response.status}`);
-        }
-        
-        // Check content type to ensure we're getting JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('Error: Received non-JSON response:', contentType);
-          // Get the raw text to see what was returned
-          const text = await response.text();
-          console.error('Raw response text (first 200 chars):', text.substring(0, 200));
-          throw new Error('Server returned non-JSON response');
-        }
-        
-        const songsData = await response.json();
-        console.log('Songs data received:', songsData);
-        
-        if (songsData && Array.isArray(songsData)) {
-          const formattedSongs = songsData.map((song: any) => ({
-            id: song.id || undefined,
-            title: song.title || 'Unknown Title',
-            artist: song.artist || 'Unknown Artist',
-            album: song.album,
-            duration: song.duration,
-            image_url: song.image_url || song.artwork || song.cover_url || '',
-            url: song.url || song.audio_url || '',
-            source: song.source || 'youtube'
-          }));
+        // Fetch the songs using correctly constructed API URL
+        try {
+          const baseUrl = getApiBaseUrl();
+          // Construct song endpoint using the same format as the API service
+          // The baseUrl already contains the domain
+          const songsEndpoint = `/api/playlists/${id}/songs`;
+          const songsUrl = `${baseUrl}${songsEndpoint}`;
+          console.log('Fetching songs data from:', songsUrl);
           
-          setSongs(formattedSongs);
-        } else {
+          const response = await fetch(songsUrl, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!response.ok) {
+            console.error(`Failed to fetch songs: ${response.status} ${response.statusText}`);
+            const errorText = await response.text();
+            console.error('Error response text:', errorText);
+            throw new Error(`Failed to fetch songs: ${response.status}`);
+          }
+          
+          // Check content type to ensure we're getting JSON
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            console.error('Error: Received non-JSON response:', contentType);
+            // Get the raw text to see what was returned
+            const text = await response.text();
+            console.error('Raw response text (first 200 chars):', text.substring(0, 200));
+            throw new Error('Server returned non-JSON response');
+          }
+          
+          const songsData = await response.json();
+          console.log('Songs data received:', songsData);
+          
+          if (songsData && Array.isArray(songsData)) {
+            const formattedSongs = songsData.map((song: any) => ({
+              id: song.id || undefined,
+              title: song.title || 'Unknown Title',
+              artist: song.artist || 'Unknown Artist',
+              album: song.album,
+              duration: song.duration,
+              image_url: song.image_url || song.artwork || song.cover_url || '',
+              url: song.url || song.audio_url || '',
+              source: song.source || 'youtube'
+            }));
+            
+            setSongs(formattedSongs);
+          } else {
+            setSongs([]);
+            toast('This playlist has no songs yet', { icon: 'ℹ️' });
+          }
+        } catch (songError: any) {
+          console.error('Error fetching songs:', songError);
           setSongs([]);
-          toast('This playlist has no songs yet', { icon: 'ℹ️' });
+          toast('Could not fetch songs for this playlist', { icon: '❌' });
         }
-      } catch (songError: any) {
-        console.error('Error fetching songs:', songError);
-        setSongs([]);
-        toast('Could not fetch songs for this playlist', { icon: '❌' });
+        
+        // Reset dirty state after loading
+        setIsDirty(false);
+      } catch (err: any) {
+        console.error('Error fetching playlist:', err);
+        
+        if (err.response?.status === 401) {
+          toast.error('Your session has expired. Please log in again.');
+          navigate('/login');
+        } else if (err.response?.status === 404) {
+          setError('Playlist not found');
+          toast.error('This playlist does not exist');
+          navigate('/playlists');
+        } else {
+          setError(err.message || 'Failed to load playlist');
+          toast.error('Failed to load playlist: Server error');
+        }
       }
-      
-      // Reset dirty state after loading
-      setIsDirty(false);
-      
     } catch (err: any) {
-      console.error('Error fetching playlist:', err);
-      
-      if (err.response?.status === 401) {
-        toast.error('Your session has expired. Please log in again.');
-        navigate('/login');
-      } else if (err.response?.status === 404) {
-        setError('Playlist not found');
-        toast.error('This playlist does not exist');
-        navigate('/playlists');
-      } else {
-        setError(err.message || 'Failed to load playlist');
-        toast.error('Failed to load playlist: Server error');
-      }
+      console.error('Error in fetchPlaylistAndSongs:', err);
+      setError('Failed to load playlist data');
     } finally {
       setIsLoading(false);
     }
