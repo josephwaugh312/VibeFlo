@@ -174,6 +174,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('user', JSON.stringify(response.user));
           setUser(response.user);
           setIsAuthenticated(true);
+          
+          // Dispatch custom event to notify theme context
+          window.dispatchEvent(new Event('vf-login-success'));
+          
           return response;
         } else {
           // If no user data, fetch it
@@ -188,6 +192,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
             setIsAuthenticated(true);
+            
+            // Dispatch custom event to notify theme context
+            window.dispatchEvent(new Event('vf-login-success'));
             
             return {
               ...response,
