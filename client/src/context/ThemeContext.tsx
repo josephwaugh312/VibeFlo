@@ -476,6 +476,28 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
+  // Add a listener to detect when the user logs in
+  useEffect(() => {
+    // Create a function to check for authentication changes
+    const checkAuthChanges = () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log('User authentication detected, refreshing themes');
+        fetchAllThemes();
+      }
+    };
+    
+    // Set up an interval to check for auth changes
+    const authCheckInterval = setInterval(checkAuthChanges, 2000);
+    
+    // Also check immediately
+    checkAuthChanges();
+    
+    // Clean up interval on unmount
+    return () => clearInterval(authCheckInterval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
   // Safety check to ensure a theme is applied after initial loading
   useEffect(() => {
     // Only execute after themes have been loaded

@@ -35,7 +35,8 @@ const ThemeSelector: React.FC = () => {
     customThemes, 
     publicCustomThemes,
     loadingThemes, 
-    setActiveTheme 
+    setActiveTheme,
+    refreshThemes
   } = useTheme();
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
@@ -578,6 +579,9 @@ const ThemeSelector: React.FC = () => {
         borderBottom: 1, 
         borderColor: 'rgba(255, 255, 255, 0.2)', 
         mb: 4,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         '& .MuiTabs-indicator': {
           display: 'none'
         }
@@ -611,6 +615,28 @@ const ThemeSelector: React.FC = () => {
           <Tab label="Your Custom Themes" />
           <Tab label="Community Themes" />
         </Tabs>
+        
+        <Button 
+          variant="outlined" 
+          color="primary" 
+          onClick={async () => {
+            toast.loading('Refreshing themes...');
+            await refreshThemes();
+            toast.dismiss();
+            toast.success('Themes refreshed');
+          }}
+          disabled={loadingThemes}
+          sx={{ 
+            borderColor: 'rgba(255, 255, 255, 0.3)', 
+            color: 'white',
+            '&:hover': {
+              borderColor: 'white',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)'
+            }
+          }}
+        >
+          Refresh Themes
+        </Button>
       </Box>
 
       {tabValue === 0 && renderThemeCards(availableThemes)}
