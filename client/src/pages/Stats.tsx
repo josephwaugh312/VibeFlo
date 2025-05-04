@@ -365,32 +365,32 @@ const Stats: React.FC = () => {
   // Render tab buttons without refresh controls
   const renderTabButtons = () => (
     <div className="flex flex-col sm:flex-row justify-between border-b border-white/20 mb-6">
-      <div className="flex overflow-x-auto space-x-6">
+      <div className="flex">
         <button
-          className={`py-2 px-4 font-medium text-sm rounded transition-all duration-200 ease-in-out ${
+          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
             activeTab === 'overview' 
-              ? 'bg-purple-600 text-white' 
-              : 'text-white/70 hover:text-white'
+              ? 'text-white font-bold border-b-2 border-[#9333ea]' 
+              : 'text-white/70 hover:text-white border-b-2 border-transparent'
           }`}
           onClick={() => setActiveTab('overview')}
         >
           Overview
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm rounded transition-all duration-200 ease-in-out ${
+          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
             activeTab === 'trends' 
-              ? 'bg-purple-600 text-white' 
-              : 'text-white/70 hover:text-white'
+              ? 'text-white font-bold border-b-2 border-[#9333ea]' 
+              : 'text-white/70 hover:text-white border-b-2 border-transparent'
           }`}
           onClick={() => setActiveTab('trends')}
         >
           Trends
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm rounded transition-all duration-200 ease-in-out ${
+          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
             activeTab === 'details' 
-              ? 'bg-purple-600 text-white' 
-              : 'text-white/70 hover:text-white'
+              ? 'text-white font-bold border-b-2 border-[#9333ea]' 
+              : 'text-white/70 hover:text-white border-b-2 border-transparent'
           }`}
           onClick={() => setActiveTab('details')}
         >
