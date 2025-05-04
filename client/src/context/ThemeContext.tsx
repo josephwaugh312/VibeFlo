@@ -270,6 +270,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           if (tokenParts.length === 3) {
             const payload = JSON.parse(atob(tokenParts[1]));
             currentUserId = payload.id || '';
+            console.log("Current user ID:", currentUserId);
           }
         } catch (e) {
           console.warn('Could not decode token for user ID:', e);
@@ -307,6 +308,39 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           return true;
         });
         console.log('After filtering:', filteredThemes.length, 'custom themes');
+        
+        // We'll use this filtered list from API, but we also need to fetch public themes
+        
+        // Make a request to get public themes as well (to handle themes created on a different deployment)
+        try {
+          console.log('Fetching public themes to check for user themes');
+          const publicResponse = await axios.get(`${serverUrl}/api/themes/custom/public`);
+          
+          if (publicResponse.data && Array.isArray(publicResponse.data)) {
+            // Filter to only get public themes created by this user
+            const userPublicThemes = publicResponse.data.filter((theme: CustomTheme) => 
+              theme.user_id === currentUserId
+            );
+            
+            if (userPublicThemes.length > 0) {
+              console.log(`Found ${userPublicThemes.length} public themes created by this user`);
+              
+              // Add any public themes by this user that aren't already in the list
+              for (const publicTheme of userPublicThemes) {
+                const exists = filteredThemes.some(theme => 
+                  theme.id === publicTheme.id || theme.name === publicTheme.name
+                );
+                
+                if (!exists) {
+                  console.log(`Adding public theme "${publicTheme.name}" to user's custom themes`);
+                  filteredThemes.push(publicTheme);
+                }
+              }
+            }
+          }
+        } catch (publicError) {
+          console.error('Error fetching public themes for user check:', publicError);
+        }
         
         setCustomThemes(filteredThemes);
       }
