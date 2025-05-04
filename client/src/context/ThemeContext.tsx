@@ -245,12 +245,29 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       return;
     }
 
+    console.log('Token found, proceeding with custom theme fetch');
     try {
       const serverUrl = getServerUrl();
       if (!serverUrl) {
         console.warn('REACT_APP_SERVER_URL is not defined, cannot fetch custom themes');
         setCustomThemes([]);
         return;
+      }
+      
+      // Log token length for debugging (not the actual token for security)
+      console.log(`Fetching custom themes with token (length: ${token.length})`);
+      
+      // Get the current user ID by decoding the JWT token
+      let currentUserId = '';
+      try {
+        const tokenParts = token.split('.');
+        if (tokenParts.length === 3) {
+          const payload = JSON.parse(atob(tokenParts[1]));
+          currentUserId = payload.id || '';
+          console.log("Current user ID:", currentUserId);
+        }
+      } catch (e) {
+        console.warn('Could not decode token for user ID:', e);
       }
       
       console.log('Fetching custom themes for user...');
@@ -262,19 +279,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       
       if (response.data && Array.isArray(response.data)) {
         console.log('Custom themes fetched successfully:', response.data.length, 'custom themes');
-        
-        // Get the current user ID by decoding the JWT token
-        let currentUserId = '';
-        try {
-          const tokenParts = token.split('.');
-          if (tokenParts.length === 3) {
-            const payload = JSON.parse(atob(tokenParts[1]));
-            currentUserId = payload.id || '';
-            console.log("Current user ID:", currentUserId);
-          }
-        } catch (e) {
-          console.warn('Could not decode token for user ID:', e);
-        }
         
         // Filter out standard themes and unwanted themes
         const unwantedThemeIds = [
@@ -523,11 +527,53 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Check immediately
     checkAuthChanges();
     
-    // Set up an interval to check for auth changes, but infrequently
-    const authCheckInterval = setInterval(checkAuthChanges, 30000); // 30 seconds
+    // Set up an interval to check for auth changes
+    const authCheckInterval = setInterval(checkAuthChanges, 5000); // Check every 5 seconds
     
-    // Clean up interval on unmount
-    return () => clearInterval(authCheckInterval);
+    // Add a direct event listener for storage changes (for when token is added in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'token' && e.newValue && !prevToken) {
+        console.log('Token added to localStorage, refreshing themes');
+        fetchAllThemes();
+        prevToken = e.newValue;
+        lastRefreshTime = Date.now();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Clean up interval and event listener on unmount
+    return () => {
+      clearInterval(authCheckInterval);
+      window.removeEventListener('storage', handleStorageChange);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Add a specific listener for login events
+  useEffect(() => {
+    // Function to check for token after login attempts
+    const checkForTokenAfterLogin = () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        console.log('Token found after login, fetching themes immediately');
+        fetchAllThemes();
+      }
+    };
+    
+    // Listen for successful login events
+    const handleLoginSuccess = () => {
+      console.log('Login success event detected');
+      // Wait a short time for token to be stored
+      setTimeout(checkForTokenAfterLogin, 500);
+    };
+    
+    // Create a custom event for login success
+    window.addEventListener('vf-login-success', handleLoginSuccess);
+    
+    return () => {
+      window.removeEventListener('vf-login-success', handleLoginSuccess);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   
