@@ -284,6 +284,8 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
           24, 25, 26, 27, 28, 29, 30, 31, 32
         ];
         
+        // These are themes that should be filtered out when we retrieve from the server API
+        // This is different from the userPublicThemes which might include these themes
         const unwantedNames = ["Deep Purple", "Dark Theme", "Ocean Blue", "Forest Green", "Sunset Orange"];
         
         console.log('Before filtering:', response.data.length, 'custom themes');
@@ -310,6 +312,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         console.log('After filtering:', filteredThemes.length, 'custom themes');
         
         // We'll use this filtered list from API, but we also need to fetch public themes
+        // Your user's actual custom themes (the Tokyo Chill, Lo-Fi, etc.) will be in filteredThemes
         
         // Make a request to get public themes as well (to handle themes created on a different deployment)
         try {
@@ -325,13 +328,18 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
             if (userPublicThemes.length > 0) {
               console.log(`Found ${userPublicThemes.length} public themes created by this user`);
               
-              // Add any public themes by this user that aren't already in the list
+              // We want to be careful about which themes we add back to the custom themes list
+              // Only add back themes that the user actually created and aren't in the unwanted lists
+              
+              // Get list of theme names we already have in filteredThemes
+              const existingThemeNames = filteredThemes.map(theme => theme.name);
+              
               for (const publicTheme of userPublicThemes) {
-                const exists = filteredThemes.some(theme => 
-                  theme.id === publicTheme.id || theme.name === publicTheme.name
-                );
+                // Don't add back the filtered themes that are in the unwanted list
+                if (unwantedNames.includes(publicTheme.name)) continue;
                 
-                if (!exists) {
+                // Check if the theme already exists in our list
+                if (!existingThemeNames.includes(publicTheme.name)) {
                   console.log(`Adding public theme "${publicTheme.name}" to user's custom themes`);
                   filteredThemes.push(publicTheme);
                 }
@@ -478,20 +486,34 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   
   // Add a listener to detect when the user logs in
   useEffect(() => {
+    // Keep track of previous token and theme refresh time
+    let prevToken = localStorage.getItem('token');
+    let lastRefreshTime = 0;
+    const MIN_REFRESH_INTERVAL = 10000; // 10 seconds minimum between refreshes
+    
     // Create a function to check for authentication changes
     const checkAuthChanges = () => {
       const token = localStorage.getItem('token');
-      if (token) {
-        console.log('User authentication detected, refreshing themes');
+      const currentTime = Date.now();
+      
+      // Only refresh if token changed from null to a value
+      // or if enough time has passed since last refresh
+      if ((token && !prevToken) || 
+          (token && (currentTime - lastRefreshTime > MIN_REFRESH_INTERVAL))) {
+        console.log('User authentication detected or refresh interval passed, refreshing themes');
         fetchAllThemes();
+        lastRefreshTime = currentTime;
       }
+      
+      // Update previous token
+      prevToken = token;
     };
     
-    // Set up an interval to check for auth changes
-    const authCheckInterval = setInterval(checkAuthChanges, 2000);
-    
-    // Also check immediately
+    // Check immediately
     checkAuthChanges();
+    
+    // Set up an interval to check for auth changes, but less frequently
+    const authCheckInterval = setInterval(checkAuthChanges, 5000);
     
     // Clean up interval on unmount
     return () => clearInterval(authCheckInterval);
