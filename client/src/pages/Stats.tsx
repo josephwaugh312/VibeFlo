@@ -367,30 +367,30 @@ const Stats: React.FC = () => {
     <div className="flex flex-col sm:flex-row justify-between border-b border-white/20 mb-6">
       <div className="flex">
         <button
-          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
+          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out border-b-2 ${
             activeTab === 'overview' 
-              ? 'bg-[#9333ea] text-white font-bold border-b-2 border-[#9333ea]' 
-              : 'text-white/70 hover:text-white hover:bg-[#9333ea] border-b-2 border-transparent'
+              ? 'text-white font-bold border-[#9333ea]' 
+              : 'text-white/70 hover:text-white border-transparent'
           }`}
           onClick={() => setActiveTab('overview')}
         >
           Overview
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
+          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out border-b-2 ${
             activeTab === 'trends' 
-              ? 'bg-[#9333ea] text-white font-bold border-b-2 border-[#9333ea]' 
-              : 'text-white/70 hover:text-white hover:bg-[#9333ea] border-b-2 border-transparent'
+              ? 'text-white font-bold border-[#9333ea]' 
+              : 'text-white/70 hover:text-white border-transparent'
           }`}
           onClick={() => setActiveTab('trends')}
         >
           Trends
         </button>
         <button
-          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out ${
+          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out border-b-2 ${
             activeTab === 'details' 
-              ? 'bg-[#9333ea] text-white font-bold border-b-2 border-[#9333ea]' 
-              : 'text-white/70 hover:text-white hover:bg-[#9333ea] border-b-2 border-transparent'
+              ? 'text-white font-bold border-[#9333ea]' 
+              : 'text-white/70 hover:text-white border-transparent'
           }`}
           onClick={() => setActiveTab('details')}
         >
