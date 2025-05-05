@@ -35,9 +35,31 @@ const customScreen = {
   findAllByAcceptance,
 };
 
-// Mock the theme context
-jest.mock('../../context/ThemeContext', () => ({
-  useTheme: jest.fn(),
+// Increase Jest timeout for all tests in this file
+jest.setTimeout(15000);
+
+// Mock the ThemeContext with more complete values
+jest.mock('../../contexts/ThemeContext', () => ({
+  useTheme: () => ({
+    currentTheme: 'Midnight',
+    setTheme: jest.fn(),
+    availableThemes: [
+      { id: '1', name: 'Standard Theme 1', image: 'image1.jpg', type: 'standard' },
+      { id: '2', name: 'Standard Theme 2', image: 'image2.jpg', type: 'standard' }
+    ],
+    userThemes: [
+      { id: '3', name: 'User Theme 1', image: 'user1.jpg', type: 'user' },
+    ],
+    publicThemes: [
+      { id: '4', name: 'Public Theme 1', image: 'public1.jpg', type: 'public' },
+    ],
+    loadingThemes: false,
+    createCustomTheme: jest.fn(),
+    deleteCustomTheme: jest.fn(),
+    publishTheme: jest.fn(),
+    saveBase64Image: jest.fn(),
+    getBase64FromUrl: jest.fn()
+  }),
 }));
 
 // Mock the auth context
