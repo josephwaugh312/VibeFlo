@@ -4,6 +4,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, 
   ResponsiveContainer, Legend, BarChart, Bar
 } from 'recharts';
+import { Tabs, Tab, Box } from '@mui/material'; // Import Material UI components
 
 // Define tab types
 type TabType = 'overview' | 'trends' | 'details';
@@ -362,86 +363,77 @@ const Stats: React.FC = () => {
     };
   };
 
-  // Render tab buttons without refresh controls
+  // Render tab buttons using Material UI Tabs to match ThemeSelector
   const renderTabButtons = () => {
-    // Define styles as JavaScript objects for reliability
-    const baseButtonStyle = {
-      padding: '8px 16px',
-      fontSize: '0.875rem',
-      fontWeight: 500,
-      transition: 'all 0.2s ease',
-      borderBottom: '2px solid transparent',
-      color: 'rgba(255, 255, 255, 0.7)',
-      background: 'transparent'
+    // Convert activeTab to numeric value for Material UI Tabs
+    const getTabValue = () => {
+      switch (activeTab) {
+        case 'overview': return 0;
+        case 'trends': return 1;
+        case 'details': return 2;
+        default: return 0;
+      }
     };
-    
-    const selectedButtonStyle = {
-      ...baseButtonStyle,
-      fontWeight: 'bold',
-      color: '#ffffff',
-      borderBottom: '2px solid #9333ea',
-      backgroundColor: 'transparent' // No background for selected tab
+
+    // Handle tab change
+    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+      switch (newValue) {
+        case 0:
+          setActiveTab('overview');
+          break;
+        case 1:
+          setActiveTab('trends');
+          break;
+        case 2:
+          setActiveTab('details');
+          break;
+        default:
+          setActiveTab('overview');
+      }
     };
-    
+
     return (
-      <div className="flex flex-col sm:flex-row justify-between border-b border-white/20 mb-6">
-        <div className="flex">
-          <button
-            style={activeTab === 'overview' ? selectedButtonStyle : baseButtonStyle}
-            onClick={() => setActiveTab('overview')}
-            onMouseOver={(e) => {
-              if (activeTab !== 'overview') {
-                e.currentTarget.style.backgroundColor = '#9333ea';
-                e.currentTarget.style.color = '#ffffff';
+      <Box sx={{ 
+        borderBottom: 1, 
+        borderColor: 'rgba(255, 255, 255, 0.2)', 
+        mb: 4,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        '& .MuiTabs-indicator': {
+          display: 'none'
+        }
+      }}>
+        <Tabs 
+          value={getTabValue()} 
+          onChange={handleTabChange} 
+          aria-label="statistics categories"
+          sx={{
+            '& .MuiTab-root': {
+              color: 'rgba(255, 255, 255, 0.7)',
+              marginRight: '24px',
+              padding: '8px 16px',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+              borderBottom: '2px solid transparent',
+              '&.Mui-selected': {
+                color: '#ffffff',
+                fontWeight: 'bold',
+                borderBottom: '2px solid #9333ea'
+              },
+              '&:hover': {
+                color: '#ffffff',
+                opacity: 1
               }
-            }}
-            onMouseOut={(e) => {
-              if (activeTab !== 'overview') {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-              }
-            }}
-          >
-            Overview
-          </button>
-          <button
-            style={activeTab === 'trends' ? selectedButtonStyle : baseButtonStyle}
-            onClick={() => setActiveTab('trends')}
-            onMouseOver={(e) => {
-              if (activeTab !== 'trends') {
-                e.currentTarget.style.backgroundColor = '#9333ea';
-                e.currentTarget.style.color = '#ffffff';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (activeTab !== 'trends') {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-              }
-            }}
-          >
-            Trends
-          </button>
-          <button
-            style={activeTab === 'details' ? selectedButtonStyle : baseButtonStyle}
-            onClick={() => setActiveTab('details')}
-            onMouseOver={(e) => {
-              if (activeTab !== 'details') {
-                e.currentTarget.style.backgroundColor = '#9333ea';
-                e.currentTarget.style.color = '#ffffff';
-              }
-            }}
-            onMouseOut={(e) => {
-              if (activeTab !== 'details') {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
-              }
-            }}
-          >
-            Session History
-          </button>
-        </div>
-      </div>
+            }
+          }}
+        >
+          <Tab label="Overview" />
+          <Tab label="Trends" />
+          <Tab label="Session History" />
+        </Tabs>
+      </Box>
     );
   };
 
