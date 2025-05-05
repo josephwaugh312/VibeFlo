@@ -363,42 +363,87 @@ const Stats: React.FC = () => {
   };
 
   // Render tab buttons without refresh controls
-  const renderTabButtons = () => (
-    <div className="flex flex-col sm:flex-row justify-between border-b border-white/20 mb-6">
-      <div className="flex">
-        <button
-          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out border-b-2 ${
-            activeTab === 'overview' 
-              ? 'text-white font-bold border-[#9333ea]' 
-              : 'text-white/70 hover:text-white border-transparent'
-          }`}
-          onClick={() => setActiveTab('overview')}
-        >
-          Overview
-        </button>
-        <button
-          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out border-b-2 ${
-            activeTab === 'trends' 
-              ? 'text-white font-bold border-[#9333ea]' 
-              : 'text-white/70 hover:text-white border-transparent'
-          }`}
-          onClick={() => setActiveTab('trends')}
-        >
-          Trends
-        </button>
-        <button
-          className={`py-2 px-4 font-medium text-sm transition-all duration-200 ease-in-out border-b-2 ${
-            activeTab === 'details' 
-              ? 'text-white font-bold border-[#9333ea]' 
-              : 'text-white/70 hover:text-white border-transparent'
-          }`}
-          onClick={() => setActiveTab('details')}
-        >
-          Session History
-        </button>
+  const renderTabButtons = () => {
+    // Define styles as JavaScript objects for reliability
+    const baseButtonStyle = {
+      padding: '8px 16px',
+      fontSize: '0.875rem',
+      fontWeight: 500,
+      transition: 'all 0.2s ease',
+      borderBottom: '2px solid transparent',
+      color: 'rgba(255, 255, 255, 0.7)',
+      background: 'transparent'
+    };
+    
+    const selectedButtonStyle = {
+      ...baseButtonStyle,
+      fontWeight: 'bold',
+      color: '#ffffff',
+      borderBottom: '2px solid #9333ea',
+      backgroundColor: 'transparent' // No background for selected tab
+    };
+    
+    return (
+      <div className="flex flex-col sm:flex-row justify-between border-b border-white/20 mb-6">
+        <div className="flex">
+          <button
+            style={activeTab === 'overview' ? selectedButtonStyle : baseButtonStyle}
+            onClick={() => setActiveTab('overview')}
+            onMouseOver={(e) => {
+              if (activeTab !== 'overview') {
+                e.currentTarget.style.backgroundColor = '#9333ea';
+                e.currentTarget.style.color = '#ffffff';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activeTab !== 'overview') {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+              }
+            }}
+          >
+            Overview
+          </button>
+          <button
+            style={activeTab === 'trends' ? selectedButtonStyle : baseButtonStyle}
+            onClick={() => setActiveTab('trends')}
+            onMouseOver={(e) => {
+              if (activeTab !== 'trends') {
+                e.currentTarget.style.backgroundColor = '#9333ea';
+                e.currentTarget.style.color = '#ffffff';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activeTab !== 'trends') {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+              }
+            }}
+          >
+            Trends
+          </button>
+          <button
+            style={activeTab === 'details' ? selectedButtonStyle : baseButtonStyle}
+            onClick={() => setActiveTab('details')}
+            onMouseOver={(e) => {
+              if (activeTab !== 'details') {
+                e.currentTarget.style.backgroundColor = '#9333ea';
+                e.currentTarget.style.color = '#ffffff';
+              }
+            }}
+            onMouseOut={(e) => {
+              if (activeTab !== 'details') {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'rgba(255, 255, 255, 0.7)';
+              }
+            }}
+          >
+            Session History
+          </button>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Render weekly activity table
   const renderWeeklyActivityTable = () => {
