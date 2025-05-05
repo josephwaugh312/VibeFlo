@@ -9,7 +9,7 @@ jest.mock('../../services/api', () => ({
   pomodoroAPI: {
     getStats: jest.fn(),
     getAllSessions: jest.fn(),
-    recordSession: jest.fn()
+    createSession: jest.fn()
   }
 }));
 
@@ -510,7 +510,7 @@ describe('StatsContext', () => {
       created_at: '2023-01-02T15:00:00Z'
     };
     
-    (pomodoroAPI.recordSession as jest.Mock).mockResolvedValueOnce(newSession);
+    (pomodoroAPI.createSession as jest.Mock).mockResolvedValueOnce(newSession);
     
     renderWithProvider(
       <StatsProvider>
@@ -532,7 +532,7 @@ describe('StatsContext', () => {
     });
     
     // Should call the API
-    expect(pomodoroAPI.recordSession).toHaveBeenCalledWith({
+    expect(pomodoroAPI.createSession).toHaveBeenCalledWith({
       duration: 25,
       task: 'Test Task',
       completed: true
@@ -562,7 +562,7 @@ describe('StatsContext', () => {
     (pomodoroAPI.getAllSessions as jest.Mock).mockResolvedValueOnce([]);
     
     // Mock recordSession API error
-    (pomodoroAPI.recordSession as jest.Mock).mockRejectedValueOnce(new Error('Failed to record session'));
+    (pomodoroAPI.createSession as jest.Mock).mockRejectedValueOnce(new Error('Failed to record session'));
     
     renderWithProvider(
       <StatsProvider>

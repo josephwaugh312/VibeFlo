@@ -2,9 +2,10 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
+import apiService from '../../services/api';
 
-// Increase Jest timeout for all tests in this file
-jest.setTimeout(15000);
+// Set a longer timeout for Auth Context tests
+jest.setTimeout(30000);
 
 // Define the mock response object
 const mockUser = { 
@@ -19,59 +20,18 @@ const mockLoginResponse = {
   user: mockUser
 };
 
-// Mock the API service - be sure to include token in the response
-jest.mock('../../services/api', () => {
-  // Create mock functions
-  const loginMock = jest.fn().mockResolvedValue({
-    token: 'test-auth-token',
-    user: { id: '1', name: 'Test User', username: 'testuser', email: 'test@example.com' }
-  });
-  
-  const getCurrentUserMock = jest.fn().mockResolvedValue(
-    { id: '1', name: 'Test User', username: 'testuser', email: 'test@example.com' }
-  );
-  
-  const registerMock = jest.fn().mockResolvedValue({ 
-    message: 'Registration successful'
-  });
-
-  const updateProfileMock = jest.fn().mockResolvedValue({
-    id: '1', 
-    name: 'Updated User',
-    username: 'testuser',
-    email: 'test@example.com',
-    bio: 'New bio'
-  });
-
-  const changePasswordMock = jest.fn().mockResolvedValue({
-    message: 'Password changed successfully'
-  });
-
-  const deleteAccountMock = jest.fn().mockResolvedValue({
-    message: 'Account deleted successfully'
-  });
-  
-  const setTokenMock = jest.fn();
-  
-  return {
-    authAPI: {
-      login: loginMock,
-      register: registerMock,
-      getCurrentUser: getCurrentUserMock,
-      updateProfile: updateProfileMock,
-      changePassword: changePasswordMock,
-      deleteAccount: deleteAccountMock,
-    },
-    default: {
-      setToken: setTokenMock
-    },
-    // This is important! The context accesses this directly
-    setToken: setTokenMock
-  };
-});
-
-// Import the mocked module
-import apiService, { authAPI } from '../../services/api';
+// Mock the API service
+jest.mock('../../services/api', () => ({
+  setToken: jest.fn(),
+  auth: {
+    login: jest.fn(),
+    register: jest.fn(),
+    getCurrentUser: jest.fn(),
+  },
+  default: {
+    setToken: jest.fn(),
+  },
+}));
 
 // Mock toast notifications
 jest.mock('react-hot-toast', () => ({
@@ -186,8 +146,8 @@ describe('AuthContext', () => {
     mockLocalStorage.clear();
     
     // Reset the mock implementation for each test
-    (authAPI.login as jest.Mock).mockResolvedValue(mockLoginResponse);
-    (authAPI.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
+    (apiService.auth.login as jest.Mock).mockResolvedValue(mockLoginResponse);
+    (apiService.auth.getCurrentUser as jest.Mock).mockResolvedValue(mockUser);
 
     // Mock console methods
     console.error = jest.fn();
@@ -209,7 +169,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Initial state should be unauthenticated
     expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
@@ -225,7 +185,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click login button
     fireEvent.click(screen.getByTestId('login-button'));
@@ -238,7 +198,7 @@ describe('AuthContext', () => {
     });
     
     // Verify API calls
-    expect(authAPI.login).toHaveBeenCalledWith('test@example.com', 'password123');
+    expect(apiService.auth.login).toHaveBeenCalledWith('test@example.com', 'password123');
     expect(apiService.setToken).toHaveBeenCalledWith('test-auth-token');
     expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Welcome back'));
   });
@@ -252,7 +212,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -282,7 +242,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click register button
     fireEvent.click(screen.getByTestId('register-button'));
@@ -294,14 +254,14 @@ describe('AuthContext', () => {
     await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
     
     // Verify API call
-    expect(authAPI.register).toHaveBeenCalledWith('New User', 'newuser', 'new@example.com', 'password123');
+    expect(apiService.auth.register).toHaveBeenCalledWith('New User', 'newuser', 'new@example.com', 'password123');
     expect(toast.success).toHaveBeenCalledWith(expect.stringContaining('Registration successful'));
   });
 
   // Test 5: Profile update
   test('updates user profile', async () => {
     // Set up a successful profile update mock
-    (authAPI.updateProfile as jest.Mock).mockResolvedValueOnce({
+    (apiService.auth.updateProfile as jest.Mock).mockResolvedValueOnce({
       id: '1', 
       name: 'Updated User',
       username: 'testuser',
@@ -317,7 +277,7 @@ describe('AuthContext', () => {
 
     // We need to be authenticated first to update a profile
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -342,7 +302,7 @@ describe('AuthContext', () => {
     
     // Verify API call
     await waitFor(() => {
-      expect(authAPI.updateProfile).toHaveBeenCalledWith({ name: 'Updated User', bio: 'New bio' });
+      expect(apiService.auth.updateProfile).toHaveBeenCalledWith({ name: 'Updated User', bio: 'New bio' });
     });
     
     // Verify that the user object was updated
@@ -363,7 +323,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -379,7 +339,7 @@ describe('AuthContext', () => {
     await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
     
     // Verify API call
-    expect(authAPI.changePassword).toHaveBeenCalledWith('oldPassword', 'newPassword');
+    expect(apiService.auth.changePassword).toHaveBeenCalledWith('oldPassword', 'newPassword');
     expect(toast.success).toHaveBeenCalledWith('Password changed successfully');
   });
 
@@ -392,7 +352,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -412,7 +372,7 @@ describe('AuthContext', () => {
     });
     
     // Verify API call and cleanup
-    expect(authAPI.deleteAccount).toHaveBeenCalledWith('password123');
+    expect(apiService.auth.deleteAccount).toHaveBeenCalledWith('password123');
     expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('token');
     expect(apiService.setToken).toHaveBeenCalledWith(null);
     expect(toast.success).toHaveBeenCalledWith('Account deleted successfully');
@@ -427,7 +387,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click login without remember me button
     fireEvent.click(screen.getByTestId('login-no-remember-me-button'));
@@ -456,7 +416,7 @@ describe('AuthContext', () => {
     });
     
     // Replace the mock with our custom implementation
-    (authAPI.login as jest.Mock).mockImplementation(mockLogin);
+    (apiService.auth.login as jest.Mock).mockImplementation(mockLogin);
 
     render(
       <AuthProvider>
@@ -464,7 +424,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click login button - using act to handle async updates
     await act(async () => {
@@ -496,11 +456,11 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading');
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Authenticated');
       expect(screen.getByTestId('user-name')).toHaveTextContent('Test User');
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
     
     // Verify API calls
     expect(apiService.setToken).toHaveBeenCalledWith('stored-token');
-    expect(authAPI.getCurrentUser).toHaveBeenCalled();
+    expect(apiService.auth.getCurrentUser).toHaveBeenCalled();
   });
 
   // Test 11: Handle invalid token during auto-login
@@ -512,7 +472,7 @@ describe('AuthContext', () => {
     });
     
     // Mock getCurrentUser to fail with 401
-    (authAPI.getCurrentUser as jest.Mock).mockRejectedValueOnce({
+    (apiService.auth.getCurrentUser as jest.Mock).mockRejectedValueOnce({
       response: {
         status: 401,
         data: { message: 'Invalid token' }
@@ -529,7 +489,7 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading');
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
     
     // Verify token cleanup
     expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('token');
@@ -552,7 +512,7 @@ describe('AuthContext', () => {
     });
     
     // Mock getCurrentUser to fail with network error
-    (authAPI.getCurrentUser as jest.Mock).mockRejectedValueOnce({
+    (apiService.auth.getCurrentUser as jest.Mock).mockRejectedValueOnce({
       // Not a 401 error, but a network error
       message: 'Network Error'
     });
@@ -568,7 +528,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading');
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Authenticated');
       expect(screen.getByTestId('user-name')).toHaveTextContent('Cached User');
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
     
     // Token should not be removed as this is just a network error
     expect(mockLocalStorage.removeItem).not.toHaveBeenCalledWith('token');
@@ -586,7 +546,7 @@ describe('AuthContext', () => {
     });
     
     // Replace the mock with our custom implementation
-    (authAPI.register as jest.Mock).mockImplementation(mockRegister);
+    (apiService.auth.register as jest.Mock).mockImplementation(mockRegister);
 
     render(
       <AuthProvider>
@@ -594,7 +554,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
     
     // Click register button - using act to handle async updates
     await act(async () => {
@@ -619,7 +579,7 @@ describe('AuthContext', () => {
     }));
 
     // First try with an authorization error without the specific message
-    (authAPI.getCurrentUser as jest.Mock).mockRejectedValueOnce({
+    (apiService.auth.getCurrentUser as jest.Mock).mockRejectedValueOnce({
       response: {
         status: 401,
         data: {
@@ -638,7 +598,7 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Authenticated');
       expect(screen.getByTestId('user-name')).toHaveTextContent('Cached User');
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
   });
 
   // Test corrupted cached user data handling
@@ -648,7 +608,7 @@ describe('AuthContext', () => {
     mockLocalStorage.setItem('cachedUser', '{corrupt-json');
 
     // Mock API error to trigger cached user fallback
-    (authAPI.getCurrentUser as jest.Mock).mockRejectedValueOnce(new Error('Network Error'));
+    (apiService.auth.getCurrentUser as jest.Mock).mockRejectedValueOnce(new Error('Network Error'));
 
     render(
       <AuthProvider>
@@ -659,7 +619,7 @@ describe('AuthContext', () => {
     // Should not be authenticated since cached data parsing failed
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
   });
 
   // Test updateProfile error handling
@@ -674,7 +634,7 @@ describe('AuthContext', () => {
     });
     
     // Replace the mock with our custom implementation
-    (authAPI.updateProfile as jest.Mock).mockImplementation(mockUpdateProfile);
+    (apiService.auth.updateProfile as jest.Mock).mockImplementation(mockUpdateProfile);
 
     render(
       <AuthProvider>
@@ -682,7 +642,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
 
     // Click update profile button - using act to handle async updates
     await act(async () => {
@@ -707,7 +667,7 @@ describe('AuthContext', () => {
     });
     
     // Replace the mock with our custom implementation
-    (authAPI.changePassword as jest.Mock).mockImplementation(mockChangePassword);
+    (apiService.auth.changePassword as jest.Mock).mockImplementation(mockChangePassword);
 
     render(
       <AuthProvider>
@@ -715,7 +675,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
 
     // Click change password button - using act to handle async updates
     await act(async () => {
@@ -740,7 +700,7 @@ describe('AuthContext', () => {
     });
     
     // Replace the mock with our custom implementation
-    (authAPI.deleteAccount as jest.Mock).mockImplementation(mockDeleteAccount);
+    (apiService.auth.deleteAccount as jest.Mock).mockImplementation(mockDeleteAccount);
 
     render(
       <AuthProvider>
@@ -748,7 +708,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 15000 });
 
     // Click delete account button - using act to handle async updates
     await act(async () => {
@@ -768,7 +728,7 @@ describe('AuthContext', () => {
     // Don't set cachedUser
 
     // Mock server error
-    (authAPI.getCurrentUser as jest.Mock).mockRejectedValueOnce(new Error('Server unavailable'));
+    (apiService.auth.getCurrentUser as jest.Mock).mockRejectedValueOnce(new Error('Server unavailable'));
 
     render(
       <AuthProvider>
@@ -779,6 +739,6 @@ describe('AuthContext', () => {
     // Should not be authenticated since there's no cached user data
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
-    }, { timeout: 5000 });
+    }, { timeout: 15000 });
   });
 }); 

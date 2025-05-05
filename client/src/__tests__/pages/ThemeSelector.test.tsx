@@ -39,7 +39,7 @@ const customScreen = {
 jest.setTimeout(15000);
 
 // Mock the ThemeContext with more complete values
-jest.mock('../../contexts/ThemeContext', () => ({
+jest.mock('../../context/ThemeContext', () => ({
   useTheme: () => ({
     currentTheme: 'Midnight',
     setTheme: jest.fn(),

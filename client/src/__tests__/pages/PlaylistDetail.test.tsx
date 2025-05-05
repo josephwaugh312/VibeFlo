@@ -3,9 +3,8 @@ import { render, screen, waitFor, fireEvent, act } from '@testing-library/react'
 import '@testing-library/jest-dom';
 import PlaylistDetail from '../../pages/PlaylistDetail';
 import { MockAuthProvider, MockMusicPlayerProvider } from '../mocks/contexts';
-import { toast } from 'react-toastify';
-import * as reactRouterDom from 'react-router-dom';
 import toast from 'react-hot-toast';
+import * as reactRouterDom from 'react-router-dom';
 
 // Import our mock API service
 import apiService, { playlistAPI } from '../../__mocks__/apiService';
@@ -20,12 +19,10 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock toast
-jest.mock('react-toastify', () => ({
-  toast: {
-    error: jest.fn(),
-    success: jest.fn(),
-    info: jest.fn()
-  }
+jest.mock('react-hot-toast', () => ({
+  error: jest.fn(),
+  success: jest.fn(),
+  info: jest.fn()
 }));
 
 // Increase Jest timeout for all tests in this file
