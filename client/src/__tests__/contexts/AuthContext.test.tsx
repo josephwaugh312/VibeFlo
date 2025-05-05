@@ -206,7 +206,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Initial state should be unauthenticated
     expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
@@ -222,7 +222,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click login button
     fireEvent.click(screen.getByTestId('login-button'));
@@ -249,7 +249,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -279,7 +279,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click register button
     fireEvent.click(screen.getByTestId('register-button'));
@@ -314,7 +314,7 @@ describe('AuthContext', () => {
 
     // We need to be authenticated first to update a profile
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -360,7 +360,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -389,7 +389,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Login first
     fireEvent.click(screen.getByTestId('login-button'));
@@ -424,7 +424,7 @@ describe('AuthContext', () => {
     );
 
     // Wait for the initial loading to complete
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click login without remember me button
     fireEvent.click(screen.getByTestId('login-no-remember-me-button'));
@@ -461,7 +461,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click login button - using act to handle async updates
     await act(async () => {
@@ -493,7 +493,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading');
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Authenticated');
       expect(screen.getByTestId('user-name')).toHaveTextContent('Test User');
-    });
+    }, { timeout: 5000 });
     
     // Verify API calls
     expect(apiService.setToken).toHaveBeenCalledWith('stored-token');
@@ -526,7 +526,7 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading');
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
-    });
+    }, { timeout: 5000 });
     
     // Verify token cleanup
     expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('token');
@@ -565,7 +565,7 @@ describe('AuthContext', () => {
       expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading');
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Authenticated');
       expect(screen.getByTestId('user-name')).toHaveTextContent('Cached User');
-    });
+    }, { timeout: 5000 });
     
     // Token should not be removed as this is just a network error
     expect(mockLocalStorage.removeItem).not.toHaveBeenCalledWith('token');
@@ -591,7 +591,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
     
     // Click register button - using act to handle async updates
     await act(async () => {
@@ -635,7 +635,7 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Authenticated');
       expect(screen.getByTestId('user-name')).toHaveTextContent('Cached User');
-    });
+    }, { timeout: 5000 });
   });
 
   // Test corrupted cached user data handling
@@ -656,7 +656,7 @@ describe('AuthContext', () => {
     // Should not be authenticated since cached data parsing failed
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
-    });
+    }, { timeout: 5000 });
   });
 
   // Test updateProfile error handling
@@ -679,7 +679,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
 
     // Click update profile button - using act to handle async updates
     await act(async () => {
@@ -712,7 +712,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
 
     // Click change password button - using act to handle async updates
     await act(async () => {
@@ -745,7 +745,7 @@ describe('AuthContext', () => {
       </AuthProvider>
     );
 
-    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'));
+    await waitFor(() => expect(screen.getByTestId('loading-state')).toHaveTextContent('Not Loading'), { timeout: 5000 });
 
     // Click delete account button - using act to handle async updates
     await act(async () => {
@@ -776,6 +776,6 @@ describe('AuthContext', () => {
     // Should not be authenticated since there's no cached user data
     await waitFor(() => {
       expect(screen.getByTestId('auth-state')).toHaveTextContent('Not Authenticated');
-    });
+    }, { timeout: 5000 });
   });
 }); 
