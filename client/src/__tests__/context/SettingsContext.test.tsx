@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { SettingsProvider, useSettings } from '../../context/SettingsContext';
 import { settingsAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Mock the API service
 jest.mock('../../services/api', () => ({
@@ -14,7 +14,7 @@ jest.mock('../../services/api', () => ({
 }));
 
 // Mock the auth context
-jest.mock('../../context/AuthContext', () => ({
+jest.mock('../../contexts/AuthContext', () => ({
   useAuth: jest.fn()
 }));
 

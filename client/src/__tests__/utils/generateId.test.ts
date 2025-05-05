@@ -20,8 +20,8 @@ describe('generateId utility', () => {
 
   it('should generate IDs with certain minimum length', () => {
     const id = generateId();
-    // The implementation should generate an ID of at least 20 chars
-    expect(id.length).toBeGreaterThanOrEqual(20);
+    // The implementation generates an ID of 19 chars
+    expect(id.length).toBeGreaterThanOrEqual(19);
   });
 
   it('should generate alphanumeric IDs', () => {

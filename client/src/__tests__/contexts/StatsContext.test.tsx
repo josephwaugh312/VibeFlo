@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { render, screen, waitFor, act, RenderResult } from '@testing-library/react';
 import { StatsProvider, useStats, PomodoroSession, PomodoroStats, StatsContext } from '../../context/StatsContext';
 import { pomodoroAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Mock API and context
 jest.mock('../../services/api', () => ({
@@ -13,7 +13,7 @@ jest.mock('../../services/api', () => ({
   }
 }));
 
-jest.mock('../../context/AuthContext', () => ({
+jest.mock('../../contexts/AuthContext', () => ({
   useAuth: jest.fn()
 }));
 

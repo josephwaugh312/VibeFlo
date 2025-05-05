@@ -4,7 +4,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { ThemeProvider, useTheme } from '../../context/ThemeContext';
-import { AuthProvider } from '../../context/AuthContext';
+import { AuthProvider } from '../../contexts/AuthContext';
 
 // Mock console methods
 const originalConsoleError = console.error;
@@ -110,18 +110,18 @@ jest.mock('../../services/api', () => ({
 }));
 
 // Mock the useAuth hook properly
-jest.mock('../../context/AuthContext', () => {
+jest.mock('../../contexts/AuthContext', () => {
   return {
     useAuth: jest.fn(() => ({
       isAuthenticated: true,
-      user: { id: '1', name: 'Test User' }
+      user: { id: 'user123', username: 'testuser' }
     })),
     AuthProvider: ({ children }) => <div>{children}</div>
   };
 });
 
 // Import the mocked useAuth directly to allow adjusting its return value in tests
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Mock toast notifications
 jest.mock('react-hot-toast', () => ({

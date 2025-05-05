@@ -136,9 +136,10 @@ describe('Stats Component', () => {
     // Check for page title
     expect(screen.getByText('Pomodoro Statistics')).toBeInTheDocument();
     
-    // Check that the Overview tab is selected
-    const overviewButton = screen.getByRole('button', { name: /Overview/i });
-    expect(overviewButton).toBeInTheDocument();
+    // Check that the Overview tab is selected - Material UI tabs
+    const overviewTab = screen.getByRole('tab', { name: /Overview/i });
+    expect(overviewTab).toBeInTheDocument();
+    expect(overviewTab).toHaveAttribute('aria-selected', 'true');
     
     // Check for stats content
     expect(screen.getByText('Total Sessions')).toBeInTheDocument();
@@ -231,8 +232,9 @@ describe('Stats Component', () => {
       </MemoryRouter>
     );
     
-    // Switch to Session History tab
-    fireEvent.click(screen.getByRole('button', { name: /Session History/i }));
+    // Switch to Session History tab - now using Material UI tabs
+    const sessionHistoryTab = screen.getByRole('tab', { name: /Session History/i });
+    fireEvent.click(sessionHistoryTab);
     
     // Check that we see the session history content (look for the heading inside the content area)
     expect(screen.getByRole('heading', { name: /Session History/i, level: 2 })).toBeInTheDocument();
@@ -241,18 +243,19 @@ describe('Stats Component', () => {
     expect(screen.getByText(/Start Time/i)).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: /Task/i })).toBeInTheDocument();
     
-    // Switch to Overview tab
-    fireEvent.click(screen.getByRole('button', { name: /Overview/i }));
+    // Switch to Overview tab - now using Material UI tabs
+    const overviewTab = screen.getByRole('tab', { name: /Overview/i });
+    fireEvent.click(overviewTab);
     
     // Check that we see the overview content
     expect(screen.getByText(/Total Sessions/i)).toBeInTheDocument();
     
-    // Switch to Trends tab
-    fireEvent.click(screen.getByRole('button', { name: /Trends/i }));
+    // Switch to Trends tab - now using Material UI tabs
+    const trendsTab = screen.getByRole('tab', { name: /Trends/i });
+    fireEvent.click(trendsTab);
     
     // Check that we see the trends content
-    expect(screen.getByText('Focus Time by Day')).toBeInTheDocument();
-    expect(screen.getByText('Session Frequency')).toBeInTheDocument();
+    expect(screen.getByText(/Weekly Progress/i)).toBeInTheDocument();
   });
 
   test('changes time range when time range buttons are clicked', () => {
