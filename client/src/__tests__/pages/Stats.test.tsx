@@ -4,11 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 import Stats from '../../pages/Stats';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material';
-import { useStats } from '../../contexts/StatsContext';
+import { useStats } from '../../context/StatsContext';
 
 // Mock the StatsContext - important to do this before importing the component
-jest.mock('../../contexts/StatsContext', () => {
-  const originalModule = jest.requireActual('../../contexts/StatsContext');
+jest.mock('../../context/StatsContext', () => {
+  const originalModule = jest.requireActual('../../context/StatsContext');
   return {
     ...originalModule,
     useStats: jest.fn(),
