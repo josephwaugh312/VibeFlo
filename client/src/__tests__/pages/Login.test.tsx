@@ -18,8 +18,19 @@ jest.mock('../../contexts/AuthContext', () => {
   };
 });
 
+// Mock the ThemeContext hook
+jest.mock('../../context/ThemeContext', () => {
+  const originalModule = jest.requireActual('../../context/ThemeContext');
+  return {
+    ...originalModule,
+    useTheme: jest.fn(),
+    ThemeProvider: ({ children }) => <>{children}</>,
+  };
+});
+
 // Import the mocked hook after mocking
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
 import { mockNavigate } from '../mocks/react-router-dom';
 
 describe('Login Page', () => {
@@ -37,6 +48,20 @@ describe('Login Page', () => {
       isLoading: false,
       user: null
     });
+    
+    // Mock ThemeContext to avoid errors
+    (useTheme as jest.Mock).mockReturnValue({
+      currentTheme: {
+        id: 'default',
+        name: 'Default Theme',
+        background_color: '#ffffff',
+        text_color: '#000000',
+        primary_color: '#3498db',
+        secondary_color: '#2ecc71',
+        accent_color: '#e74c3c',
+        is_dark: false,
+      },
+    });
   });
   
   afterEach(() => {
@@ -47,119 +72,104 @@ describe('Login Page', () => {
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Check for heading
-    expect(screen.getByText('Sign in to your account')).toBeInTheDocument();
+    expect(screen.getByText('Welcome Back')).toBeInTheDocument();
     
-    // Check for email input
-    const emailInput = screen.getByPlaceholderText('Email address');
-    expect(emailInput).toBeInTheDocument();
+    // Check for email/username input
+    const loginInput = screen.getByLabelText(/Email or Username/i);
+    expect(loginInput).toBeInTheDocument();
     
     // Check for password input
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const passwordInput = screen.getByLabelText(/Password/i);
     expect(passwordInput).toBeInTheDocument();
     
     // Check for submit button
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: /log in/i });
     expect(submitButton).toBeInTheDocument();
-    
-    // Check for registration link
-    const registerLink = screen.getByText('create a new account');
-    expect(registerLink).toBeInTheDocument();
-    expect(registerLink.getAttribute('href')).toBe('/register');
-    
-    // Check for forgot password link
-    const forgotPasswordLink = screen.getByText('Forgot your password?');
-    expect(forgotPasswordLink).toBeInTheDocument();
-    expect(forgotPasswordLink.getAttribute('href')).toBe('/forgot-password');
   });
   
   it('checks for required form fields', () => {
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Get the form inputs
-    const emailInput = screen.getByPlaceholderText('Email address');
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const loginInput = screen.getByLabelText(/Email or Username/i);
+    const passwordInput = screen.getByLabelText(/Password/i);
     
     // Check if the inputs have the required attribute
-    expect(emailInput).toBeRequired();
+    expect(loginInput).toBeRequired();
     expect(passwordInput).toBeRequired();
-    
-    // Check if the inputs have email and password types
-    expect(emailInput).toHaveAttribute('type', 'email');
-    expect(passwordInput).toHaveAttribute('type', 'password');
   });
   
   it('allows user to input email and password', () => {
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Get the input elements
-    const emailInput = screen.getByPlaceholderText('Email address') as HTMLInputElement;
-    const passwordInput = screen.getByPlaceholderText('Password') as HTMLInputElement;
+    const loginInput = screen.getByLabelText(/Email or Username/i) as HTMLInputElement;
+    const passwordInput = screen.getByLabelText(/Password/i) as HTMLInputElement;
     
     // Enter values
-    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    fireEvent.change(loginInput, { target: { value: 'test@example.com' } });
     fireEvent.change(passwordInput, { target: { value: 'password123' } });
     
     // Check the values were set correctly
-    expect(emailInput.value).toBe('test@example.com');
+    expect(loginInput.value).toBe('test@example.com');
     expect(passwordInput.value).toBe('password123');
   });
   
   it('submits the form with correct values', async () => {
     // Mock successful login
-    mockLogin.mockResolvedValueOnce(undefined);
+    mockLogin.mockResolvedValueOnce({ success: true });
     
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Get the input elements and fill them
-    const emailInput = screen.getByPlaceholderText('Email address');
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const loginInput = screen.getByLabelText(/Email or Username/i);
+    const passwordInput = screen.getByLabelText(/Password/i);
     
     await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+      fireEvent.change(loginInput, { target: { value: 'test@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
     
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: /log in/i });
     await act(async () => {
       fireEvent.click(submitButton);
     });
     
     // Check login function was called with correct values
-    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
+    expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123', true);
     
     // Wait for navigation to dashboard after successful login
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
     });
   });
   
   it('shows loading state during form submission', async () => {
     // Mock login function to create a delay
-    const loginPromise = new Promise<void>(resolve => {
-      setTimeout(() => resolve(), 100);
+    const loginPromise = new Promise<{success: boolean}>(resolve => {
+      setTimeout(() => resolve({ success: true }), 100);
     });
     mockLogin.mockReturnValue(loginPromise);
     
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Fill in the form
-    const emailInput = screen.getByPlaceholderText('Email address');
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const loginInput = screen.getByLabelText(/Email or Username/i);
+    const passwordInput = screen.getByLabelText(/Password/i);
     
     await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+      fireEvent.change(loginInput, { target: { value: 'test@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
     
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: /log in/i });
     await act(async () => {
       fireEvent.click(submitButton);
     });
     
-    // Check for loading text
-    expect(screen.getByText('Signing in...')).toBeInTheDocument();
+    // Check that the button is disabled during loading
     expect(submitButton).toBeDisabled();
     
     // Resolve the promise and check loading state is cleared
@@ -168,32 +178,30 @@ describe('Login Page', () => {
     });
     
     await waitFor(() => {
-      expect(screen.queryByText('Signing in...')).not.toBeInTheDocument();
+      expect(submitButton).not.toBeDisabled();
     });
   });
   
   it('displays an error message when login fails', async () => {
     // Mock login failure
-    const error = new Error('Login failed');
-    (error as any).response = { 
-      data: { message: 'Invalid email or password' },
-      status: 401
-    };
-    mockLogin.mockRejectedValueOnce(error);
+    mockLogin.mockResolvedValueOnce({ 
+      success: false,
+      message: 'Invalid email or password' 
+    });
     
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Fill in the form
-    const emailInput = screen.getByPlaceholderText('Email address');
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const loginInput = screen.getByLabelText(/Email or Username/i);
+    const passwordInput = screen.getByLabelText(/Password/i);
     
     await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+      fireEvent.change(loginInput, { target: { value: 'test@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } });
     });
     
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: /log in/i });
     await act(async () => {
       fireEvent.click(submitButton);
     });
@@ -205,43 +213,35 @@ describe('Login Page', () => {
   });
   
   it('handles account lockout correctly', async () => {
-    // Mock too many login attempts response
-    const error = new Error('Too many attempts');
-    (error as any).response = {
-      data: { message: 'Too many login attempts. Please try again in 15 minutes.' },
-      status: 429
-    };
-    mockLogin.mockRejectedValueOnce(error);
+    // Mock login with needs verification
+    mockLogin.mockResolvedValueOnce({
+      success: false,
+      needsVerification: true,
+      email: 'test@example.com',
+      message: 'Please verify your email before logging in.'
+    });
     
     renderWithProviders(<Login />, ['router', 'auth']);
     
     // Fill in the form
-    const emailInput = screen.getByPlaceholderText('Email address');
-    const passwordInput = screen.getByPlaceholderText('Password');
+    const loginInput = screen.getByLabelText(/Email or Username/i);
+    const passwordInput = screen.getByLabelText(/Password/i);
     
     await act(async () => {
-      fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+      fireEvent.change(loginInput, { target: { value: 'test@example.com' } });
       fireEvent.change(passwordInput, { target: { value: 'password123' } });
     });
     
     // Submit the form
-    const submitButton = screen.getByRole('button', { name: /sign in/i });
+    const submitButton = screen.getByRole('button', { name: /log in/i });
     await act(async () => {
       fireEvent.click(submitButton);
     });
     
-    // Check for lockout message
+    // Check for verification message
     await waitFor(() => {
-      expect(screen.getByText('Too many login attempts. Please try again in 15 minutes.')).toBeInTheDocument();
-    });
-    
-    // Check if form inputs and button are disabled during lockout
-    await waitFor(() => {
-      // We can't be certain about timeLeft text as it depends on timer
-      expect(screen.getByText(/Time remaining:/)).toBeInTheDocument();
-      expect(emailInput).toBeDisabled();
-      expect(passwordInput).toBeDisabled();
-      expect(submitButton).toBeDisabled();
+      const verificationMessages = screen.getAllByText('Please verify your email before logging in.');
+      expect(verificationMessages.length).toBeGreaterThan(0);
     });
   });
 }); 

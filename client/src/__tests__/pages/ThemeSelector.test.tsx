@@ -5,7 +5,8 @@ import { queries, buildQueries, within } from '@testing-library/dom';
 import ThemeSelector from '../../pages/ThemeSelector';
 import { useTheme } from '../../context/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { themeAPI } from '../../services/api';
+import * as themeAPI from '../../services/api';
+import userEvent from '@testing-library/user-event';
 
 // Custom query to get elements by their 'accept' attribute
 const queryAllByAcceptance = (container, acceptance) => {
@@ -38,48 +39,48 @@ const customScreen = {
 // Increase Jest timeout for all tests in this file
 jest.setTimeout(15000);
 
-// Mock the ThemeContext with more complete values
-jest.mock('../../context/ThemeContext', () => ({
-  useTheme: () => ({
-    currentTheme: 'Midnight',
-    setTheme: jest.fn(),
-    availableThemes: [
-      { id: '1', name: 'Standard Theme 1', image: 'image1.jpg', type: 'standard' },
-      { id: '2', name: 'Standard Theme 2', image: 'image2.jpg', type: 'standard' }
-    ],
-    userThemes: [
-      { id: '3', name: 'User Theme 1', image: 'user1.jpg', type: 'user' },
-    ],
-    publicThemes: [
-      { id: '4', name: 'Public Theme 1', image: 'public1.jpg', type: 'public' },
-    ],
-    loadingThemes: false,
-    createCustomTheme: jest.fn(),
-    deleteCustomTheme: jest.fn(),
-    publishTheme: jest.fn(),
-    saveBase64Image: jest.fn(),
-    getBase64FromUrl: jest.fn()
-  }),
-}));
+// Properly setup the ThemeContext mock
+jest.mock('../../context/ThemeContext', () => {
+  const actualThemeContext = jest.requireActual('../../context/ThemeContext');
+  const mockUseTheme = jest.fn();
+  return {
+    ...actualThemeContext,
+    useTheme: mockUseTheme,
+    // This preserves the actual ThemeProvider implementation
+    ThemeProvider: actualThemeContext.ThemeProvider 
+  };
+});
 
 // Mock the auth context
 jest.mock('../../contexts/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
 
+// Create the mock functions outside of the jest.mock call
+const getAllThemesMock = jest.fn();
+const getPublicCustomThemesMock = jest.fn();
+const getUserCustomThemesMock = jest.fn();
+const createCustomThemeMock = jest.fn();
+const updateCustomThemeMock = jest.fn();
+const deleteCustomThemeMock = jest.fn();
+const setUserThemeMock = jest.fn();
+const getUserThemeMock = jest.fn();
+
 // Mock the API service
-jest.mock('../../services/api', () => ({
-  themeAPI: {
-    getAllThemes: jest.fn(),
-    getPublicCustomThemes: jest.fn(),
-    getUserCustomThemes: jest.fn(),
-    createCustomTheme: jest.fn(),
-    updateCustomTheme: jest.fn(),
-    deleteCustomTheme: jest.fn(),
-    setUserTheme: jest.fn(),
-    getUserTheme: jest.fn(),
-  },
-}));
+jest.mock('../../services/api', () => {
+  return {
+    themeAPI: {
+      getAllThemes: getAllThemesMock,
+      getPublicCustomThemes: getPublicCustomThemesMock,
+      getUserCustomThemes: getUserCustomThemesMock,
+      createCustomTheme: createCustomThemeMock,
+      updateCustomTheme: updateCustomThemeMock,
+      deleteCustomTheme: deleteCustomThemeMock,
+      setUserTheme: setUserThemeMock,
+      getUserTheme: getUserThemeMock
+    }
+  };
+});
 
 // Mock confirm dialog
 window.confirm = jest.fn();
@@ -189,6 +190,10 @@ describe('ThemeSelector Component', () => {
       currentTheme: mockCurrentTheme,
       setActiveTheme: setActiveThemeMock,
       setCurrentTheme: setCurrentThemeMock,
+      availableThemes: [], // Add this to fix availableThemes.length error
+      customThemes: [], // Add empty arrays for custom themes
+      publicCustomThemes: [], // Add empty arrays for public custom themes
+      loadingThemes: true, // Set loading state to true
     });
     
     // Mock useAuth implementation - authenticated user
@@ -197,26 +202,26 @@ describe('ThemeSelector Component', () => {
     });
     
     // Mock API responses
-    themeAPI.getAllThemes.mockResolvedValue(mockStandardThemes);
-    themeAPI.getPublicCustomThemes.mockResolvedValue(mockCommunityThemes);
-    themeAPI.getUserCustomThemes.mockResolvedValue(mockUserThemes);
-    themeAPI.setUserTheme.mockResolvedValue({ success: true });
-    themeAPI.getUserTheme.mockResolvedValue(mockCurrentTheme);
-    themeAPI.createCustomTheme.mockResolvedValue({ 
+    getAllThemesMock.mockResolvedValue(mockStandardThemes);
+    getPublicCustomThemesMock.mockResolvedValue(mockCommunityThemes);
+    getUserCustomThemesMock.mockResolvedValue(mockUserThemes);
+    setUserThemeMock.mockResolvedValue({ success: true });
+    getUserThemeMock.mockResolvedValue(mockCurrentTheme);
+    createCustomThemeMock.mockResolvedValue({ 
       id: 203, 
       name: 'New Test Theme', 
       description: 'Test description',
       image_url: '/images/test.jpg',
       background_url: '/images/test.jpg',
     });
-    themeAPI.updateCustomTheme.mockResolvedValue({
+    updateCustomThemeMock.mockResolvedValue({
       id: 201,
       name: 'Updated Test Theme',
       description: 'Updated description',
       image_url: '/images/updated.jpg',
       background_url: '/images/updated.jpg',
     });
-    themeAPI.deleteCustomTheme.mockResolvedValue({ success: true });
+    deleteCustomThemeMock.mockResolvedValue({ success: true });
     
     // Default confirm answer
     (window.confirm as jest.Mock).mockReturnValue(true);
@@ -224,8 +229,11 @@ describe('ThemeSelector Component', () => {
 
   // Test 1: Renders loading spinner initially
   test('renders loading spinner initially', () => {
+    // Mock the API call to not resolve yet
+    getAllThemesMock.mockImplementation(() => new Promise(() => {})); // Never resolves
+    
     render(<ThemeSelector />);
-    expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
+    expect(screen.getByText('Loading Themes...')).toBeInTheDocument();
   });
 
   // Test 2: Renders themes after loading 
