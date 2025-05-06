@@ -61,10 +61,10 @@ describe('SettingsModal Component', () => {
       />
     );
     
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(25);
-    expect(screen.getByLabelText('Short Break')).toHaveValue(5);
-    expect(screen.getByLabelText('Long Break')).toHaveValue(15);
-    expect(screen.getByLabelText('Pomodoros until long break')).toHaveValue(4);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('25');
+    expect(screen.getByLabelText('Short Break')).toHaveValue('5');
+    expect(screen.getByLabelText('Long Break')).toHaveValue('15');
+    expect(screen.getByLabelText('Pomodoros until long break')).toHaveValue('4');
     expect(screen.getByLabelText('Auto start breaks')).not.toBeChecked();
     expect(screen.getByLabelText('Auto start pomodoros')).not.toBeChecked();
     expect(screen.getByLabelText('Sound notifications')).toBeChecked();
@@ -92,10 +92,10 @@ describe('SettingsModal Component', () => {
     fireEvent.click(screen.getByLabelText('Sound notifications'));
     
     // Check that values updated
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(30);
-    expect(screen.getByLabelText('Short Break')).toHaveValue(10);
-    expect(screen.getByLabelText('Long Break')).toHaveValue(20);
-    expect(screen.getByLabelText('Pomodoros until long break')).toHaveValue(5);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('30');
+    expect(screen.getByLabelText('Short Break')).toHaveValue('10');
+    expect(screen.getByLabelText('Long Break')).toHaveValue('20');
+    expect(screen.getByLabelText('Pomodoros until long break')).toHaveValue('5');
     expect(screen.getByLabelText('Auto start breaks')).toBeChecked();
     expect(screen.getByLabelText('Sound notifications')).not.toBeChecked();
   });
@@ -123,7 +123,9 @@ describe('SettingsModal Component', () => {
       expect(mockOnSave).toHaveBeenCalledWith({
         ...defaultSettings,
         pomodoro_duration: 30,
-        auto_start_breaks: true
+        auto_start_breaks: true,
+        dark_mode: false,
+        timer_completion_sound: 'bell'
       });
     });
     
@@ -146,7 +148,7 @@ describe('SettingsModal Component', () => {
     fireEvent.click(screen.getByLabelText('Auto start breaks'));
     
     // Check that values updated
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(30);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('30');
     expect(screen.getByLabelText('Auto start breaks')).toBeChecked();
     
     // Click cancel button
@@ -167,7 +169,7 @@ describe('SettingsModal Component', () => {
     );
     
     // Check values are back to defaults
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(25);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('25');
     expect(screen.getByLabelText('Auto start breaks')).not.toBeChecked();
   });
 
@@ -180,10 +182,10 @@ describe('SettingsModal Component', () => {
       />
     );
     
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(25);
-    expect(screen.getByLabelText('Short Break')).toHaveValue(5);
-    expect(screen.getByLabelText('Long Break')).toHaveValue(15);
-    expect(screen.getByLabelText('Pomodoros until long break')).toHaveValue(4);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('25');
+    expect(screen.getByLabelText('Short Break')).toHaveValue('5');
+    expect(screen.getByLabelText('Long Break')).toHaveValue('15');
+    expect(screen.getByLabelText('Pomodoros until long break')).toHaveValue('4');
   });
 
   it('updates local state when initialSettings changes', () => {
@@ -197,7 +199,7 @@ describe('SettingsModal Component', () => {
     );
     
     // Initial values
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(25);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('25');
     expect(screen.getByLabelText('Auto start breaks')).not.toBeChecked();
     
     // Re-render with new initialSettings
@@ -217,7 +219,7 @@ describe('SettingsModal Component', () => {
     );
     
     // Check values updated
-    expect(screen.getByLabelText('Pomodoro')).toHaveValue(35);
+    expect(screen.getByLabelText('Pomodoro')).toHaveValue('35');
     expect(screen.getByLabelText('Auto start breaks')).toBeChecked();
   });
 }); 
