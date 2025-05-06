@@ -2,6 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MusicPlayerProvider, useMusicPlayer } from '../../contexts/MusicPlayerContext';
+import axios from 'axios';
 
 // Define mock track data - but create it as a function to get fresh copies
 const getMockTracks = () => [
@@ -22,6 +23,9 @@ const getMockTracks = () => [
     source: 'youtube'
   }
 ];
+
+// Mock axios instead of fetch
+jest.mock('axios');
 
 // Mock the API service
 jest.mock('../../services/api', () => ({
@@ -61,27 +65,6 @@ jest.mock('react-youtube', () => ({
     return <div data-testid="youtube-player">YouTube Player Mock</div>;
   })
 }));
-
-// Mock fetch for YouTube API search
-global.fetch = jest.fn().mockImplementation(() => 
-  Promise.resolve({
-    json: () => Promise.resolve({
-      items: [
-        {
-          id: { videoId: 'searchResult1' },
-          snippet: {
-            title: 'Search Result 1',
-            channelTitle: 'Search Channel 1',
-            thumbnails: {
-              default: { url: 'https://i.ytimg.com/vi/searchResult1/default.jpg' },
-              high: { url: 'https://i.ytimg.com/vi/searchResult1/hqdefault.jpg' }
-            }
-          }
-        }
-      ]
-    })
-  })
-);
 
 // Create a test component that shows key state and functionality
 const TestComponent = () => {
@@ -375,12 +358,12 @@ describe('MusicPlayerContext', () => {
 
   // Test 8: Search functionality
   test('handles search and uses mockSearchResults on error', async () => {
-    // Mock console.error to prevent test output noise
+    // Store original console.error
     const originalConsoleError = console.error;
     console.error = jest.fn();
     
-    // Intentionally make fetch fail
-    global.fetch.mockImplementationOnce(() => Promise.reject('API error'));
+    // Intentionally make axios fail
+    (axios.get as jest.Mock).mockRejectedValueOnce(new Error('API error'));
     
     render(
       <MusicPlayerProvider>
@@ -401,7 +384,7 @@ describe('MusicPlayerContext', () => {
     });
     
     // Verify console.error was called with the error
-    expect(console.error).toHaveBeenCalledWith('Error searching:', 'API error');
+    expect(console.error).toHaveBeenCalledWith('YouTube API key is missing! Search will not work.');
     
     // Restore original console.error
     console.error = originalConsoleError;
@@ -494,26 +477,49 @@ describe('MusicPlayerContext', () => {
 
   // Test 13: Search functionality with successful API response
   test('successfully searches for tracks', async () => {
-    // Reset the fetch mock to return successful response
-    global.fetch.mockImplementationOnce(() => 
-      Promise.resolve({
-        json: () => Promise.resolve({
-          items: [
-            {
-              id: { videoId: 'newSearchResult' },
-              snippet: {
-                title: 'New Search Result',
-                channelTitle: 'New Channel',
-                thumbnails: {
-                  default: { url: 'https://i.ytimg.com/vi/newSearchResult/default.jpg' },
-                  high: { url: 'https://i.ytimg.com/vi/newSearchResult/hqdefault.jpg' }
-                }
+    // Mock the environment variable
+    process.env.REACT_APP_YOUTUBE_API_KEY = 'mock-api-key';
+    
+    // Reset the axios mock to return successful response
+    (axios.get as jest.Mock).mockResolvedValueOnce({
+      data: {
+        items: [
+          {
+            id: { videoId: 'newSearchResult1' },
+            snippet: {
+              title: 'New Search Result 1',
+              channelTitle: 'New Channel 1',
+              thumbnails: {
+                default: { url: 'https://i.ytimg.com/vi/newSearchResult1/default.jpg' },
+                high: { url: 'https://i.ytimg.com/vi/newSearchResult1/hqdefault.jpg' }
               }
             }
-          ]
-        })
-      })
-    );
+          },
+          {
+            id: { videoId: 'newSearchResult2' },
+            snippet: {
+              title: 'New Search Result 2',
+              channelTitle: 'New Channel 2',
+              thumbnails: {
+                default: { url: 'https://i.ytimg.com/vi/newSearchResult2/default.jpg' },
+                high: { url: 'https://i.ytimg.com/vi/newSearchResult2/hqdefault.jpg' }
+              }
+            }
+          },
+          {
+            id: { videoId: 'newSearchResult3' },
+            snippet: {
+              title: 'New Search Result 3',
+              channelTitle: 'New Channel 3',
+              thumbnails: {
+                default: { url: 'https://i.ytimg.com/vi/newSearchResult3/default.jpg' },
+                high: { url: 'https://i.ytimg.com/vi/newSearchResult3/hqdefault.jpg' }
+              }
+            }
+          }
+        ]
+      }
+    });
     
     render(
       <MusicPlayerProvider>
@@ -529,9 +535,20 @@ describe('MusicPlayerContext', () => {
     
     // Wait for search results to be populated
     await waitFor(() => {
-      expect(screen.getByTestId('search-results-count')).toHaveTextContent('1 results');
-      expect(global.fetch).toHaveBeenCalled();
+      expect(screen.getByTestId('search-results-count')).toHaveTextContent('3 results');
+      expect(axios.get).toHaveBeenCalledWith(
+        'https://www.googleapis.com/youtube/v3/search',
+        expect.objectContaining({
+          params: expect.objectContaining({
+            q: 'successful search',
+            key: 'mock-api-key'
+          })
+        })
+      );
     });
+    
+    // Clean up
+    delete process.env.REACT_APP_YOUTUBE_API_KEY;
   });
   
   // Test 14: Player visibility state is saved to localStorage

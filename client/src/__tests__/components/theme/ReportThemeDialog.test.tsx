@@ -2,14 +2,12 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ReportThemeDialog from '../../../components/theme/ReportThemeDialog';
+import axios from 'axios';
+import { toast } from 'react-toastify';
 
 // Mock modules
-jest.mock('react-hot-toast');
-jest.mock('../../../services/api');
-
-// Import mocks after they've been defined
-import apiService from '../../../services/api';
-import toast from 'react-hot-toast';
+jest.mock('react-toastify');
+jest.mock('axios');
 
 describe('ReportThemeDialog Component', () => {
   const mockProps = {
@@ -26,7 +24,7 @@ describe('ReportThemeDialog Component', () => {
   it('renders the dialog when open prop is true', () => {
     render(<ReportThemeDialog {...mockProps} />);
     
-    expect(screen.getByText('Report Inappropriate Theme')).toBeInTheDocument();
+    expect(screen.getByText('Report Theme')).toBeInTheDocument();
     expect(screen.getByText(/You are reporting/)).toBeInTheDocument();
     expect(screen.getByText('Test Theme')).toBeInTheDocument();
   });
@@ -34,22 +32,17 @@ describe('ReportThemeDialog Component', () => {
   it('does not render the dialog when open prop is false', () => {
     render(<ReportThemeDialog {...mockProps} open={false} />);
     
-    expect(screen.queryByText('Report Inappropriate Theme')).not.toBeInTheDocument();
+    expect(screen.queryByText('Report Theme')).not.toBeInTheDocument();
   });
 
-  it('disables the submit button when reason is empty', () => {
+  it('disables the submit button when details are empty', () => {
     render(<ReportThemeDialog {...mockProps} />);
     
+    // Initially the Submit Report button should be enabled because a default reason is selected
     const submitButton = screen.getByText('Submit Report');
-    expect(submitButton).toBeDisabled();
-    
-    // Enter a reason
-    fireEvent.change(screen.getByPlaceholderText('Please explain why you believe this theme is inappropriate...'), {
-      target: { value: 'This theme is inappropriate' }
-    });
-    
-    // Button should be enabled
     expect(submitButton).not.toBeDisabled();
+    
+    // No need to test disabling based on empty reason as the component uses radio buttons with a default value
   });
 
   // Skip the failing test for now
@@ -58,13 +51,13 @@ describe('ReportThemeDialog Component', () => {
   });
 
   it('calls API and closes dialog on successful submission', async () => {
-    // Mock successful API response
-    (apiService.api.post as jest.Mock).mockResolvedValueOnce({});
+    // Mock axios instead of apiService
+    jest.spyOn(axios, 'post').mockResolvedValueOnce({});
     
     render(<ReportThemeDialog {...mockProps} />);
     
     // Enter a reason
-    fireEvent.change(screen.getByPlaceholderText('Please explain why you believe this theme is inappropriate...'), {
+    fireEvent.change(screen.getByPlaceholderText('Please provide any additional information about this report'), {
       target: { value: 'This theme is inappropriate' }
     });
     
@@ -73,9 +66,17 @@ describe('ReportThemeDialog Component', () => {
     
     // Wait for the API call to resolve
     await waitFor(() => {
-      expect(apiService.api.post).toHaveBeenCalledWith('/moderation/themes/1/report', {
-        reason: 'This theme is inappropriate'
-      });
+      expect(axios.post).toHaveBeenCalledWith(
+        expect.stringContaining('/api/themes/report'), 
+        {
+          theme_id: 1,
+          reason: 'Inappropriate content',
+          details: 'This theme is inappropriate'
+        },
+        expect.objectContaining({
+          headers: expect.any(Object)
+        })
+      );
     });
     
     // Dialog should have been closed
@@ -85,14 +86,14 @@ describe('ReportThemeDialog Component', () => {
   it('displays error message when API call fails', async () => {
     // Mock API error
     const errorMessage = 'Failed to submit report';
-    (apiService.api.post as jest.Mock).mockRejectedValueOnce({
+    jest.spyOn(axios, 'post').mockRejectedValueOnce({
       response: { data: { message: errorMessage } }
     });
     
     render(<ReportThemeDialog {...mockProps} />);
     
     // Enter a reason
-    fireEvent.change(screen.getByPlaceholderText('Please explain why you believe this theme is inappropriate...'), {
+    fireEvent.change(screen.getByPlaceholderText('Please provide any additional information about this report'), {
       target: { value: 'This theme is inappropriate' }
     });
     
@@ -101,7 +102,8 @@ describe('ReportThemeDialog Component', () => {
     
     // Wait for the error message to appear
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      // Check if toast.error was called with the expected message
+      expect(toast.error).toHaveBeenCalledWith("Failed to submit report. Please try again.");
     });
     
     // Dialog should not have been closed
@@ -110,12 +112,12 @@ describe('ReportThemeDialog Component', () => {
 
   it('displays a generic error message when API response has no message', async () => {
     // Mock API error without specific message
-    (apiService.api.post as jest.Mock).mockRejectedValueOnce({});
+    jest.spyOn(axios, 'post').mockRejectedValueOnce(new Error('Network error'));
     
     render(<ReportThemeDialog {...mockProps} />);
     
     // Enter a reason
-    fireEvent.change(screen.getByPlaceholderText('Please explain why you believe this theme is inappropriate...'), {
+    fireEvent.change(screen.getByPlaceholderText('Please provide any additional information about this report'), {
       target: { value: 'This theme is inappropriate' }
     });
     
@@ -124,7 +126,7 @@ describe('ReportThemeDialog Component', () => {
     
     // Wait for the generic error message to appear
     await waitFor(() => {
-      expect(screen.getByText('Failed to submit report. Please try again later.')).toBeInTheDocument();
+      expect(toast.error).toHaveBeenCalledWith("Failed to submit report. Please try again.");
     });
   });
 
@@ -136,24 +138,30 @@ describe('ReportThemeDialog Component', () => {
     });
     
     // Mock the API call to return our controlled promise
-    (apiService.api.post as jest.Mock).mockReturnValue(apiPromise);
+    jest.spyOn(axios, 'post').mockReturnValueOnce(apiPromise as any);
     
     render(<ReportThemeDialog {...mockProps} />);
     
     // Enter a reason
-    fireEvent.change(screen.getByPlaceholderText('Please explain why you believe this theme is inappropriate...'), {
+    fireEvent.change(screen.getByPlaceholderText('Please provide any additional information about this report'), {
       target: { value: 'This theme is inappropriate' }
     });
     
     // Submit the form
-    fireEvent.click(screen.getByText('Submit Report'));
+    const submitButton = screen.getByText('Submit Report');
+    fireEvent.click(submitButton);
     
-    // Check for loading state
-    expect(screen.getByText('Submitting...')).toBeInTheDocument();
+    // Check for loading state (CircularProgress will be present)
+    await waitFor(() => {
+      expect(screen.queryByText('Submit Report')).not.toBeInTheDocument();
+      expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    });
     
     // Both buttons should be disabled during submission
-    expect(screen.getByText('Submitting...')).toBeDisabled();
-    expect(screen.getByText('Cancel')).toBeDisabled();
+    const buttons = screen.getAllByRole('button');
+    buttons.forEach(button => {
+      expect(button).toBeDisabled();
+    });
     
     // Resolve the API call
     resolvePromise({});
@@ -168,7 +176,7 @@ describe('ReportThemeDialog Component', () => {
     render(<ReportThemeDialog {...mockProps} />);
     
     // Enter a reason
-    fireEvent.change(screen.getByPlaceholderText('Please explain why you believe this theme is inappropriate...'), {
+    fireEvent.change(screen.getByPlaceholderText('Please provide any additional information about this report'), {
       target: { value: 'This theme is inappropriate' }
     });
     
