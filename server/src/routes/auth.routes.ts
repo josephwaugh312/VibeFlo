@@ -332,4 +332,147 @@ router.post('/test-verification', async (req, res) => {
   }
 });
 
+// Add a route for OAuth configuration checking
+/**
+ * @route   GET /api/auth/config-check
+ * @desc    Check OAuth configuration
+ * @access  Public
+ */
+router.get('/config-check', (req, res) => {
+  try {
+    // Get environment variables
+    const config = {
+      SERVER_URL: process.env.SERVER_URL || 'Not set',
+      CLIENT_URL: process.env.CLIENT_URL || 'Not set',
+      
+      // Google OAuth - mask secrets partially
+      GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID ? 
+        `${process.env.GOOGLE_CLIENT_ID.substring(0, 5)}...${process.env.GOOGLE_CLIENT_ID.substring(process.env.GOOGLE_CLIENT_ID.length - 5)}` : 
+        'Not set',
+      GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET ? 
+        `${process.env.GOOGLE_CLIENT_SECRET.substring(0, 3)}...${process.env.GOOGLE_CLIENT_SECRET.substring(process.env.GOOGLE_CLIENT_SECRET.length - 3)}` : 
+        'Not set',
+      GOOGLE_CALLBACK_URL: process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback',
+      
+      // GitHub OAuth - mask secrets partially
+      GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID ? 
+        `${process.env.GITHUB_CLIENT_ID.substring(0, 5)}...${process.env.GITHUB_CLIENT_ID.substring(process.env.GITHUB_CLIENT_ID.length - 5)}` : 
+        'Not set',
+      GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET ? 
+        `${process.env.GITHUB_CLIENT_SECRET.substring(0, 3)}...${process.env.GITHUB_CLIENT_SECRET.substring(process.env.GITHUB_CLIENT_SECRET.length - 3)}` : 
+        'Not set',
+      GITHUB_CALLBACK_URL: process.env.GITHUB_CALLBACK_URL || '/api/auth/github/callback',
+      
+      // Calculate the effective callback URLs
+      effectiveGoogleCallback: process.env.GOOGLE_CALLBACK_URL?.startsWith('http') 
+        ? process.env.GOOGLE_CALLBACK_URL 
+        : `${process.env.SERVER_URL || 'https://vibeflo-api.onrender.com'}${process.env.GOOGLE_CALLBACK_URL || '/api/auth/google/callback'}`,
+      
+      effectiveGithubCallback: process.env.GITHUB_CALLBACK_URL?.startsWith('http')
+        ? process.env.GITHUB_CALLBACK_URL
+        : `${process.env.SERVER_URL || 'https://vibeflo-api.onrender.com'}${process.env.GITHUB_CALLBACK_URL || '/api/auth/github/callback'}`,
+      
+      // Additional flags
+      isProduction: process.env.NODE_ENV === 'production',
+      isTest: process.env.NODE_ENV === 'test',
+      isDevelopment: process.env.NODE_ENV === 'development' || !process.env.NODE_ENV
+    };
+    
+    res.json({
+      success: true,
+      message: 'OAuth configuration check',
+      config
+    });
+  } catch (error) {
+    console.error('Error in OAuth config check:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking OAuth configuration',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/auth/google/url
+ * @desc    Get Google auth URL for testing
+ * @access  Public
+ */
+router.get('/google/url', (req, res) => {
+  try {
+    // Check if passport and the Google strategy are properly configured
+    const strategies = (passport as any)._strategies || {};
+    if (!strategies.google) {
+      return res.status(500).json({
+        success: false,
+        message: 'Google authentication is not configured'
+      });
+    }
+    
+    // Build the authorization URL manually
+    const googleStrategy = strategies.google;
+    const authUrl = googleStrategy._oauth2.getAuthorizeUrl({
+      redirect_uri: googleStrategy._callbackURL,
+      scope: googleStrategy._scope,
+      response_type: 'code',
+      state: Math.random().toString(36).substring(2, 15)
+    });
+    
+    res.json({
+      success: true,
+      authUrl,
+      callbackUrl: googleStrategy._callbackURL,
+      scope: googleStrategy._scope
+    });
+  } catch (error) {
+    console.error('Error getting Google auth URL:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating Google auth URL',
+      error: error.message
+    });
+  }
+});
+
+/**
+ * @route   GET /api/auth/github/url
+ * @desc    Get GitHub auth URL for testing
+ * @access  Public
+ */
+router.get('/github/url', (req, res) => {
+  try {
+    // Check if passport and the GitHub strategy are properly configured
+    const strategies = (passport as any)._strategies || {};
+    if (!strategies.github) {
+      return res.status(500).json({
+        success: false,
+        message: 'GitHub authentication is not configured'
+      });
+    }
+    
+    // Build the authorization URL manually
+    const githubStrategy = strategies.github;
+    const authUrl = githubStrategy._oauth2.getAuthorizeUrl({
+      redirect_uri: githubStrategy._callbackURL,
+      scope: githubStrategy._scope,
+      response_type: 'code',
+      state: Math.random().toString(36).substring(2, 15)
+    });
+    
+    res.json({
+      success: true,
+      authUrl,
+      callbackUrl: githubStrategy._callbackURL,
+      scope: githubStrategy._scope
+    });
+  } catch (error) {
+    console.error('Error getting GitHub auth URL:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating GitHub auth URL',
+      error: error.message
+    });
+  }
+});
+
 export default router; 

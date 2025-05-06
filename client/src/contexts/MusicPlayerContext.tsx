@@ -461,7 +461,19 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     
     if (!searchQuery.trim()) {
       setSearchError('Please enter a search query');
+      setIsSearching(false);
+      return;
+    }
+    
+    // Check for API key before making the request
+    if (!YOUTUBE_API_KEY) {
+      console.error('YouTube API key is missing! Search will not work.');
+      setSearchError('YouTube search is unavailable. API key is missing.');
       setSearchResults(mockSearchResults);
+      setIsSearching(false);
+      toast.error('YouTube search is unavailable. Please contact support.', {
+        duration: 5000
+      });
       return;
     }
     
@@ -478,10 +490,27 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
       
       const data = response.data;
+      
+      if (data.error) {
+        console.error('YouTube API error:', data.error);
+        throw new Error(data.error.message || 'YouTube API error');
+      }
+      
       setSearchResults(data.items || []);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error searching:', err);
-      setSearchError('YouTube search failed. Showing sample results instead.');
+      
+      // Handle specific error cases
+      if (err.response?.status === 403) {
+        setSearchError('YouTube API access denied. The API key may be invalid or restricted.');
+        toast.error('YouTube search unavailable. Please contact support.', {
+          duration: 5000
+        });
+      } else {
+        setSearchError('YouTube search failed. Showing sample results instead.');
+      }
+      
+      // Fall back to mock results
       setSearchResults(mockSearchResults);
     } finally {
       setIsSearching(false);

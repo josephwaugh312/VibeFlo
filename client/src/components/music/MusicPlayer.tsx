@@ -33,6 +33,14 @@ interface MusicPlayerProps {}
 // Global reference to prevent multiple YouTube players
 let globalPlayerInstance: any = null;
 
+// Get YouTube API key from environment variable
+const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
+
+// Display warning in console if YouTube API key is missing
+if (!YOUTUBE_API_KEY) {
+  console.warn('REACT_APP_YOUTUBE_API_KEY is not set. YouTube search functionality will not work.');
+}
+
 const MusicPlayer: React.FC<MusicPlayerProps> = () => {
   // We're using togglePlay from context but not directly in this component
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -726,20 +734,31 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 
                 {/* Search Tab */}
                 {currentTab === 'search' && (
-                  <div className="p-4 overflow-y-auto">
+                  <div className="p-4 flex flex-col h-full">
+                    <h4 className="font-semibold text-white mb-3">Search</h4>
+                    
+                    {!YOUTUBE_API_KEY && (
+                      <div className="mb-4 p-3 bg-yellow-800/50 border border-yellow-600 rounded-md text-yellow-200 text-sm">
+                        <p className="font-semibold">YouTube API key is missing</p>
+                        <p className="mt-1">Search functionality is unavailable. Please contact the administrator.</p>
+                      </div>
+                    )}
+                    
                     <form onSubmit={handleSearchSubmit} className="mb-4">
-                      <div className="flex">
+                      <div className="flex gap-2">
                         <input
                           type="text"
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="flex-1 bg-gray-800 text-white border border-gray-700 rounded-l px-3 py-2"
-                          placeholder="Search YouTube..."
+                          placeholder="Search for songs..."
+                          className="flex-1 p-2 bg-gray-800 border border-gray-700 rounded text-white"
+                          data-testid="search-input"
                         />
                         <button
                           type="submit"
-                          disabled={isSearching || !searchQuery.trim()}
-                          className="bg-purple-600 hover:bg-purple-700 text-white rounded-r px-3 py-2 disabled:bg-gray-700 disabled:cursor-not-allowed"
+                          className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded"
+                          disabled={isSearching || !YOUTUBE_API_KEY}
+                          data-testid="search-button"
                         >
                           {isSearching ? 'Searching...' : 'Search'}
                         </button>

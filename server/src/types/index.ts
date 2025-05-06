@@ -12,6 +12,7 @@ export interface User {
   github_id?: string;
   is_verified?: boolean;
   is_admin?: boolean;
+  role?: string;
   bio?: string;
   created_at?: Date;
   updated_at?: Date;

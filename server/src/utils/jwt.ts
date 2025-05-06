@@ -1,10 +1,11 @@
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions, JwtPayload } from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { User } from '../types';
 import { AppError } from './errors';
 
 dotenv.config();
 
+// Define JWT_SECRET and handle type issues
 const JWT_SECRET = process.env.JWT_SECRET || 'secret-key';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '30d';
 
@@ -17,6 +18,9 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
+// Define the StringValue type as required by jsonwebtoken
+type StringValue = string | Buffer;
+
 /**
  * Generate a JWT token for a user
  * @param {User} user - User object from database
@@ -24,7 +28,9 @@ if (process.env.NODE_ENV !== 'production') {
  * @returns {String} JWT token
  */
 export const generateToken = (user: User, expiresIn?: string): string => {
+  // Use the expirationTime directly without putting it in an options object
   const expirationTime = expiresIn || JWT_EXPIRES_IN;
+  
   if (process.env.NODE_ENV !== 'production') {
     console.log(`Generating token for user ID: ${user.id}`);
   }
@@ -38,7 +44,8 @@ export const generateToken = (user: User, expiresIn?: string): string => {
     is_admin: user.is_admin || false
   };
 
-  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: expirationTime });
+  // Pass the options directly to avoid type issues
+  const token = jwt.sign(payload, JWT_SECRET, { expiresIn: expirationTime as any });
   
   if (process.env.NODE_ENV !== 'production') {
     console.log(`Token generated successfully. Preview: ${token.substring(0, 20)}...`);
@@ -60,7 +67,7 @@ export const generateToken = (user: User, expiresIn?: string): string => {
  * @param {String} token - JWT token to verify
  * @returns {Object} Decoded token payload or throws error with context
  */
-export const verifyToken = (token: string): any => {
+export const verifyToken = (token: string): JwtPayload | string => {
   if (process.env.NODE_ENV !== 'production') {
     console.log(`Verifying token. Preview: ${token.substring(0, 20)}...`);
   }
