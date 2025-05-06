@@ -40,32 +40,37 @@
    - Created separate tests for each key functionality (login, register, logout, etc.)
    - All 8 tests passing
 
+9. **ThemeBackground Tests**
+   - Fixed mocking of DOM elements
+   - Updated tests to match component implementation
+   - Added proper error handling test
+   - All 8 tests passing
+
 ## Remaining Tests to Fix:
 
-1. **ThemeBackground Tests**
-   - 7 failing tests related to DOM manipulation and background image styling
+1. **API Service Tests**
+   - 28 failing tests related to API endpoints
+   - Main issues: 404 errors when calling endpoints, mismatch in expected parameter formats
+   - First test failing: "should call login endpoint with the correct data" - data format mismatch
 
-2. **API Service Tests**
-   - Multiple failing tests with 404 errors
-   - Need to update mock responses or implement proper API mocking
+2. **PlaylistDetail Token Tests**
+   - 1 failing test: "should redirect to login when token is missing"
+   - Issue: toast.error is not being called as expected
 
-3. **PlaylistDetail Token Tests**
-   - 1 failing test related to token validation
-
-4. **Stats Component Tests**
-   - 6 failing tests related to component rendering and state
+3. **Stats Component Tests**
+   - 6 failing tests that can't find expected UI elements
+   - Likely issue: components not rendering due to async data loading or missing context providers
 
 ## Progress Summary
 
-Fixed: 8 major components with 80+ tests now passing  
-Remaining: 4 components with approximately 35-40 failing tests
+Fixed: 9 major components with over 88 tests now passing  
+Remaining: API Service (28 tests), PlaylistDetail token (1 test), and Stats component (6 tests)
 
 ## Next Steps
 
-1. Fix ThemeBackground tests, which appear to need proper DOM mocking for style manipulation
-2. Address API Service tests by properly mocking HTTP responses
-3. Fix PlaylistDetail token test by updating the mock implementation
-4. Fix Stats component tests by updating the render and state handling
+1. Fix API Service tests by properly mocking axios and updating expected parameter formats
+2. Fix PlaylistDetail token test by ensuring toast.error is properly mocked
+3. Fix Stats component tests by providing the necessary context for rendering
 
 ## Achievements
 
