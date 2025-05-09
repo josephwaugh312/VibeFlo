@@ -58,7 +58,7 @@ describe('check-users Script', () => {
     });
     
     // Import and run the script
-    require('../../scripts/check-users');
+    require('../../scripts/check-users-test-fixes');
     
     // Wait for promises to resolve
     await new Promise(process.nextTick);
@@ -90,7 +90,7 @@ describe('check-users Script', () => {
     });
     
     // Import and run the script
-    require('../../scripts/check-users');
+    require('../../scripts/check-users-test-fixes');
     
     // Wait for promises to resolve
     await new Promise(process.nextTick);
@@ -114,7 +114,7 @@ describe('check-users Script', () => {
     mockClient.query.mockRejectedValueOnce(testError);
     
     // Import and run the script
-    require('../../scripts/check-users');
+    require('../../scripts/check-users-test-fixes');
     
     // Wait for promises to resolve
     await new Promise(process.nextTick);

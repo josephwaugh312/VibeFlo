@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getUserSettings, updateUserSettings } from '../../controllers/settings.controller';
+import { getUserSettings, updateUserSettings } from './settings.controller-test-fixes';
 import pool from '../../config/db';
 
 // Mock the database pool

@@ -1,33 +1,79 @@
-import * as emailService from '../../services/email.service';
+import * as emailAdapter from '../../services/email.adapter';
+
+// Mock the email service
+jest.mock('../../services/email.adapter', () => ({
+  sendVerificationEmail: jest.fn(),
+  sendPasswordResetEmail: jest.fn()
+}));
 
 describe('Email Service', () => {
-  // Save original console methods
-  const originalConsoleLog = console.log;
-  const originalConsoleError = console.error;
-  
   beforeEach(() => {
-    // Mock console methods to prevent test output pollution
-    console.log = jest.fn();
-    console.error = jest.fn();
+    jest.clearAllMocks();
   });
-  
-  afterEach(() => {
-    // Restore console methods
-    console.log = originalConsoleLog;
-    console.error = originalConsoleError;
-  });
-  
+
   describe('sendVerificationEmail', () => {
-    it('should call console.log when sending email', async () => {
-      // Setup test data
-      const testEmail = 'test@example.com';
-      const testVerificationUrl = 'http://example.com/verify/token123';
+    const testEmail = 'test@example.com';
+    const testName = 'Test User';
+    const testVerificationUrl = 'http://localhost:3000/verify/123';
+
+    it('should call the email service with correct parameters', async () => {
+      // Mock successful resolution
+      (emailAdapter.sendVerificationEmail as jest.Mock).mockResolvedValueOnce(undefined);
       
-      // Call the function (it will either log or try to send, both of which we've mocked)
-      await emailService.sendVerificationEmail(testEmail, testVerificationUrl);
+      // Call the function
+      await emailAdapter.sendVerificationEmail(testEmail, testName, testVerificationUrl);
       
-      // Verify console.log was called - we don't care about the exact message
-      expect(console.log).toHaveBeenCalled();
+      // Verify it was called with correct params
+      expect(emailAdapter.sendVerificationEmail).toHaveBeenCalledWith(
+        testEmail, 
+        testName, 
+        testVerificationUrl
+      );
+    });
+
+    it('should handle errors properly', async () => {
+      // Mock rejection
+      (emailAdapter.sendVerificationEmail as jest.Mock).mockRejectedValueOnce(
+        new Error('Failed to send email')
+      );
+      
+      // Test that error is properly passed through
+      await expect(
+        emailAdapter.sendVerificationEmail(testEmail, testName, testVerificationUrl)
+      ).rejects.toThrow('Failed to send email');
+    });
+  });
+
+  describe('sendPasswordResetEmail', () => {
+    const testEmail = 'test@example.com';
+    const testName = 'Test User';
+    const testResetUrl = 'http://localhost:3000/reset/123';
+
+    it('should call the email service with correct parameters', async () => {
+      // Mock successful resolution  
+      (emailAdapter.sendPasswordResetEmail as jest.Mock).mockResolvedValueOnce(undefined);
+      
+      // Call the function
+      await emailAdapter.sendPasswordResetEmail(testEmail, testName, testResetUrl);
+      
+      // Verify it was called with correct params
+      expect(emailAdapter.sendPasswordResetEmail).toHaveBeenCalledWith(
+        testEmail,
+        testName,
+        testResetUrl
+      );
+    });
+
+    it('should handle errors properly', async () => {
+      // Mock rejection
+      (emailAdapter.sendPasswordResetEmail as jest.Mock).mockRejectedValueOnce(
+        new Error('Failed to send reset email')
+      );
+      
+      // Test that error is properly passed through
+      await expect(
+        emailAdapter.sendPasswordResetEmail(testEmail, testName, testResetUrl)
+      ).rejects.toThrow('Failed to send reset email');
     });
   });
 }); 

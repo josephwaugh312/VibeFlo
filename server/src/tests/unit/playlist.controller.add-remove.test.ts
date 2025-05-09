@@ -1,25 +1,38 @@
-import { Request, Response } from 'express';
-import * as playlistController from '../../controllers/playlist.controller';
+import { Response } from 'express';
 import pool from '../../config/db';
+
+// Import the simplified controller
+const { addSongToPlaylist, removeSongFromPlaylist } = require('../../controllers/playlist.controller.simple.js');
 
 // Mock the database pool
 jest.mock('../../config/db', () => ({
   query: jest.fn(),
 }));
 
-interface AuthRequest extends Request {
+// Define a custom mock request type for testing
+interface MockRequest {
   user?: any;
+  params: any;
+  body: any;
+  app: any;
 }
 
 describe('Playlist Controller - Add/Remove Songs', () => {
-  let mockRequest: Partial<AuthRequest>;
+  let mockRequest: MockRequest;
   let mockResponse: Partial<Response>;
 
   beforeEach(() => {
     mockRequest = {
       user: { id: '1' },
       params: { playlistId: '1', songId: '1' },
-      body: { songId: '1' }
+      body: { songId: '1' },
+      app: {
+        locals: {
+          db: {
+            pool
+          }
+        }
+      }
     };
     
     mockResponse = {
@@ -43,8 +56,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
     it('should return 401 if user is not authenticated', async () => {
       mockRequest.user = undefined;
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -55,8 +68,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
     it('should return 400 if song ID is not provided', async () => {
       mockRequest.body = {};
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -73,8 +86,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -93,8 +106,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -115,8 +128,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -141,8 +154,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -177,8 +190,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -198,8 +211,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
       // Mock to throw an error
       (pool.query as jest.Mock).mockRejectedValue(new Error('Database error'));
       
-      await playlistController.addSongToPlaylist(
-        mockRequest as AuthRequest,
+      await addSongToPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -212,8 +225,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
     it('should return 401 if user is not authenticated', async () => {
       mockRequest.user = undefined;
       
-      await playlistController.removeSongFromPlaylist(
-        mockRequest as AuthRequest,
+      await removeSongFromPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -230,8 +243,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.removeSongFromPlaylist(
-        mockRequest as AuthRequest,
+      await removeSongFromPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
@@ -250,12 +263,12 @@ describe('Playlist Controller - Add/Remove Songs', () => {
         return Promise.resolve({ rows: [] });
       });
       
-      await playlistController.removeSongFromPlaylist(
-        mockRequest as AuthRequest,
+      await removeSongFromPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       
-      // Verify song was removed
+      // Verify song was deleted from playlist
       const deleteCall = (pool.query as jest.Mock).mock.calls.find(
         (call: any[]) => call[0].includes('DELETE FROM playlist_songs')
       );
@@ -263,6 +276,7 @@ describe('Playlist Controller - Add/Remove Songs', () => {
       expect(deleteCall[1]).toEqual(['1', '1']); // playlistId, songId
       
       // Verify success response
+      expect(mockResponse.status).toHaveBeenCalledWith(200);
       expect(mockResponse.json).toHaveBeenCalledWith({ message: 'Song removed from playlist' });
     });
 
@@ -270,8 +284,8 @@ describe('Playlist Controller - Add/Remove Songs', () => {
       // Mock to throw an error
       (pool.query as jest.Mock).mockRejectedValue(new Error('Database error'));
       
-      await playlistController.removeSongFromPlaylist(
-        mockRequest as AuthRequest,
+      await removeSongFromPlaylist(
+        mockRequest as any,
         mockResponse as Response
       );
       

@@ -45,9 +45,18 @@ describe('ReportThemeDialog Component', () => {
     // No need to test disabling based on empty reason as the component uses radio buttons with a default value
   });
 
-  // Skip the failing test for now
   it.skip('displays validation error when trying to submit without a reason', async () => {
-    // This test is skipped until we can improve our testing approach
+    // This test is skipped as it doesn't match the current component implementation.
+    // The component doesn't have a form with data-testid and always has a default reason selected.
+    const customProps = {
+      ...mockProps,
+      open: true
+    };
+    
+    render(<ReportThemeDialog {...customProps} />);
+    
+    // The component implementation always selects a default reason, so there's
+    // no simple way to test for a missing reason in the current implementation
   });
 
   it('calls API and closes dialog on successful submission', async () => {
@@ -185,5 +194,9 @@ describe('ReportThemeDialog Component', () => {
     
     // Dialog should have been closed
     expect(mockProps.onClose).toHaveBeenCalled();
+  });
+
+  it('closes the dialog when cancel button is clicked', async () => {
+    // ... existing code ...
   });
 }); 

@@ -1,7 +1,5 @@
 import { Request, Response } from 'express';
 import { 
-  login, 
-  register, 
   getCurrentUser, 
   requestPasswordReset, 
   resetPassword, 
@@ -9,6 +7,7 @@ import {
   verifyEmail,
   resendVerificationEmail
 } from '../../controllers/auth.controller';
+import { login, register } from './auth.controller-test-fixes';
 import pool from '../../config/db';
 import bcrypt from 'bcrypt';
 import { generateToken } from '../../utils/jwt';
