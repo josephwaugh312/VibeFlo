@@ -8,11 +8,12 @@ const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM || 'joseph.waugh312@gmail.com';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 const IS_DEV = NODE_ENV === 'development';
+const IS_TEST = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
 
 // Check for SendGrid API key
 if (!SENDGRID_API_KEY) {
   console.warn('SENDGRID_API_KEY is not set in environment variables');
-  if (!IS_DEV) {
+  if (!IS_DEV && !IS_TEST) {
     // Only throw error in production
     throw new Error('SendGrid API key is required for email functionality in production');
   }
@@ -20,7 +21,7 @@ if (!SENDGRID_API_KEY) {
 
 if (!FROM_EMAIL) {
   console.warn('EMAIL_FROM is not set in environment variables');
-  if (!IS_DEV) {
+  if (!IS_DEV && !IS_TEST) {
     // Only throw error in production
     throw new Error('Sender email address is required for email functionality in production');
   }
@@ -28,32 +29,38 @@ if (!FROM_EMAIL) {
 
 const CLIENT_URL = process.env.CLIENT_URL || 'https://vibeflo.app';
 
-// Initialize SendGrid if API key is available
-if (SENDGRID_API_KEY) {
+// Initialize SendGrid if API key is available and not in test environment
+if (SENDGRID_API_KEY && !IS_TEST) {
   sgMail.setApiKey(SENDGRID_API_KEY);
   console.log('SendGrid configured successfully with sender:', FROM_EMAIL);
   
-  // Test SendGrid configuration
-  sgMail.send({
-    to: FROM_EMAIL,
-    from: FROM_EMAIL,
-    subject: 'SendGrid Test',
-    text: 'Testing SendGrid configuration',
-    html: '<p>Testing SendGrid configuration</p>'
-  }).then(() => {
-    console.log('SendGrid test email sent successfully');
-  }).catch((error) => {
-    console.error('SendGrid test email failed:', error);
-    if (error.response) {
-      console.error('SendGrid API Response:', {
-        statusCode: error.response.statusCode,
-        body: error.response.body,
-        headers: error.response.headers
-      });
-    }
-  });
+  // Test SendGrid configuration - Only in development, not in tests
+  if (!IS_TEST) {
+    sgMail.send({
+      to: FROM_EMAIL,
+      from: FROM_EMAIL,
+      subject: 'SendGrid Test',
+      text: 'Testing SendGrid configuration',
+      html: '<p>Testing SendGrid configuration</p>'
+    }).then(() => {
+      console.log('SendGrid test email sent successfully');
+    }).catch((error) => {
+      console.error('SendGrid test email failed:', error);
+      if (error.response) {
+        console.error('SendGrid API Response:', {
+          statusCode: error.response.statusCode,
+          body: error.response.body,
+          headers: error.response.headers
+        });
+      }
+    });
+  }
 } else {
-  console.log('SendGrid not configured - email functionality will use mock implementation in development');
+  if (IS_TEST) {
+    console.log('Running in test environment - email functionality will be mocked');
+  } else {
+    console.log('SendGrid not configured - email functionality will use mock implementation in development');
+  }
 }
 
 /**
@@ -68,8 +75,8 @@ class EmailService {
    */
   async sendVerificationEmail(to: string, name: string, token: string): Promise<void> {
     try {
-      if (!SENDGRID_API_KEY) {
-        console.log('Skipping verification email - SendGrid API key not configured');
+      if (!SENDGRID_API_KEY || IS_TEST) {
+        console.log('Skipping verification email - SendGrid API key not configured or in test environment');
         // Still log the token for testing environments
         console.log(`[DEV] Verification token for ${to}: ${token}`);
         console.log(`[DEV] Verification link: ${CLIENT_URL}/verify/${token}`);
@@ -144,8 +151,8 @@ class EmailService {
    */
   async sendPasswordResetEmail(to: string, name: string, token: string): Promise<void> {
     try {
-      if (!SENDGRID_API_KEY) {
-        console.warn('Skipping password reset email - SendGrid API key not configured');
+      if (!SENDGRID_API_KEY || IS_TEST) {
+        console.warn('Skipping password reset email - SendGrid API key not configured or in test environment');
         // Still log the token for testing environments
         console.log(`[DEV] Password reset token for ${to}: ${token}`);
         console.log(`[DEV] Password reset link: ${CLIENT_URL}/reset-password/${token}`);
@@ -201,8 +208,8 @@ class EmailService {
    */
   async sendNotificationEmail(to: string, name: string, subject: string, message: string): Promise<void> {
     try {
-      if (!SENDGRID_API_KEY) {
-        console.warn('Skipping notification email - SendGrid API key not configured');
+      if (!SENDGRID_API_KEY || IS_TEST) {
+        console.warn('Skipping notification email - SendGrid API key not configured or in test environment');
         console.log(`[DEV] Notification to ${to}: ${subject} - ${message}`);
         return;
       }
@@ -241,4 +248,13 @@ class EmailService {
   }
 }
 
-export default new EmailService(); 
+// Create instance
+const emailServiceInstance = new EmailService();
+
+// Export the methods directly for tests to use
+export const sendVerificationEmail = emailServiceInstance.sendVerificationEmail.bind(emailServiceInstance);
+export const sendPasswordResetEmail = emailServiceInstance.sendPasswordResetEmail.bind(emailServiceInstance);
+export const sendNotificationEmail = emailServiceInstance.sendNotificationEmail.bind(emailServiceInstance);
+
+// Default export - the full service instance
+export default emailServiceInstance; 

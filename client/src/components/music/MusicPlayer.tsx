@@ -193,9 +193,13 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
     }
   };
 
-  const handleSearchSubmit = (e: FormEvent) => {
-    handleSearch(e);
-    setSearchError(null);
+  const handleSearchSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    try {
+      await handleSearch(e);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Search failed');
+    }
   };
 
   // Handle player ready event with error checking
@@ -330,6 +334,11 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
     }
   }, [currentTrack, isPlaying, playNext, tracks]);
 
+  const handlePlayerError = (event: any) => {
+    console.error('YouTube player error:', event);
+    toast.error('Error playing video. Please try again.');
+  };
+
   return (
     <>
       {/* Music Player Button - fixed to bottom right, hide when player is open */}
@@ -425,6 +434,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                         value={volume}
                         onChange={handleVolumeChange}
                         className="w-full accent-purple-500"
+                        aria-label="Volume control"
                       />
                       <span className="text-xs text-gray-400">{volume}%</span>
                     </div>
@@ -434,39 +444,60 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                 <button
                   onClick={playPrevious}
                   className="text-gray-400 hover:text-white mx-1"
+                  aria-label="Previous track"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M11 19l-7-7m0 0l7-7m-7 7h18"
+                    />
                   </svg>
                 </button>
-                {isPlaying ? (
-                  <button
-                    onClick={pause}
-                    className="text-white hover:text-gray-200 mx-1"
-                    data-testid="play-button"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                ) : (
-                  <button
-                    onClick={play}
-                    className="text-white hover:text-gray-200 mx-1"
-                    data-testid="play-button"
-                  >
-                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                )}
+                <button
+                  onClick={isPlaying ? pause : play}
+                  className="text-white hover:text-gray-200 transition-colors"
+                  aria-label={isPlaying ? "Pause" : "Play"}
+                >
+                  <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isPlaying ? (
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    ) : (
+                      <>
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </>
+                    )}
+                  </svg>
+                </button>
                 <button
                   onClick={playNext}
                   className="text-gray-400 hover:text-white mx-1"
+                  aria-label="Next track"
                 >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
               </div>
@@ -493,20 +524,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                   },
                 }}
                 onReady={handlePlayerReady}
-                onError={(error: any) => {
-                  console.error('YouTube player error:', error);
-                  // Try to recover from the error
-                  if (tracks.length > 1) {
-                    toast.error(`Playback error. Skipping to next track.`, { 
-                      duration: 1500 
-                    });
-                    setTimeout(() => playNext(), 500);
-                  } else {
-                    toast.error(`Cannot play this track. Please try another.`, { 
-                      duration: 3000 
-                    });
-                  }
-                }}
+                onError={handlePlayerError}
                 onStateChange={(event: any) => {
                   try {
                     // When the video ends, automatically play the next track
@@ -604,6 +622,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                               value={volume}
                               onChange={handleVolumeChange}
                               className="w-24 accent-purple-500"
+                              aria-label="Volume control"
                             />
                             <span className="text-xs text-gray-400">{volume}%</span>
                           </div>
@@ -612,39 +631,62 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                             <button
                               onClick={playPrevious}
                               className="text-gray-400 hover:text-white transition-colors"
+                              aria-label="Previous track"
                             >
                               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7m0 0l7-7m-7 7h18" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M11 19l-7-7m0 0l7-7m-7 7h18"
+                                />
                               </svg>
                             </button>
                             
-                            {isPlaying ? (
-                              <button
-                                onClick={pause}
-                                className="text-white hover:text-gray-200 transition-colors"
-                              >
-                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={play}
-                                className="text-white hover:text-gray-200 transition-colors"
-                              >
-                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              </button>
-                            )}
+                            <button
+                              onClick={isPlaying ? pause : play}
+                              className="text-white hover:text-gray-200 transition-colors"
+                              aria-label={isPlaying ? "Pause" : "Play"}
+                            >
+                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {isPlaying ? (
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                ) : (
+                                  <>
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
+                                  </>
+                                )}
+                              </svg>
+                            </button>
                             
                             <button
                               onClick={playNext}
                               className="text-gray-400 hover:text-white transition-colors"
+                              aria-label="Next track"
                             >
                               <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M13 5l7 7-7 7M5 5l7 7-7 7"
+                                />
                               </svg>
                             </button>
                           </div>
@@ -676,6 +718,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                         onClick={handleSavePlaylist}
                         disabled={!tracks.length}
                         className="ml-2 bg-purple-600 hover:bg-purple-700 text-white rounded px-3 py-2 text-sm disabled:bg-gray-700 disabled:cursor-not-allowed"
+                        data-testid="save-playlist-button"
                       >
                         Save
                       </button>
@@ -718,11 +761,20 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                               </div>
                             </div>
                             <button
-                              onClick={() => removeTrack(track.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeTrack(track.id);
+                              }}
                               className="ml-2 text-gray-400 hover:text-red-400"
+                              aria-label="Remove track"
                             >
                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
                               </svg>
                             </button>
                           </li>
@@ -744,7 +796,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                       </div>
                     )}
                     
-                    <form onSubmit={handleSearchSubmit} className="mb-4">
+                    <form onSubmit={handleSearchSubmit} className="mb-4" data-testid="search-form">
                       <div className="flex gap-2">
                         <input
                           type="text"
@@ -757,10 +809,10 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                         <button
                           type="submit"
                           className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded"
-                          disabled={isSearching || !YOUTUBE_API_KEY}
+                          disabled={!YOUTUBE_API_KEY}
                           data-testid="search-button"
                         >
-                          {isSearching ? 'Searching...' : 'Search'}
+                          Search
                         </button>
                       </div>
                     </form>
@@ -791,6 +843,7 @@ const MusicPlayer: React.FC<MusicPlayerProps> = () => {
                               <button
                                 onClick={() => addTrackToPlaylist(result)}
                                 className="mt-1 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded px-2 py-1"
+                                data-testid="add-track-button"
                               >
                                 Add to Playlist
                               </button>

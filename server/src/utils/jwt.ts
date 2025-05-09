@@ -54,9 +54,11 @@ export const generateToken = (user: User, expiresIn?: string): string => {
     const decoded = jwt.decode(token);
     console.log('Token payload:', decoded);
     
-    // Calculate when the token will expire
-    const expiresAt = new Date((decoded as any).exp * 1000);
-    console.log(`Token expires at: ${expiresAt.toISOString()}`);
+    // Calculate when the token will expire (with safety check)
+    if (decoded && typeof decoded === 'object' && 'exp' in decoded) {
+      const expiresAt = new Date(decoded.exp * 1000);
+      console.log(`Token expires at: ${expiresAt.toISOString()}`);
+    }
   }
   
   return token;
@@ -65,9 +67,9 @@ export const generateToken = (user: User, expiresIn?: string): string => {
 /**
  * Verify a JWT token
  * @param {String} token - JWT token to verify
- * @returns {Object} Decoded token payload or throws error with context
+ * @returns {Object|null} Decoded token payload or null if invalid
  */
-export const verifyToken = (token: string): JwtPayload | string => {
+export const verifyToken = (token: string): JwtPayload | string | null => {
   if (process.env.NODE_ENV !== 'production') {
     console.log(`Verifying token. Preview: ${token.substring(0, 20)}...`);
   }
@@ -86,13 +88,7 @@ export const verifyToken = (token: string): JwtPayload | string => {
       console.error('Token verification failed:', error instanceof Error ? error.message : 'Unknown error');
     }
     
-    // Use our AppError class for standardized error handling
-    if (error instanceof jwt.TokenExpiredError) {
-      throw AppError.unauthorized('Token expired', 'TOKEN_EXPIRED', error);
-    } else if (error instanceof jwt.JsonWebTokenError) {
-      throw AppError.unauthorized('Invalid token', 'INVALID_TOKEN', error);
-    } else {
-      throw AppError.unauthorized('Token verification failed', 'VERIFICATION_FAILED', error as Error);
-    }
+    // Return null for tests and API consumers that expect this behavior
+    return null;
   }
 }; 

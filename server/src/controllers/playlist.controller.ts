@@ -26,7 +26,7 @@ export const getUserPlaylists = async (req: AuthRequest, res: Response) => {
     res.json(playlists.rows);
   } catch (error) {
     console.error('Error getting playlists:', error);
-    res.status(500).json({ message: 'Error fetching playlists' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
@@ -498,6 +498,11 @@ export const addSongToPlaylist = async (req: AuthRequest, res: Response) => {
     
     if (!userId) {
       return res.status(401).json({ message: 'User not authenticated' });
+    }
+
+    // Validate required parameters first
+    if (!songId && (!title || !artist)) {
+      return res.status(400).json({ message: 'Song ID is required' });
     }
 
     // Check if playlist exists and belongs to user

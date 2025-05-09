@@ -150,7 +150,8 @@ export const useMockMusicPlayer = () => useContext(MockMusicPlayerContext);
 export const MockAuthProvider: React.FC<{
   children: React.ReactNode;
   value?: Partial<AuthContextType>;
-}> = ({ children, value = {} }) => {
+  isAuthenticated?: boolean;
+}> = ({ children, value = {}, isAuthenticated = true }) => {
   const defaultValue: AuthContextType = {
     user: {
       id: '1',
@@ -160,12 +161,12 @@ export const MockAuthProvider: React.FC<{
       bio: 'This is a test bio',
       created_at: '2023-01-01T00:00:00.000Z',
     },
-    isAuthenticated: true,
+    isAuthenticated: isAuthenticated,
     isLoading: false,
     login: jest.fn().mockResolvedValue(undefined),
     register: jest.fn().mockResolvedValue(undefined),
     logout: jest.fn(),
-    checkAuthStatus: jest.fn().mockResolvedValue(true),
+    checkAuthStatus: jest.fn().mockResolvedValue(isAuthenticated),
     setUser: jest.fn(),
     passwordResetToken: null,
     sendPasswordResetEmail: jest.fn().mockResolvedValue(undefined),

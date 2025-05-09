@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiService from '../services/api';
 import { Track } from '../components/music/MusicPlayer';
-import { toast } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 interface Playlist {
   id: string;
@@ -103,15 +103,27 @@ const Playlists: React.FC = () => {
     try {
       setIsDeleting(true);
       
+      // Confirm deletion with the user
+      const confirmed = window.confirm('Are you sure you want to delete this playlist?');
+      
+      if (!confirmed) {
+        setIsDeleting(false);
+        return;
+      }
+      
       // Delete the playlist
       await apiService.playlists.deletePlaylist(String(id));
       
       // Remove from local state
       setPlaylists(playlists.filter(p => p.id !== id));
+      
+      // Show success message
       toast.success('Playlist deleted successfully');
     } catch (error) {
       console.error('Error deleting playlist:', error);
       setError('Failed to delete playlist');
+      
+      // Show error message
       toast.error('Failed to delete playlist');
     } finally {
       setIsDeleting(false);

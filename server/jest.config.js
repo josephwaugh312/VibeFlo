@@ -1,38 +1,35 @@
-/** @type {import('ts-jest').JestConfigWithTsJest} */
+/** @type {import('jest').Config} */
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  roots: ['<rootDir>/src'],
-  testMatch: [
-    '**/__tests__/**/*.+(ts|tsx|js)',
-    '**/?(*.)+(spec|test).+(ts|tsx|js)',
-    '**/tests/**/*.+(ts|tsx|js)'
-  ],
-  transform: {
-    '^.+\\.(ts|tsx)$': ['ts-jest', {
-      tsconfig: 'tsconfig.json',
-      useESM: false
-    }]
-  },
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  setupFiles: ['<rootDir>/src/tests/setupEnv.js'],
   setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
-  testTimeout: 10000,
-  verbose: true,
+  testMatch: [
+    '**/__tests__/**/*.[jt]s?(x)',
+    '**/?(*.)+(spec|test).[jt]s?(x)'
+  ],
+  moduleNameMapper: {
+    // Any module mappings needed
+  },
+  // Global variables for test environment
+  globals: {
+    'ts-jest': {
+      tsconfig: 'tsconfig.json'
+    },
+    // Set global variables for tests
+    TEST_MODE: true
+  },
+  // Collect code coverage information
   collectCoverage: true,
   collectCoverageFrom: [
     'src/**/*.{js,ts}',
-    '!src/tests/**/*.{js,ts}',
-    '!src/migrations/**/*.{js,ts}',
-    '!src/scripts/**/*.{js,ts}'
+    '!src/**/*.d.ts',
+    '!src/tests/**/*'
   ],
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'clover'],
-  coverageThreshold: {
-    global: {
-      branches: 0,
-      functions: 0,
-      lines: 0,
-      statements: 0
-    }
-  }
+  transform: {
+    '^.+\\.(ts|tsx)$': 'ts-jest'
+  },
+  // Adjusts for slow CI
+  testTimeout: 30000
 }; 

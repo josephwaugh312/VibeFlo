@@ -38,7 +38,7 @@ interface MusicPlayerContextType {
   setPlayerReference: (player: any) => void;
 }
 
-const MusicPlayerContext = createContext<MusicPlayerContextType>({
+export const MusicPlayerContext = createContext<MusicPlayerContextType>({
   tracks: [],
   currentTrack: null,
   isPlaying: false,
@@ -245,6 +245,9 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
               }, 300);
             }
           }
+        } else {
+          // Make sure we handle non-array tracks case explicitly 
+          console.error('Error handling custom playlist event: Invalid tracks format', e.detail);
         }
       } catch (err) {
         console.error('Error handling custom playlist event:', err);
@@ -422,7 +425,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       try {
         playerRef.current.seekTo(time);
       } catch (err) {
-        console.error("Error seeking video:", err);
+        console.error("Error seeking:", err);
       }
     }
   };
@@ -537,6 +540,23 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
     playerRef.current = player;
   };
 
+  // Add a dedicated volume control function with clamping
+  const handleVolumeChange = (newVolume: number) => {
+    // Clamp volume between 0 and 100
+    const clampedVolume = Math.max(0, Math.min(100, newVolume));
+    setVolume(clampedVolume);
+    
+    // If we have a player reference, update its volume too
+    if (playerRef.current && typeof playerRef.current.setVolume === 'function') {
+      try {
+        // YouTube API volume is between 0 and 100
+        playerRef.current.setVolume(clampedVolume);
+      } catch (err) {
+        console.error("Error setting YouTube player volume:", err);
+      }
+    }
+  };
+
   return (
     <MusicPlayerContext.Provider value={{
       tracks,
@@ -560,7 +580,7 @@ export const MusicPlayerProvider: React.FC<{ children: React.ReactNode }> = ({ c
       playPrevious,
       playNext,
       seek,
-      setVolume,
+      setVolume: handleVolumeChange,
       toggleOpen,
       toggleMinimize,
       setCurrentTab,

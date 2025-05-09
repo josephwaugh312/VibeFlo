@@ -18,6 +18,14 @@ export interface User {
   updated_at?: Date;
 }
 
+// Define a TestUser interface that makes all User properties optional for testing
+export interface TestUser extends Partial<User> {
+  id?: number;
+  name?: string;
+  username?: string;
+  email?: string;
+}
+
 // Define pomodoro session type
 export interface PomodoroSession {
   id: number;

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState, FormEvent } from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MusicPlayerProvider, useMusicPlayer } from '../../contexts/MusicPlayerContext';
@@ -24,7 +24,7 @@ const getMockTracks = () => [
   }
 ];
 
-// Mock axios instead of fetch
+// Mock axios
 jest.mock('axios');
 
 // Mock the API service
@@ -66,7 +66,7 @@ jest.mock('react-youtube', () => ({
   })
 }));
 
-// Create a test component that shows key state and functionality
+// Reusable test component that shows key state and functionality
 const TestComponent = () => {
   const {
     tracks,
@@ -86,7 +86,9 @@ const TestComponent = () => {
     searchResults,
     searchQuery,
     setSearchQuery,
-    savePlaylistToAccount
+    savePlaylistToAccount,
+    isMinimized,
+    toggleMinimize
   } = useMusicPlayer();
 
   return (
@@ -97,6 +99,7 @@ const TestComponent = () => {
         <div data-testid="playing-state">{isPlaying ? 'Playing' : 'Paused'}</div>
         <div data-testid="volume-level">Volume: {volume}</div>
         <div data-testid="player-open">{isOpen ? 'Open' : 'Closed'}</div>
+        <div data-testid="player-minimized">{isMinimized ? 'Minimized' : 'Full'}</div>
         <div data-testid="search-results-count">
           {searchResults ? `${searchResults.length} results` : '0 results'}
         </div>
@@ -152,6 +155,13 @@ const TestComponent = () => {
           Toggle Open
         </button>
         
+        <button 
+          data-testid="toggle-minimize-btn" 
+          onClick={toggleMinimize}
+        >
+          Toggle Minimize
+        </button>
+        
         <input
           data-testid="volume-slider"
           type="range"
@@ -172,7 +182,7 @@ const TestComponent = () => {
         <button
           data-testid="search-btn"
           onClick={(e) => {
-            e.preventDefault(); // Prevent default to mimic FormEvent
+            e.preventDefault();
             handleSearch(e as any);
           }}
         >
@@ -190,6 +200,7 @@ const TestComponent = () => {
   );
 };
 
+// Shared setup for all tests
 describe('MusicPlayerContext', () => {
   // Mock localStorage with Jest mock functions
   const getItemMock = jest.fn();
@@ -197,6 +208,7 @@ describe('MusicPlayerContext', () => {
   const removeItemMock = jest.fn();
   const clearMock = jest.fn();
   
+  // Clean up between tests
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
@@ -216,504 +228,597 @@ describe('MusicPlayerContext', () => {
     
     // Default behavior for localStorage.getItem
     getItemMock.mockImplementation(() => null);
-  });
-
-  // Test 1: Initial state
-  test('provides initial empty state', () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
     
-    expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
-    expect(screen.getByTestId('current-track')).toHaveTextContent('No Track');
-    expect(screen.getByTestId('playing-state')).toHaveTextContent('Paused');
-    expect(screen.getByTestId('volume-level')).toHaveTextContent('Volume: 50');
-    expect(screen.getByTestId('player-open')).toHaveTextContent('Closed');
-  });
-
-  // Test 2: Adding a track
-  test('adds a track to the playlist', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add a track
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Check if track was added
-    expect(screen.getByTestId('track-count')).toHaveTextContent('1 Tracks');
-    
-    // Check if localStorage was updated
-    expect(setItemMock).toHaveBeenCalledWith(
-      'vibeflo_playlist',
-      expect.any(String)
-    );
-    
-    // Check if the first added track becomes the current track
-    expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
-  });
-
-  // Test 3: Removing a track
-  test('removes a track from the playlist', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add a track first
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    expect(screen.getByTestId('track-count')).toHaveTextContent('1 Tracks');
-    
-    // Now remove it
-    fireEvent.click(screen.getByTestId('remove-track-btn'));
-    
-    // Check if track was removed
-    expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
-    expect(screen.getByTestId('current-track')).toHaveTextContent('No Track');
-  });
-
-  // Test 4: Playing a track
-  test('plays a selected track', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add a track
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Play the track
-    fireEvent.click(screen.getByTestId('play-track-btn'));
-    
-    // Check if the track is now playing
-    expect(screen.getByTestId('playing-state')).toHaveTextContent('Playing');
-    expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
-  });
-
-  // Test 5: Toggle play/pause
-  test('toggles between play and pause states', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add and play a track first
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    fireEvent.click(screen.getByTestId('play-track-btn'));
-    expect(screen.getByTestId('playing-state')).toHaveTextContent('Playing');
-    
-    // Now pause it
-    fireEvent.click(screen.getByTestId('toggle-play-btn'));
-    expect(screen.getByTestId('playing-state')).toHaveTextContent('Paused');
-    
-    // Play again
-    fireEvent.click(screen.getByTestId('toggle-play-btn'));
-    expect(screen.getByTestId('playing-state')).toHaveTextContent('Playing');
-  });
-
-  // Test 6: Toggle player open state
-  test('toggles the player open state', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Initially closed
-    expect(screen.getByTestId('player-open')).toHaveTextContent('Closed');
-    
-    // Toggle open
-    fireEvent.click(screen.getByTestId('toggle-open-btn'));
-    expect(screen.getByTestId('player-open')).toHaveTextContent('Open');
-    
-    // Toggle closed again
-    fireEvent.click(screen.getByTestId('toggle-open-btn'));
-    expect(screen.getByTestId('player-open')).toHaveTextContent('Closed');
-  });
-
-  // Test 7: Changing volume
-  test('changes the player volume', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Initial volume
-    expect(screen.getByTestId('volume-level')).toHaveTextContent('Volume: 50');
-    
-    // Change volume
-    fireEvent.change(screen.getByTestId('volume-slider'), { target: { value: "75" } });
-    
-    // Check if volume was updated
-    expect(screen.getByTestId('volume-level')).toHaveTextContent('Volume: 75');
-  });
-
-  // Test 8: Search functionality
-  test('handles search and uses mockSearchResults on error', async () => {
-    // Store original console.error
-    const originalConsoleError = console.error;
-    console.error = jest.fn();
-    
-    // Intentionally make axios fail
-    (axios.get as jest.Mock).mockRejectedValueOnce(new Error('API error'));
-    
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Set search query
-    fireEvent.change(screen.getByTestId('search-input'), { target: { value: "test search" } });
-    
-    // Perform search
-    fireEvent.click(screen.getByTestId('search-btn'));
-    
-    // Wait for search results to fallback to mockSearchResults
-    await waitFor(() => {
-      // The context should fall back to mockSearchResults
-      expect(screen.getByTestId('search-results-count')).toHaveTextContent('3 results');
-    });
-    
-    // Verify console.error was called with the error
-    expect(console.error).toHaveBeenCalledWith('YouTube API key is missing! Search will not work.');
-    
-    // Restore original console.error
-    console.error = originalConsoleError;
-  });
-
-  // Test 9: Saving a playlist
-  test('saves the playlist to user account', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add tracks to the playlist
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Save playlist
-    fireEvent.click(screen.getByTestId('save-playlist-btn'));
-    
-    // Wait for the save to complete
-    await waitFor(() => {
-      expect(playlistAPI.createPlaylist).toHaveBeenCalledWith(
-        'Test Playlist',
-        expect.any(Array)
-      );
-    });
-  });
-
-  // Test 10: Load tracks from localStorage on initialization
-  test('loads tracks from localStorage on initialization', async () => {
-    // Set up localStorage with tracks before rendering
-    getItemMock.mockImplementation((key) => {
-      if (key === 'vibeflo_playlist') {
-        return JSON.stringify(getMockTracks());
-      }
-      if (key === 'vibeflo_current_track') {
-        return JSON.stringify(getMockTracks()[0]);
-      }
-      return null;
-    });
-    
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Wait for effects to run and state to update
-    await waitFor(() => {
-      expect(screen.getByTestId('track-count')).toHaveTextContent('2 Tracks');
-      expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
-    });
-  });
-
-  // Test 11: Next and previous track controls
-  test('navigates to next and previous tracks', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add both tracks
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Add the second track manually
-    act(() => {
-      // Click again to add the first track (since our button only adds mockTracks[0])
-      fireEvent.click(screen.getByTestId('add-track-btn'));
-    });
-    
-    // Play the first track
-    fireEvent.click(screen.getByTestId('play-track-btn'));
-    expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
-    
-    // Navigate to next track (since we added the same track twice, it will just play the same track)
-    fireEvent.click(screen.getByTestId('next-track-btn'));
-    
-    // Navigate back to previous track
-    fireEvent.click(screen.getByTestId('prev-track-btn'));
-    expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
-  });
-
-  // Test 12: Handles player initialization error
-  test('handles player initialization error', async () => {
-    // Since we can't easily test this behavior directly, we'll skip the test
-    // for now and focus on other functionality
-    expect(true).toBeTruthy();
-  });
-
-  // Test 13: Search functionality with successful API response
-  test('successfully searches for tracks', async () => {
-    // Mock the environment variable
-    process.env.REACT_APP_YOUTUBE_API_KEY = 'mock-api-key';
-    
-    // Reset the axios mock to return successful response
-    (axios.get as jest.Mock).mockResolvedValueOnce({
-      data: {
-        items: [
-          {
-            id: { videoId: 'newSearchResult1' },
-            snippet: {
-              title: 'New Search Result 1',
-              channelTitle: 'New Channel 1',
-              thumbnails: {
-                default: { url: 'https://i.ytimg.com/vi/newSearchResult1/default.jpg' },
-                high: { url: 'https://i.ytimg.com/vi/newSearchResult1/hqdefault.jpg' }
-              }
-            }
-          },
-          {
-            id: { videoId: 'newSearchResult2' },
-            snippet: {
-              title: 'New Search Result 2',
-              channelTitle: 'New Channel 2',
-              thumbnails: {
-                default: { url: 'https://i.ytimg.com/vi/newSearchResult2/default.jpg' },
-                high: { url: 'https://i.ytimg.com/vi/newSearchResult2/hqdefault.jpg' }
-              }
-            }
-          },
-          {
-            id: { videoId: 'newSearchResult3' },
-            snippet: {
-              title: 'New Search Result 3',
-              channelTitle: 'New Channel 3',
-              thumbnails: {
-                default: { url: 'https://i.ytimg.com/vi/newSearchResult3/default.jpg' },
-                high: { url: 'https://i.ytimg.com/vi/newSearchResult3/hqdefault.jpg' }
-              }
-            }
-          }
-        ]
-      }
-    });
-    
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Set search query
-    fireEvent.change(screen.getByTestId('search-input'), { target: { value: "successful search" } });
-    
-    // Perform search
-    fireEvent.click(screen.getByTestId('search-btn'));
-    
-    // Wait for search results to be populated
-    await waitFor(() => {
-      expect(screen.getByTestId('search-results-count')).toHaveTextContent('3 results');
-      expect(axios.get).toHaveBeenCalledWith(
-        'https://www.googleapis.com/youtube/v3/search',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            q: 'successful search',
-            key: 'mock-api-key'
-          })
-        })
-      );
-    });
-    
-    // Clean up
+    // Reset environment variables
     delete process.env.REACT_APP_YOUTUBE_API_KEY;
   });
   
-  // Test 14: Player visibility state is saved to localStorage
-  test('saves player visibility state to localStorage', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Player is initially closed
-    expect(screen.getByTestId('player-open')).toHaveTextContent('Closed');
-    
-    // Toggle player open
-    fireEvent.click(screen.getByTestId('toggle-open-btn'));
-    
-    // Check localStorage was updated with 'true'
-    await waitFor(() => {
-      expect(setItemMock).toHaveBeenCalledWith(
-        'vibeflo_player_open',
-        'true'
+  afterEach(() => {
+    // Ensure timers are cleaned up
+    jest.useRealTimers();
+  });
+
+  // Group 1: Basic player functionality tests
+  describe('Basic Player Functionality', () => {
+    test('provides initial empty state and allows adding/removing tracks', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
       );
-    });
-    
-    // No need to test toggling again as it depends on implementation details
-  });
-  
-  // Test 15: Handles playback with empty playlist
-  test('handles playback controls with empty playlist', async () => {
-    // Reset localStorage mocks
-    getItemMock.mockImplementation(() => null);
-    
-    // Render with isolated provider for this test
-    const { unmount } = render(
-      <MusicPlayerProvider initialTracks={[]}>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Verify we start with empty tracks
-    expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
-    
-    // Try to play with empty playlist
-    fireEvent.click(screen.getByTestId('play-track-btn'));
-    expect(screen.getByTestId('current-track')).toHaveTextContent('No Track');
-    expect(screen.getByTestId('playing-state')).toHaveTextContent('Paused');
-    
-    // Try next and previous with empty playlist
-    fireEvent.click(screen.getByTestId('next-track-btn'));
-    expect(screen.getByTestId('current-track')).toHaveTextContent('No Track');
-    
-    fireEvent.click(screen.getByTestId('prev-track-btn'));
-    expect(screen.getByTestId('current-track')).toHaveTextContent('No Track');
-    
-    // Clean up this test
-    unmount();
-  });
-
-  // Test 16: Handles YouTube player state changes
-  test('handles YouTube player state changes', async () => {
-    // Reset localStorage mocks
-    getItemMock.mockImplementation(() => null);
-    
-    // Render with isolated provider with empty tracks
-    const { unmount } = render(
-      <MusicPlayerProvider initialTracks={[]}>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Verify we start with no tracks
-    expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
-    
-    // Add a track
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Wait for track to be added
-    await waitFor(() => {
+      
+      // Check initial state
+      expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
+      expect(screen.getByTestId('current-track')).toHaveTextContent('No Track');
+      expect(screen.getByTestId('playing-state')).toHaveTextContent('Paused');
+      expect(screen.getByTestId('volume-level')).toHaveTextContent('Volume: 50');
+      expect(screen.getByTestId('player-open')).toHaveTextContent('Closed');
+      
+      // Add a track
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('add-track-btn'));
+      });
+      
+      // Check if track was added
       expect(screen.getByTestId('track-count')).toHaveTextContent('1 Tracks');
-    });
-    
-    // Clean up
-    unmount();
-  });
-
-  // Test 17: Handles failed playlist save
-  test('handles failed playlist save', async () => {
-    // Mock the API to reject
-    playlistAPI.createPlaylist.mockRejectedValueOnce(new Error('Save failed'));
-    
-    // Mock toast to check for error message
-    const toast = require('react-hot-toast').toast;
-    
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Add a track to the playlist
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Try to save playlist
-    fireEvent.click(screen.getByTestId('save-playlist-btn'));
-    
-    // Check that error toast was shown with the actual message used in the implementation
-    await waitFor(() => {
-      expect(toast.error).toHaveBeenCalledWith('Failed to save playlist');
-    });
-  });
-  
-  // Test 18: Updates current track when tracks change
-  test('updates current track when original track is removed', async () => {
-    // Reset localStorage mocks
-    getItemMock.mockImplementation(() => null);
-    
-    // Render with isolated provider for this test
-    const { unmount } = render(
-      <MusicPlayerProvider initialTracks={[]}>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
-    
-    // Verify we start with no tracks
-    expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
-    
-    // Add a track
-    fireEvent.click(screen.getByTestId('add-track-btn'));
-    
-    // Wait for track to be added
-    await waitFor(() => {
-      expect(screen.getByTestId('track-count')).toHaveTextContent('1 Tracks');
-    });
-    
-    // Play it
-    fireEvent.click(screen.getByTestId('play-track-btn'));
-    expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
-    
-    // Remove the track
-    fireEvent.click(screen.getByTestId('remove-track-btn'));
-    
-    // Wait for track to be removed
-    await waitFor(() => {
+      expect(setItemMock).toHaveBeenCalledWith(
+        'vibeflo_playlist',
+        expect.any(String)
+      );
+      
+      // Now remove it
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('remove-track-btn'));
+      });
+      
+      // Check if track was removed
       expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
     });
+
+    test('handles playback controls (play, pause, next, previous)', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Add two tracks
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('add-track-btn'));
+        fireEvent.click(screen.getByTestId('add-track-btn'));
+      });
+      
+      // Play first track
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('play-track-btn'));
+      });
+      
+      // Check if playing
+      expect(screen.getByTestId('playing-state')).toHaveTextContent('Playing');
+      expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
+      
+      // Pause
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('toggle-play-btn'));
+      });
+      
+      expect(screen.getByTestId('playing-state')).toHaveTextContent('Paused');
+      
+      // Play again
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('toggle-play-btn'));
+      });
+      
+      expect(screen.getByTestId('playing-state')).toHaveTextContent('Playing');
+      
+      // Next track
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('next-track-btn'));
+      });
+      
+      // Previous track
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('prev-track-btn'));
+      });
+      
+      expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
+    });
     
-    // Clean up
-    unmount();
+    test('toggles UI states (open/close, minimize)', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Initially closed
+      expect(screen.getByTestId('player-open')).toHaveTextContent('Closed');
+      
+      // Toggle open
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('toggle-open-btn'));
+      });
+      
+      expect(screen.getByTestId('player-open')).toHaveTextContent('Open');
+      
+      // Toggle minimize
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('toggle-minimize-btn'));
+      });
+      
+      expect(screen.getByTestId('player-minimized')).toHaveTextContent('Minimized');
+      
+      // Toggle back to full
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('toggle-minimize-btn'));
+      });
+      
+      expect(screen.getByTestId('player-minimized')).toHaveTextContent('Full');
+    });
+    
+    test('changes volume and handles value limits', async () => {
+      // Create a mock player
+      const mockSetVolume = jest.fn();
+      const mockPlayerRef = { setVolume: mockSetVolume };
+      
+      const VolumeTestComponent = () => {
+        const { volume, setVolume, setPlayerReference } = useMusicPlayer();
+        
+        useEffect(() => {
+          setPlayerReference(mockPlayerRef);
+        }, [setPlayerReference]);
+        
+        return (
+          <div>
+            <div data-testid="volume">{volume}</div>
+            <button data-testid="set-high" onClick={() => setVolume(150)}>High</button>
+            <button data-testid="set-low" onClick={() => setVolume(-10)}>Low</button>
+            <button data-testid="set-normal" onClick={() => setVolume(75)}>Normal</button>
+          </div>
+        );
+      };
+      
+      render(
+        <MusicPlayerProvider>
+          <VolumeTestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Default volume
+      expect(screen.getByTestId('volume')).toHaveTextContent('50');
+      
+      // Test normal value
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('set-normal'));
+      });
+      
+      expect(screen.getByTestId('volume')).toHaveTextContent('75');
+      expect(mockSetVolume).toHaveBeenCalledWith(75);
+      
+      // Test high value (should clamp to 100)
+      mockSetVolume.mockClear();
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('set-high'));
+      });
+      
+      expect(screen.getByTestId('volume')).toHaveTextContent('100');
+      expect(mockSetVolume).toHaveBeenCalledWith(100);
+      
+      // Test low value (should clamp to 0)
+      mockSetVolume.mockClear();
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('set-low'));
+      });
+      
+      expect(screen.getByTestId('volume')).toHaveTextContent('0');
+      expect(mockSetVolume).toHaveBeenCalledWith(0);
+    });
   });
 
-  // Test 19: Volume persistence check
-  test('changes volume and updates UI', async () => {
-    render(
-      <MusicPlayerProvider>
-        <TestComponent />
-      </MusicPlayerProvider>
-    );
+  // Group 2: LocalStorage and persistence tests
+  describe('Storage and Persistence', () => {
+    test('loads tracks from localStorage on initialization', async () => {
+      // Set up localStorage with tracks before rendering
+      getItemMock.mockImplementation((key) => {
+        if (key === 'vibeflo_playlist') {
+          return JSON.stringify(getMockTracks());
+        }
+        if (key === 'vibeflo_current_track') {
+          return JSON.stringify(getMockTracks()[0]);
+        }
+        return null;
+      });
+      
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Wait for effects to run and state to update
+      await waitFor(() => {
+        expect(screen.getByTestId('track-count')).toHaveTextContent('2 Tracks');
+        expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
+      });
+    });
     
-    // Default volume should be 50
-    expect(screen.getByTestId('volume-level')).toHaveTextContent('Volume: 50');
+    test('handles localStorage events from other tabs', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Verify initial state
+      expect(screen.getByTestId('track-count')).toHaveTextContent('0 Tracks');
+      
+      // Simulate localStorage events with act()
+      await act(async () => {
+        const playlistEvent = new StorageEvent('storage', {
+          key: 'vibeflo_playlist',
+          newValue: JSON.stringify(getMockTracks()),
+          oldValue: null,
+          url: window.location.href
+        });
+        window.dispatchEvent(playlistEvent);
+      });
+      
+      await act(async () => {
+        const currentTrackEvent = new StorageEvent('storage', {
+          key: 'vibeflo_current_track',
+          newValue: JSON.stringify(getMockTracks()[0]),
+          oldValue: null,
+          url: window.location.href
+        });
+        window.dispatchEvent(currentTrackEvent);
+      });
+      
+      // Verify state updates
+      await waitFor(() => {
+        expect(screen.getByTestId('track-count')).toHaveTextContent('2 Tracks');
+        expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
+      });
+    });
     
-    // Change volume
-    fireEvent.change(screen.getByTestId('volume-slider'), { target: { value: "60" } });
+    test('handles custom events for playlist loading', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Dispatch custom event
+      await act(async () => {
+        window.dispatchEvent(new CustomEvent('vibeflo_playlist_loaded', {
+          detail: {
+            tracks: getMockTracks(),
+            currentTrack: getMockTracks()[0],
+            keepOpen: true
+          }
+        }));
+      });
+      
+      // Verify state updates
+      await waitFor(() => {
+        expect(screen.getByTestId('track-count')).toHaveTextContent('2 Tracks');
+        expect(screen.getByTestId('current-track')).toHaveTextContent('Test Track 1');
+        expect(screen.getByTestId('player-open')).toHaveTextContent('Open');
+      });
+    });
+  });
+
+  // Group 3: Search functionality tests
+  describe('Search Functionality', () => {
+    test('handles successful search with API key', async () => {
+      // Set API key and mock successful response
+      process.env.REACT_APP_YOUTUBE_API_KEY = 'mock-api-key';
+      
+      (axios.get as jest.Mock).mockResolvedValueOnce({
+        data: {
+          items: [
+            {
+              id: { videoId: 'result1' },
+              snippet: {
+                title: 'Search Result 1',
+                channelTitle: 'Channel 1',
+                thumbnails: {
+                  default: { url: 'https://example.com/thumbnail1.jpg' },
+                  high: { url: 'https://example.com/thumbnail1_high.jpg' }
+                }
+              }
+            },
+            {
+              id: { videoId: 'result2' },
+              snippet: {
+                title: 'Search Result 2',
+                channelTitle: 'Channel 2',
+                thumbnails: {
+                  default: { url: 'https://example.com/thumbnail2.jpg' },
+                  high: { url: 'https://example.com/thumbnail2_high.jpg' }
+                }
+              }
+            }
+          ]
+        }
+      });
+      
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Set search query and perform search
+      await act(async () => {
+        fireEvent.change(screen.getByTestId('search-input'), { 
+          target: { value: 'test query' } 
+        });
+        
+        fireEvent.click(screen.getByTestId('search-btn'));
+      });
+      
+      // Verify search call and results
+      await waitFor(() => {
+        expect(axios.get).toHaveBeenCalledWith(
+          'https://www.googleapis.com/youtube/v3/search',
+          expect.objectContaining({
+            params: expect.objectContaining({
+              q: 'test query',
+              key: 'mock-api-key'
+            })
+          })
+        );
+        
+        expect(screen.getByTestId('search-results-count')).toHaveTextContent('2 results');
+      });
+    });
     
-    // Check UI reflects change
-    expect(screen.getByTestId('volume-level')).toHaveTextContent('Volume: 60');
+    test('provides mock results when API key is missing', async () => {
+      // Mock console.error
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+      
+      // Ensure API key is unset
+      delete process.env.REACT_APP_YOUTUBE_API_KEY;
+      
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Set search query and perform search
+      await act(async () => {
+        fireEvent.change(screen.getByTestId('search-input'), { 
+          target: { value: 'test query' } 
+        });
+        
+        fireEvent.click(screen.getByTestId('search-btn'));
+      });
+      
+      // Verify error was logged and mock results provided
+      await waitFor(() => {
+        expect(console.error).toHaveBeenCalledWith('YouTube API key is missing! Search will not work.');
+        expect(screen.getByTestId('search-results-count')).toHaveTextContent('3 results');
+      });
+      
+      // Restore console.error
+      console.error = originalConsoleError;
+    });
+    
+    test('handles search API errors gracefully', async () => {
+      // Set API key
+      process.env.REACT_APP_YOUTUBE_API_KEY = 'mock-api-key';
+      
+      // Mock different error scenarios
+      const errorCases = [
+        { 
+          name: 'general error',
+          mock: jest.fn().mockRejectedValueOnce(new Error('API error')),
+          expectText: '3 results' // Should fall back to mock results
+        },
+        {
+          name: '403 error',
+          mock: jest.fn().mockRejectedValueOnce({
+            response: {
+              status: 403,
+              data: { error: { message: 'API key quota exceeded' } }
+            }
+          }),
+          expectText: '3 results'
+        },
+        {
+          name: 'API data error',
+          mock: jest.fn().mockResolvedValueOnce({
+            data: {
+              error: {
+                message: 'YouTube API data error'
+              }
+            }
+          }),
+          expectText: '3 results'
+        }
+      ];
+      
+      // Test each error case
+      for (const { name, mock, expectText } of errorCases) {
+        // Reset axios mock
+        (axios.get as jest.Mock).mockClear();
+        (axios.get as jest.Mock) = mock;
+        
+        const { unmount } = render(
+          <MusicPlayerProvider>
+            <TestComponent />
+          </MusicPlayerProvider>
+        );
+        
+        // Set search query and perform search
+        await act(async () => {
+          fireEvent.change(screen.getByTestId('search-input'), { 
+            target: { value: `error test ${name}` } 
+          });
+          
+          fireEvent.click(screen.getByTestId('search-btn'));
+        });
+        
+        // Verify fallback to mock results
+        await waitFor(() => {
+          expect(screen.getByTestId('search-results-count')).toHaveTextContent(expectText);
+        });
+        
+        // Clean up after each sub-test
+        unmount();
+      }
+    });
+    
+    test('handles empty search query', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Set empty search query and perform search
+      await act(async () => {
+        fireEvent.change(screen.getByTestId('search-input'), { 
+          target: { value: '' } 
+        });
+        
+        fireEvent.click(screen.getByTestId('search-btn'));
+      });
+      
+      // Verify no API call was made
+      expect(axios.get).not.toHaveBeenCalled();
+    });
+  });
+
+  // Group 4: Playlist management
+  describe('Playlist Management', () => {
+    test('saves playlist to user account', async () => {
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Add a track
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('add-track-btn'));
+      });
+      
+      // Save playlist
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('save-playlist-btn'));
+      });
+      
+      // Verify API call
+      await waitFor(() => {
+        expect(playlistAPI.createPlaylist).toHaveBeenCalledWith(
+          'Test Playlist',
+          expect.any(Array)
+        );
+      });
+    });
+    
+    test('handles save playlist error', async () => {
+      // Mock the toast function
+      const toast = require('react-hot-toast').toast;
+      
+      // Mock API to reject
+      (playlistAPI.createPlaylist as jest.Mock).mockRejectedValueOnce(
+        new Error('Failed to save playlist')
+      );
+      
+      render(
+        <MusicPlayerProvider>
+          <TestComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Add a track
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('add-track-btn'));
+      });
+      
+      // Save playlist
+      await act(async () => {
+        fireEvent.click(screen.getByTestId('save-playlist-btn'));
+      });
+      
+      // Verify error toast was shown
+      await waitFor(() => {
+        expect(toast.error).toHaveBeenCalledWith('Failed to save playlist');
+      });
+    });
+  });
+
+  // Group 5: Error handling tests
+  describe('Error Handling', () => {
+    test('handles missing YouTube player gracefully', async () => {
+      // Skip checking for console logs and just verify the component can handle
+      // a missing YouTube player without throwing exceptions
+      
+      // Mock the console.log function to avoid logging to test output
+      jest.spyOn(console, 'log').mockImplementation(() => {});
+      
+      // Create a simple component that triggers play with no player reference
+      const TestPlayerComponent = () => {
+        const { play } = useMusicPlayer();
+        
+        return (
+          <button 
+            data-testid="play-btn" 
+            onClick={() => {
+              // This should handle missing player gracefully
+              play();
+            }}
+          >
+            Play
+          </button>
+        );
+      };
+      
+      render(
+        <MusicPlayerProvider>
+          <TestPlayerComponent />
+        </MusicPlayerProvider>
+      );
+      
+      // Try to play without a player, this would throw an error if not handled properly
+      expect(() => {
+        fireEvent.click(screen.getByTestId('play-btn'));
+      }).not.toThrow(); // Test passes if no exception is thrown
+      
+      // Restore original console.log implementation
+      jest.restoreAllMocks();
+    });
+    
+    test('handles custom event errors', async () => {
+      // Mock console.error
+      const originalConsoleError = console.error;
+      console.error = jest.fn();
+      
+      render(
+        <MusicPlayerProvider>
+          <div data-testid="test">Test</div>
+        </MusicPlayerProvider>
+      );
+      
+      // Trigger an error by providing invalid data
+      await act(async () => {
+        window.dispatchEvent(new CustomEvent('vibeflo_playlist_loaded', {
+          detail: { tracks: null }
+        }));
+      });
+      
+      // Verify error was logged
+      expect(console.error).toHaveBeenCalledWith(
+        expect.stringContaining('Error handling custom playlist event'),
+        expect.anything()
+      );
+      
+      // Restore console.error
+      console.error = originalConsoleError;
+    });
   });
 }); 

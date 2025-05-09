@@ -365,7 +365,7 @@ const Stats: React.FC = () => {
 
   // Render tab buttons using Material UI Tabs to match ThemeSelector
   const renderTabButtons = () => {
-    // Convert activeTab to numeric value for Material UI Tabs
+    // Function to determine the value to pass to MUI Tabs for the current activeTab
     const getTabValue = () => {
       switch (activeTab) {
         case 'overview': return 0;
@@ -374,7 +374,7 @@ const Stats: React.FC = () => {
         default: return 0;
       }
     };
-
+    
     // Handle tab change
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
       switch (newValue) {
@@ -387,55 +387,84 @@ const Stats: React.FC = () => {
         case 2:
           setActiveTab('details');
           break;
-        default:
-          setActiveTab('overview');
       }
     };
-
+    
     return (
-      <Box sx={{ 
-        borderBottom: 1, 
-        borderColor: 'rgba(255, 255, 255, 0.2)', 
-        mb: 4,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        '& .MuiTabs-indicator': {
-          display: 'none'
-        }
-      }}>
+      <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider', marginBottom: 3 }}>
         <Tabs 
-          value={getTabValue()} 
-          onChange={handleTabChange} 
-          aria-label="statistics categories"
-          sx={{
-            '& .MuiTab-root': {
-              color: 'rgba(255, 255, 255, 0.7)',
-              marginRight: '24px',
-              padding: '8px 16px',
-              fontSize: '0.875rem',
-              fontWeight: 500,
-              transition: 'all 0.2s ease',
-              borderBottom: '2px solid transparent',
-              '&.Mui-selected': {
-                color: '#ffffff',
-                fontWeight: 'bold',
-                borderBottom: '2px solid #9333ea'
-              },
-              '&:hover': {
-                color: '#ffffff',
-                opacity: 1
-              }
-            }
-          }}
+          value={getTabValue()}
+          onChange={handleTabChange}
+          aria-label="stats tabs"
+          variant="fullWidth"
+          data-testid="stats-tabs"
         >
-          <Tab label="Overview" />
-          <Tab label="Trends" />
-          <Tab label="Session History" />
+          <Tab 
+            label="Overview" 
+            id="tab-overview"
+            data-testid="tab-overview"
+            aria-controls="tabpanel-overview"
+          />
+          <Tab 
+            label="Trends" 
+            id="tab-trends"
+            data-testid="tab-trends"
+            aria-controls="tabpanel-trends"
+          />
+          <Tab 
+            label="Session History" 
+            id="tab-details"
+            data-testid="tab-history"
+            aria-controls="tabpanel-details"
+          />
         </Tabs>
       </Box>
     );
   };
+
+  // Render time range selection buttons
+  const renderTimeRangeButtons = () => (
+    <div className="bg-gray-800 bg-opacity-80 p-4 rounded-lg shadow-lg">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-white">Time Range:</h2>
+        <div className="flex space-x-2">
+          <button
+            data-testid="range-7days"
+            className={`px-3 py-1 rounded-md text-sm font-medium ${
+              timeRange === '7days' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-gray-700 text-white/70 hover:bg-gray-600'
+            }`}
+            onClick={() => setTimeRange('7days')}
+          >
+            Last 7 Days
+          </button>
+          <button
+            data-testid="range-30days"
+            className={`px-3 py-1 rounded-md text-sm font-medium ${
+              timeRange === '30days' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-gray-700 text-white/70 hover:bg-gray-600'
+            }`}
+            onClick={() => setTimeRange('30days')}
+          >
+            Last 30 Days
+          </button>
+          <button
+            data-testid="range-all"
+            className={`px-3 py-1 rounded-md text-sm font-medium ${
+              timeRange === 'all' 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-gray-700 text-white/70 hover:bg-gray-600'
+            }`}
+            onClick={() => setTimeRange('all')}
+          >
+            All Time
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   // Render weekly activity table
   const renderWeeklyActivityTable = () => {
@@ -729,43 +758,7 @@ const Stats: React.FC = () => {
     return (
       <div className="grid grid-cols-1 gap-8">
         {/* Time range selector */}
-        <div className="bg-gray-800 bg-opacity-80 p-4 rounded-lg shadow-lg">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-white">Time Range:</h2>
-            <div className="flex space-x-2">
-              <button
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  timeRange === '7days' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-gray-700 text-white/70 hover:bg-gray-600'
-                }`}
-                onClick={() => setTimeRange('7days')}
-              >
-                Last 7 Days
-              </button>
-              <button
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  timeRange === '30days' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-gray-700 text-white/70 hover:bg-gray-600'
-                }`}
-                onClick={() => setTimeRange('30days')}
-              >
-                Last 30 Days
-              </button>
-              <button
-                className={`px-3 py-1 rounded-md text-sm font-medium ${
-                  timeRange === 'all' 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-gray-700 text-white/70 hover:bg-gray-600'
-                }`}
-                onClick={() => setTimeRange('all')}
-              >
-                All Time
-              </button>
-            </div>
-          </div>
-        </div>
+        {renderTimeRangeButtons()}
         
         <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Focus Time by Day</h2>
@@ -862,55 +855,46 @@ const Stats: React.FC = () => {
     );
   };
 
-  // Render details tab content
+  // Display session history details
   const renderDetailsTab = () => (
-    <>
-      {sessions.length > 0 && (
-        <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg">
-          <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Session History</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-700">
-              <thead>
-                <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Start Time</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Duration</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Task</th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-white">Status</th>
+    <div className="bg-gray-900/40 rounded-lg p-6 shadow-lg">
+      <h2 className="text-2xl font-bold mb-4">Session History</h2>
+      
+      {sessions && sessions.length > 0 ? (
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-700">
+            <thead>
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Start Time</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Task</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Duration</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-700">
+              {sessions.map((session) => (
+                <tr key={session.id} className="hover:bg-gray-800/50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatDate(session.created_at)}</td>
+                  <td className="px-6 py-4 text-sm text-gray-300">{session.task || 'No task name'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{session.duration} minutes</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      session.completed 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {session.completed ? 'Completed' : 'Incomplete'}
+                    </span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-700">
-                {sessions.map((session) => (
-                  <tr key={session.id} className="hover:bg-gray-700 transition-colors duration-150">
-                    <td className="px-4 py-3 text-sm text-white">{formatDate(session.start_time || session.created_at)}</td>
-                    <td className="px-4 py-3 text-sm text-white">{formatDuration(session.duration)}</td>
-                    <td className="px-4 py-3 text-sm text-white">{session.task_name || session.task || 'No task'}</td>
-                    <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${
-                        session.completed 
-                          ? 'bg-green-700 text-green-100' 
-                          : 'bg-yellow-700 text-yellow-100'
-                      }`}>
-                        {session.completed ? 'Completed' : 'Interrupted'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
+      ) : (
+        renderEmptyState('Complete a Pomodoro session to see your history here. Your focus sessions will be tracked and displayed in this table.')
       )}
-
-      {(!sessions || sessions.length === 0) && (
-        <div className="bg-gray-800 bg-opacity-80 p-8 rounded-lg shadow-lg text-center">
-          <svg className="w-16 h-16 mx-auto mb-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <p className="text-lg text-white">No sessions recorded yet.</p>
-          <p className="mt-2 text-gray-300">Complete a Pomodoro session to see your history.</p>
-        </div>
-      )}
-    </>
+    </div>
   );
 
   // Render tab content based on active tab
@@ -927,30 +911,47 @@ const Stats: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white"></div>
+  // Function to display a loading spinner
+  const renderLoadingSpinner = () => (
+    <div className="flex justify-center items-center h-64">
+      <div data-testid="loading-spinner" className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-white" role="status"></div>
+    </div>
+  );
+  
+  // Function to display error message
+  const renderErrorMessage = () => (
+    <div className="bg-red-900/70 border border-red-500 text-white p-4 rounded-lg shadow-lg text-center" data-testid="error-message">
+      <h3 className="text-xl font-semibold mb-2">Error</h3>
+      <p className="mb-4">{error}</p>
+      <button 
+        onClick={() => refreshStats()}
+        className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        data-testid="retry-button"
+      >
+        Try Again
+      </button>
+    </div>
+  );
+
+  // Add data-testid to empty state message
+  const renderEmptyState = (message: string) => (
+    <div className="text-center py-12 px-4" data-testid="empty-state">
+      <div className="bg-gray-800/50 rounded-lg p-8 max-w-lg mx-auto">
+        <svg className="w-16 h-16 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <h3 className="text-xl font-semibold mb-2 text-gray-300">No sessions recorded yet</h3>
+        <p className="text-gray-400">{message}</p>
       </div>
-    );
+    </div>
+  );
+
+  if (loading) {
+    return renderLoadingSpinner();
   }
 
   if (error) {
-    const isServerError = error.includes('500') || error.includes('server error');
-    return (
-      <div className="backdrop-blur-sm bg-white/30 p-6 rounded-lg text-center text-white">
-        <h2 className="text-xl font-bold mb-2">{isServerError ? 'Server Error' : 'Error Loading Stats'}</h2>
-        <p className="text-lg mb-4">{isServerError 
-          ? 'The stats server is currently experiencing issues. This is likely a temporary problem with our backend systems.' 
-          : error}</p>
-        <button 
-          onClick={() => refreshStats()} 
-          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700"
-        >
-          Try Again
-        </button>
-      </div>
-    );
+    return renderErrorMessage();
   }
 
   return (

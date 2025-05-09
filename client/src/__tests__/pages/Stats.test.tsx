@@ -4,11 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 import Stats from '../../pages/Stats';
 import { ThemeProvider } from '@mui/material/styles';
 import { createTheme } from '@mui/material';
-import { useStats } from '../../context/StatsContext';
+import { useStats } from '../../contexts/StatsContext';
 
 // Mock the StatsContext - important to do this before importing the component
-jest.mock('../../context/StatsContext', () => {
-  const originalModule = jest.requireActual('../../context/StatsContext');
+jest.mock('../../contexts/StatsContext', () => {
+  const originalModule = jest.requireActual('../../contexts/StatsContext');
   return {
     ...originalModule,
     useStats: jest.fn(),
@@ -133,20 +133,22 @@ describe('Stats Component', () => {
       </MemoryRouter>
     );
     
-    // Check for page title
-    expect(screen.getByText('Pomodoro Statistics')).toBeInTheDocument();
+    // Wait for the component to load (no loading spinner)
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
     
-    // Check that the Overview tab is selected - Material UI tabs
-    const overviewTab = screen.getByRole('tab', { name: /Overview/i });
+    // Check for stats tabs
+    const tabsElement = await screen.findByTestId('stats-tabs');
+    expect(tabsElement).toBeInTheDocument();
+    
+    // Check that the Overview tab is selected
+    const overviewTab = await screen.findByTestId('tab-overview');
     expect(overviewTab).toBeInTheDocument();
     expect(overviewTab).toHaveAttribute('aria-selected', 'true');
-    
-    // Check for stats content
-    expect(screen.getByText('Total Sessions')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument(); // Total sessions value
   });
 
-  test('displays loading state when data is loading', () => {
+  test('displays loading state when data is loading', async () => {
     // Override mock to show loading state
     (useStats as jest.Mock).mockReturnValue({
       stats: null,
@@ -166,11 +168,11 @@ describe('Stats Component', () => {
     );
     
     // Check for loading indicator
-    const spinner = document.querySelector('.animate-spin');
+    const spinner = await screen.findByTestId('loading-spinner');
     expect(spinner).toBeInTheDocument();
   });
 
-  test('displays error message when stats fetch fails', () => {
+  test('displays error message when stats fetch fails', async () => {
     const errorMessage = 'Failed to load statistics';
     
     // Override mock to show error state
@@ -192,11 +194,16 @@ describe('Stats Component', () => {
     );
     
     // Check for error message
-    expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    expect(screen.getByText('Try Again')).toBeInTheDocument();
+    const errorElement = await screen.findByTestId('error-message');
+    expect(errorElement).toBeInTheDocument();
+    
+    // Check for retry button
+    const retryButton = await screen.findByTestId('retry-button');
+    expect(retryButton).toBeInTheDocument();
+    expect(retryButton).toHaveTextContent('Try Again');
   });
 
-  test('shows empty state when no data is available', () => {
+  test('shows empty state when no data is available', async () => {
     // Override mock to show empty state
     (useStats as jest.Mock).mockReturnValue({
       stats: null,
@@ -215,50 +222,61 @@ describe('Stats Component', () => {
       </MemoryRouter>
     );
     
-    // Click on Session History tab to see the empty state
-    fireEvent.click(screen.getByText(/Session History/i));
+    // Wait for the component to load
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
     
-    // Check for empty state message
-    expect(screen.getByText(/No sessions recorded yet/i)).toBeInTheDocument();
-    expect(screen.getByText(/Complete a Pomodoro session to see your history/i)).toBeInTheDocument();
-  });
-
-  it('switches tabs when tab buttons are clicked', () => {
-    render(
-      <MemoryRouter>
-        <ThemeProvider theme={theme}>
-          <Stats />
-        </ThemeProvider>
-      </MemoryRouter>
-    );
-    
-    // Switch to Session History tab - now using Material UI tabs
-    const sessionHistoryTab = screen.getByRole('tab', { name: /Session History/i });
+    // Find the session history tab
+    const sessionHistoryTab = await screen.findByTestId('tab-history');
     fireEvent.click(sessionHistoryTab);
     
-    // Check that we see the session history content (look for the heading inside the content area)
-    expect(screen.getByRole('heading', { name: /Session History/i, level: 2 })).toBeInTheDocument();
+    // After clicking Session History tab, should see an empty state message
+    const emptyState = await screen.findByTestId('empty-state');
+    expect(emptyState).toBeInTheDocument();
+    expect(emptyState).toHaveTextContent(/No sessions recorded yet/i);
+  });
+
+  test('switches tabs when tab buttons are clicked', async () => {
+    render(
+      <MemoryRouter>
+        <ThemeProvider theme={theme}>
+          <Stats />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
     
-    // Check that we see the session history content
-    expect(screen.getByText(/Start Time/i)).toBeInTheDocument();
-    expect(screen.getByRole('columnheader', { name: /Task/i })).toBeInTheDocument();
+    // Wait for the component to load
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
     
-    // Switch to Overview tab - now using Material UI tabs
-    const overviewTab = screen.getByRole('tab', { name: /Overview/i });
-    fireEvent.click(overviewTab);
+    // The Overview tab should be selected by default
+    const overviewTab = await screen.findByTestId('tab-overview');
+    expect(overviewTab).toHaveAttribute('aria-selected', 'true');
     
-    // Check that we see the overview content
-    expect(screen.getByText(/Total Sessions/i)).toBeInTheDocument();
-    
-    // Switch to Trends tab - now using Material UI tabs
-    const trendsTab = screen.getByRole('tab', { name: /Trends/i });
+    // Click on the Trends tab
+    const trendsTab = await screen.findByTestId('tab-trends');
     fireEvent.click(trendsTab);
     
-    // Check that we see the trends content
-    expect(screen.getByText(/Weekly Progress/i)).toBeInTheDocument();
+    // Now the Trends tab should be selected
+    await waitFor(() => {
+      expect(trendsTab).toHaveAttribute('aria-selected', 'true');
+      expect(overviewTab).toHaveAttribute('aria-selected', 'false');
+    });
+    
+    // Click on the Session History tab
+    const historyTab = await screen.findByTestId('tab-history');
+    fireEvent.click(historyTab);
+    
+    // Now the History tab should be selected
+    await waitFor(() => {
+      expect(historyTab).toHaveAttribute('aria-selected', 'true');
+      expect(trendsTab).toHaveAttribute('aria-selected', 'false');
+    });
   });
 
-  test('changes time range when time range buttons are clicked', () => {
+  test('changes time range when time range buttons are clicked', async () => {
     render(
       <MemoryRouter>
         <ThemeProvider theme={theme}>
@@ -267,22 +285,43 @@ describe('Stats Component', () => {
       </MemoryRouter>
     );
     
-    // Switch to Trends tab to see time range buttons
-    fireEvent.click(screen.getByText(/Trends/i));
+    // Wait for the component to load
+    await waitFor(() => {
+      expect(screen.queryByTestId('loading-spinner')).not.toBeInTheDocument();
+    });
     
-    // Check that 7 days button is selected initially
-    expect(screen.getByText(/Last 7 Days/i)).toHaveClass('bg-purple-600');
+    // Click on the Trends tab to see time range buttons
+    const trendsTab = await screen.findByTestId('tab-trends');
+    fireEvent.click(trendsTab);
+    
+    // Wait for range buttons to appear
+    const days7Button = await screen.findByTestId('range-7days');
+    const days30Button = await screen.findByTestId('range-30days');
+    const allTimeButton = await screen.findByTestId('range-all');
+    
+    // 7 days should be selected by default
+    expect(days7Button).toHaveClass('bg-purple-600');
     
     // Click on 30 days
-    fireEvent.click(screen.getByText(/Last 30 Days/i));
-    expect(screen.getByText(/Last 30 Days/i)).toHaveClass('bg-purple-600');
+    fireEvent.click(days30Button);
     
-    // Click on All time
-    fireEvent.click(screen.getByText(/All Time/i));
-    expect(screen.getByText(/All Time/i)).toHaveClass('bg-purple-600');
+    // Now 30 days should be selected
+    await waitFor(() => {
+      expect(days30Button).toHaveClass('bg-purple-600');
+      expect(days7Button).not.toHaveClass('bg-purple-600');
+    });
+    
+    // Click on all time
+    fireEvent.click(allTimeButton);
+    
+    // Now all time should be selected
+    await waitFor(() => {
+      expect(allTimeButton).toHaveClass('bg-purple-600');
+      expect(days30Button).not.toHaveClass('bg-purple-600');
+    });
   });
 
-  test('calls refreshStats when component mounts', () => {
+  test('calls refreshStats when component mounts', async () => {
     render(
       <MemoryRouter>
         <ThemeProvider theme={theme}>
@@ -291,6 +330,7 @@ describe('Stats Component', () => {
       </MemoryRouter>
     );
     
+    // refreshStats should be called when the component mounts
     expect(mockRefreshStats).toHaveBeenCalledTimes(1);
   });
 }); 

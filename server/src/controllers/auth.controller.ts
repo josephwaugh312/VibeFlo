@@ -617,4 +617,20 @@ const recordSuccessfulLogin = async (userId: number, req: Request) => {
     console.error('Error recording successful login:', error);
     // Don't throw error, just log it
   }
-}; 
+};
+
+/**
+ * Logout user by clearing the token cookie
+ */
+export const logout = handleAsync(async (req: Request, res: Response) => {
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax'
+  });
+  
+  return res.status(200).json({
+    success: true,
+    message: 'Logout successful'
+  });
+}); 

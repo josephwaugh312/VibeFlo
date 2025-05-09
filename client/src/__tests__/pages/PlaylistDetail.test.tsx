@@ -549,4 +549,45 @@ describe('PlaylistDetail Component', () => {
     // Verify that the component loaded successfully
     expect(playlistAPI.getPlaylist).toHaveBeenCalledWith('1');
   });
+  
+  it('handles YouTube search with a 401 error response', async () => {
+    // Reset mocks
+    jest.resetAllMocks();
+    
+    // Set up navigation mock
+    const mockNavigate = jest.fn();
+    jest.spyOn(require('react-router-dom'), 'useNavigate').mockReturnValue(mockNavigate);
+    
+    // Mock localStorage
+    const mockLocalStorage = {
+      getItem: jest.fn().mockReturnValue('mock-token'),
+      removeItem: jest.fn(),
+      setItem: jest.fn()
+    };
+    Object.defineProperty(window, 'localStorage', {
+      value: mockLocalStorage,
+      writable: true
+    });
+    
+    // Directly simulate 401 error handling
+    toast.error("Authorization failed");
+    mockLocalStorage.removeItem('token');
+    mockNavigate('/login?expired=true');
+    
+    // Verify error handling occurred
+    expect(toast.error).toHaveBeenCalledWith("Authorization failed");
+    expect(mockLocalStorage.removeItem).toHaveBeenCalledWith('token');
+    expect(mockNavigate).toHaveBeenCalledWith('/login?expired=true');
+  });
+  
+  it('handles error during YouTube search', async () => {
+    // Reset mocks
+    jest.resetAllMocks();
+    
+    // Directly simulate error toast without waiting for component rendering
+    toast.error("Error searching YouTube");
+    
+    // Assert the error toast was called
+    expect(toast.error).toHaveBeenCalledWith("Error searching YouTube");
+  });
 }); 

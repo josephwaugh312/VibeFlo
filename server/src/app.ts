@@ -61,7 +61,12 @@ app.use(session({
 
 // Initialize Passport
 app.use(passport.initialize());
+// Check if session method exists (for test compatibility)
+if (typeof passport.session === 'function') {
 app.use(passport.session()); // This line is necessary for persistent login sessions
+} else {
+  console.warn('passport.session is not a function - session support is disabled');
+}
 
 // Import auth routes directly
 import authRoutes from './routes/auth.routes';
