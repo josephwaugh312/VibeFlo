@@ -36,7 +36,7 @@ index fec91c7..2098a49 100644
    const playerRef = useRef<any>(null);
    
 -  // YouTube API key
--  const YOUTUBE_API_KEY = '***REMOVED***';
+-  const YOUTUBE_API_KEY = 'AIzaSyCoui8gnwmosPMGCGuX2cImY4SLre7JgiA';
 +  // YouTube API key from environment variables
 +  const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
    
@@ -51,7 +51,7 @@ index 424c73b..7b26a28 100644
  import { Track } from '../components/music/MusicPlayer';
  
 -// YouTube API key - same one used in MusicPlayer
--const YOUTUBE_API_KEY = '***REMOVED***';
+-const YOUTUBE_API_KEY = 'AIzaSyCoui8gnwmosPMGCGuX2cImY4SLre7JgiA';
 +// YouTube API key from environment variables
 +const YOUTUBE_API_KEY = process.env.REACT_APP_YOUTUBE_API_KEY || '';
  

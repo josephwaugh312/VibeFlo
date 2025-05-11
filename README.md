@@ -2,7 +2,35 @@
 
 VibeFlo is a comprehensive study and productivity application centered around the Pomodoro Technique, designed to help users maximize focus, track progress, and create the perfect study environment. With advanced features like customizable timers, integrated to-do lists, ambient music control, and detailed productivity analytics, VibeFlo transforms how you study, work, and focus.
 
-![VibeFlo Screenshot](https://example.com/screenshot.png)
+![VibeFlo Dashboard](docs/images/dashboard.png)
+
+## Features Showcase
+
+### 🍅 Pomodoro Timer & Session Tracking
+Keep track of your focus sessions with our intuitive timer interface. Each completed session is automatically recorded with accurate duration tracking.
+
+![Pomodoro Timer](docs/images/pomodoro-dashboard.png)
+
+### 📊 Detailed Analytics Dashboard
+Monitor your productivity with comprehensive statistics. See your total focus time, completed sessions, and performance insights.
+
+![Stats Dashboard](docs/images/stats-dashboard.png)
+
+### 🎨 Customizable Themes
+Create your perfect focus environment with our selection of beautifully designed themes.
+
+![Theme Selector](docs/images/theme-selector.png)
+
+### 🎵 Integrated Music Player
+Control your study music without leaving the app. Create and manage playlists for different focus scenarios.
+
+![Music Player](docs/images/playlists.png)
+
+### 👤 User Profile & Authentication
+Secure login and profile management that remembers your settings across sessions.
+
+![User Profile](docs/images/profile.png)
+![Login Screen](docs/images/login.png)
 
 ## Key Features
 

@@ -89,4 +89,13 @@ client/build/
 /server/.env
 /client/.env.*
 /server/.env.*
-/client_secret_* 
+/client_secret_*
+
+# Ensure docs/images is not ignored
+!docs/
+!docs/images/
+!docs/images/*.png
+!docs/images/*.jpg
+!docs/images/*.jpeg
+!docs/images/*.gif
+!docs/images/*.svg 
