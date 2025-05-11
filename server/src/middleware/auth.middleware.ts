@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import db from '../config/db';
 
 // Extend the Request type to include user
-interface AuthRequest extends Request {
+export interface AuthRequest extends Request {
   user?: User;
 }
 

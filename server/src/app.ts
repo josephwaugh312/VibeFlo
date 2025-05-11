@@ -71,8 +71,9 @@ app.use(passport.session()); // This line is necessary for persistent login sess
 // Import auth routes directly
 import authRoutes from './routes/auth.routes';
 
-// Mount auth routes directly at /auth
+// Mount auth routes directly at /auth AND at /api/auth for backward compatibility
 app.use('/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 
 // Mount API routes
 app.use('/api', apiRoutes);
