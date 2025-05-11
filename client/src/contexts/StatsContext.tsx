@@ -287,25 +287,45 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       if (statsData) {
         // Ensure all activity objects are defined using a properly typed approach
         const typedStatsData = statsData as any; // Use 'any' temporarily to handle property name mismatch
+        
+        console.log("Raw stats data from server:", typedStatsData);
+        
+        // Server returns totalMinutes, but frontend expects totalFocusTime
+        // Server returns averageSessionMinutes, but frontend might expect averageSessionDuration
+        // Create a properly transformed stats object that works with our UI
         const safeStats: PomodoroStats = {
-          totalSessions: typedStatsData.totalSessions,
-          completedSessions: typedStatsData.completedSessions,
-          // Fix property name mismatch by checking for both properties
-          totalFocusTime: typedStatsData.totalFocusTime || typedStatsData.totalFocusTimeMinutes || 0,
+          totalSessions: typedStatsData.totalSessions || 0,
+          completedSessions: typedStatsData.completedSessions || 0,
+          
+          // Map totalMinutes from server to totalFocusTime for frontend
+          totalFocusTime: typedStatsData.totalMinutes || 0,
+          totalFocusTimeMinutes: typedStatsData.totalMinutes || 0,
+          
+          // Other stats fields may not be on the server response
           lastWeekActivity: typedStatsData.lastWeekActivity || {},
           last30DaysActivity: typedStatsData.last30DaysActivity || {},
           allTimeActivity: typedStatsData.allTimeActivity || {},
-          averageSessionDuration: typedStatsData.averageSessionDuration || typedStatsData.averageSessionDurationMinutes || 0,
-          mostProductiveDay: typedStatsData.mostProductiveDay,
-          averageDailySessions: typedStatsData.averageDailySessions,
-          completionTrend: typedStatsData.completionTrend,
-          currentStreak: typedStatsData.currentStreak,
-          activityHeatmap: typedStatsData.activityHeatmap || typedStatsData.heatmapData
+          
+          // Map averageSessionMinutes from server to averageSessionDuration for frontend
+          averageSessionDuration: typedStatsData.averageSessionMinutes || 0,
+          averageSessionDurationMinutes: typedStatsData.averageSessionMinutes || 0,
+          
+          // Default values for missing fields
+          mostProductiveDay: typedStatsData.mostProductiveDay || null,
+          averageDailySessions: typedStatsData.averageDailySessions || (typedStatsData.totalSessions ? (typedStatsData.totalSessions / 7).toFixed(2) : "0.00"),
+          completionTrend: typedStatsData.completionTrend || {
+            currentWeek: 0,
+            previousWeek: 0,
+            percentChange: 0
+          },
+          currentStreak: typedStatsData.currentStreak || 0,
+          activityHeatmap: typedStatsData.activityHeatmap || typedStatsData.heatmapData || []
         };
-        setStats(safeStats);
         
-        // Log the updated stats for debugging
-        console.log("Processed stats with focus time:", safeStats.totalFocusTime);
+        console.log("Processed stats with focus time:", safeStats.totalFocusTime, "minutes");
+        console.log("Average session duration:", safeStats.averageSessionDuration, "minutes");
+        
+        setStats(safeStats);
       }
       
       if (sessionsData) {
@@ -314,10 +334,23 @@ export const StatsProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         // but now we have the real data from the server
         const sessionArray = Array.isArray(sessionsData) ? sessionsData : [];
         const realSessions = sessionArray.map((session: any) => {
+          // Calculate duration if it's not already provided
+          let duration = session.duration;
+          if (!duration && session.start_time && session.end_time) {
+            try {
+              const startTime = new Date(session.start_time).getTime();
+              const endTime = new Date(session.end_time).getTime();
+              duration = Math.round((endTime - startTime) / 60000); // Convert ms to minutes
+            } catch (e) {
+              console.error("Error calculating session duration:", e);
+              duration = 0;
+            }
+          }
+          
           // Ensure each session has the required fields for the UI
           return {
             id: session.id,
-            duration: session.duration || Math.round((new Date(session.end_time).getTime() - new Date(session.start_time).getTime()) / 60000),
+            duration: duration || 0,
             task: session.task || 'Completed Pomodoro',
             completed: session.completed !== undefined ? session.completed : true,
             created_at: session.created_at,

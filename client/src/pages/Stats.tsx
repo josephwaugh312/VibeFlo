@@ -153,27 +153,52 @@ const Stats: React.FC = () => {
       
       // Group sessions by day
       const sessionsByDay = filteredSessions.reduce((acc, session) => {
-        // Convert session date to day name
+        // Convert session date to appropriate format based on time range
         const date = new Date(session.created_at);
-        const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-        const shortDayName = date.toLocaleDateString('en-US', { weekday: 'short' });
         
-        // Map day names to their numeric index for sorting
-        const dayIndices = {
-          'Sunday': 0,
-          'Monday': 1,
-          'Tuesday': 2,
-          'Wednesday': 3,
-          'Thursday': 4,
-          'Friday': 5,
-          'Saturday': 6
-        };
+        // Use different grouping approaches based on time range
+        let key;
+        let displayLabel;
+        let sortKey;
         
-        if (!acc[dayName]) {
-          acc[dayName] = {
-            day: shortDayName,
-            fullDay: dayName,
-            dayIndex: dayIndices[dayName as keyof typeof dayIndices],
+        if (timeRange === '7days') {
+          // For 7 days view, group by day of week
+          const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+          const shortDayName = date.toLocaleDateString('en-US', { weekday: 'short' });
+          key = dayName;
+          displayLabel = shortDayName;
+          
+          // Map day names to their numeric index for sorting
+          const dayIndices = {
+            'Sunday': 0,
+            'Monday': 1,
+            'Tuesday': 2,
+            'Wednesday': 3,
+            'Thursday': 4,
+            'Friday': 5,
+            'Saturday': 6
+          };
+          sortKey = dayIndices[dayName as keyof typeof dayIndices];
+        } else {
+          // For 30 days and all time views, group by YYYY-MM-DD to show actual dates
+          const year = date.getFullYear();
+          const month = date.getMonth() + 1; // getMonth() is 0-indexed
+          const day = date.getDate();
+          key = `${year}-${month}-${day}`;
+          // Format as MMM DD (Jan 01)
+          displayLabel = date.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric'
+          });
+          // Use timestamp for sorting
+          sortKey = date.getTime();
+        }
+        
+        if (!acc[key]) {
+          acc[key] = {
+            day: displayLabel,
+            fullDay: key,
+            dayIndex: sortKey,
             sessions: 0,
             focusMinutes: 0,
             dummy: false,
@@ -181,14 +206,21 @@ const Stats: React.FC = () => {
           };
         }
         
-        acc[dayName].sessions += 1;
-        acc[dayName].focusMinutes += session.duration || 0;
+        acc[key].sessions += 1;
+        acc[key].focusMinutes += session.duration || 0;
         
         return acc;
       }, {} as Record<string, ChartDataItem>);
       
-      // Convert to array and sort by day of week for consistent display
-      let chartData = Object.values(sessionsByDay).sort((a, b) => a.dayIndex - b.dayIndex);
+      // Convert to array and sort based on time range
+      let chartData;
+      if (timeRange === '7days') {
+        // For weekly view, sort by day of week
+        chartData = Object.values(sessionsByDay).sort((a, b) => a.dayIndex - b.dayIndex);
+      } else {
+        // For 30 days and all time, sort by actual date (ascending)
+        chartData = Object.values(sessionsByDay).sort((a, b) => a.dayIndex - b.dayIndex);
+      }
       
       // If there's no data, add a placeholder
       if (chartData.length === 0) {
@@ -391,12 +423,41 @@ const Stats: React.FC = () => {
     };
     
     return (
-      <Box sx={{ width: '100%', borderBottom: 1, borderColor: 'divider', marginBottom: 3 }}>
+      <Box sx={{ 
+        borderBottom: 1, 
+        borderColor: 'rgba(255, 255, 255, 0.2)', 
+        mb: 4,
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        '& .MuiTabs-indicator': {
+          display: 'none'
+        }
+      }}>
         <Tabs 
           value={getTabValue()}
           onChange={handleTabChange}
           aria-label="stats tabs"
-          variant="fullWidth"
+          sx={{
+            '& .MuiTab-root': {
+              color: 'rgba(255, 255, 255, 0.7)',
+              marginRight: '24px',
+              padding: '8px 16px',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              transition: 'all 0.2s ease',
+              borderBottom: '2px solid transparent',
+              '&.Mui-selected': {
+                color: '#ffffff',
+                fontWeight: 'bold',
+                borderBottom: '2px solid #9333ea'
+              },
+              '&:hover': {
+                color: '#ffffff',
+                opacity: 1
+              }
+            }
+          }}
           data-testid="stats-tabs"
         >
           <Tab 
@@ -586,6 +647,7 @@ const Stats: React.FC = () => {
 
   // Render overview tab content
   const renderOverviewTab = () => {
+    // Make sure we calculate metrics even when stats is available
     const metrics = calculatePerformanceMetrics();
     
     return (
@@ -629,46 +691,6 @@ const Stats: React.FC = () => {
           </div>
         )}
         
-        {/* Completion Trend Section */}
-        {stats && stats.completionTrend && (
-          <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg mb-8">
-            <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Weekly Progress</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-                <h3 className="text-md font-medium text-white mb-1">This Week</h3>
-                <p className="text-2xl font-bold text-white">{stats.completionTrend.currentWeek} sessions</p>
-                <p className="text-xs text-white/70 mt-1">Completed sessions this week</p>
-              </div>
-              
-              <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-                <h3 className="text-md font-medium text-white mb-1">Last Week</h3>
-                <p className="text-2xl font-bold text-white">{stats.completionTrend.previousWeek} sessions</p>
-                <p className="text-xs text-white/70 mt-1">Completed sessions last week</p>
-              </div>
-              
-              <div className="bg-gray-700 bg-opacity-80 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-md font-medium text-white">Weekly Change</h3>
-                  <span className={`text-sm font-bold ${stats.completionTrend.percentChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                    {stats.completionTrend.percentChange >= 0 ? '↑' : '↓'} {Math.abs(stats.completionTrend.percentChange)}%
-                  </span>
-                </div>
-                <div className="h-6 bg-gray-600 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full ${stats.completionTrend.percentChange >= 0 ? 'bg-green-500' : 'bg-red-500'}`}
-                    style={{ width: `${Math.min(Math.abs(stats.completionTrend.percentChange), 100)}%` }}
-                  />
-                </div>
-                <p className="text-xs text-white/70 mt-1">
-                  {stats.completionTrend.percentChange >= 0 
-                    ? 'Improvement from last week' 
-                    : 'Decrease from last week'}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-        
         {/* Performance Insights Section */}
         <div className="bg-gray-800 bg-opacity-80 p-6 rounded-lg shadow-lg mb-8">
           <h2 className="text-xl font-semibold text-white drop-shadow-md mb-4">Performance Insights</h2>
@@ -682,7 +704,7 @@ const Stats: React.FC = () => {
                 </span>
               </div>
               <h3 className="text-md font-medium text-white mb-2">Current Streak</h3>
-              <p className="text-3xl font-bold text-white mb-2">{stats?.currentStreak ?? metrics.currentStreak} days</p>
+              <p className="text-3xl font-bold text-white mb-2">{metrics.currentStreak} days</p>
               <p className="text-xs text-white/70">Consecutive days with completed sessions</p>
             </div>
             

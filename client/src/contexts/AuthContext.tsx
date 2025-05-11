@@ -146,6 +146,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const logout = () => {
+    // Before logging out, save the current avatar URL if it exists
+    if (user && user.avatarUrl) {
+      try {
+        console.log('AuthContext: Saving avatar URL before logout:', user.avatarUrl);
+        localStorage.setItem('lastAvatarUrl', user.avatarUrl);
+        localStorage.setItem('lastUserId', user.id);
+      } catch (e) {
+        console.error('AuthContext: Error saving avatar URL before logout:', e);
+      }
+    }
+
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    delete axios.defaults.headers.common['Authorization'];
+    apiService.setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
   const login = async (identifier: string, password: string, rememberMe: boolean = true): Promise<LoginResponse> => {
     try {
       console.log('AuthContext: Attempting login with', { identifier, rememberMe });
@@ -157,6 +177,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           success: false,
           message: 'Email/username and password are required'
         };
+      }
+
+      // Check if there's stored user data with an avatar to preserve
+      let storedUserData = null;
+      let lastAvatarUrl = null;
+      let lastUserId = null;
+
+      try {
+        // Check for a previously saved avatar URL from last logout
+        lastAvatarUrl = localStorage.getItem('lastAvatarUrl');
+        lastUserId = localStorage.getItem('lastUserId');
+        if (lastAvatarUrl) {
+          console.log('AuthContext: Found last avatar URL from previous session:', lastAvatarUrl);
+        }
+
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          storedUserData = JSON.parse(storedUser);
+          console.log('AuthContext: Found stored user data before login:', storedUserData.username, 'Avatar:', storedUserData.avatarUrl);
+        }
+      } catch (e) {
+        console.error('AuthContext: Error reading stored user data:', e);
       }
       
       const response = await authAPI.login(identifier, password, rememberMe);
@@ -171,6 +213,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // If we have user data, store it
         if (response.user) {
           console.log('User data received with login response, storing it');
+          
+          // If the response doesn't have an avatar URL but we have one saved from last logout
+          // and it's the same user, use that avatar URL
+          if (!response.user.avatarUrl && lastAvatarUrl && lastUserId === response.user.id) {
+            console.log('AuthContext: Using avatar URL from previous session:', lastAvatarUrl);
+            response.user.avatarUrl = lastAvatarUrl;
+          }
+          
+          // Merge with stored user data if available and the same user
+          if (storedUserData && storedUserData.id === response.user.id) {
+            // If the response doesn't have an avatar but stored data does, preserve it
+            if (!response.user.avatarUrl && storedUserData.avatarUrl) {
+              console.log('AuthContext: Preserving avatar URL from stored data:', storedUserData.avatarUrl);
+              response.user.avatarUrl = storedUserData.avatarUrl;
+            }
+          }
+          
+          // Ensure the user data is complete
+          console.log('AuthContext: Final user data being stored:', response.user);
           localStorage.setItem('user', JSON.stringify(response.user));
           setUser(response.user);
           setIsAuthenticated(true);
@@ -189,6 +250,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const userData = await apiService.auth.getCurrentUser();
             console.log('User data fetched after login:', userData);
             
+            // If no avatar URL but we have one saved from last logout
+            if (!userData.avatarUrl && lastAvatarUrl && lastUserId === userData.id) {
+              console.log('AuthContext: Using avatar URL from previous session after fetch:', lastAvatarUrl);
+              userData.avatarUrl = lastAvatarUrl;
+            }
+            
+            // If we have stored data and it has an avatar but fetched data doesn't, use the stored avatar
+            if (storedUserData && storedUserData.id === userData.id && !userData.avatarUrl && storedUserData.avatarUrl) {
+              console.log('AuthContext: Adding stored avatar URL to fetched user data');
+              userData.avatarUrl = storedUserData.avatarUrl;
+            }
+            
+            console.log('AuthContext: Final user data after fetch:', userData);
             localStorage.setItem('user', JSON.stringify(userData));
             setUser(userData);
             setIsAuthenticated(true);
@@ -275,9 +349,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateProfile = async (userData: Partial<User>): Promise<User> => {
     try {
       const updatedUser = await authAPI.updateProfile(userData);
-      setUser(prevUser => ({ ...prevUser!, ...updatedUser }));
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      return updatedUser;
+      
+      // Preserve existing user data that might not be returned by the API
+      const currentUser = user || {};
+      const mergedUser = { ...currentUser, ...updatedUser };
+      
+      // Make sure avatarUrl is preserved if it exists
+      if (userData.avatarUrl && !updatedUser.avatarUrl) {
+        mergedUser.avatarUrl = userData.avatarUrl;
+      }
+      
+      // Update state and localStorage with complete user data
+      setUser(mergedUser);
+      localStorage.setItem('user', JSON.stringify(mergedUser));
+      
+      return mergedUser;
     } catch (error) {
       console.error('Error updating profile:', error);
       throw error;
@@ -303,20 +389,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    delete axios.defaults.headers.common['Authorization'];
-    apiService.setToken(null);
-    setUser(null);
-    setIsAuthenticated(false);
-  };
-
   const refreshUserData = async (retries = 3, delay = 2000): Promise<User | null> => {
     try {
       console.log('Auth Context: Manually refreshing user data');
       
       const token = localStorage.getItem('token');
+      const storedUser = localStorage.getItem('user');
+      let storedUserData: User | null = null;
+      
+      // Parse stored user data if available
+      if (storedUser) {
+        try {
+          storedUserData = JSON.parse(storedUser);
+        } catch (e) {
+          console.error('Auth Context: Error parsing stored user data:', e);
+        }
+      }
       
       if (!token) {
         console.log('Auth Context: No token found, cannot refresh user data');
@@ -383,6 +471,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       console.log('Auth Context: User data refreshed successfully:', userData);
+      
+      // Merge with stored user data to preserve any fields that might be missing in the API response
+      // This is especially important for the avatarUrl which might not be included in API responses
+      if (storedUserData) {
+        userData = {
+          ...userData,
+          // Preserve avatarUrl from stored data if it's not in the API response
+          avatarUrl: userData.avatarUrl || storedUserData.avatarUrl
+        };
+        console.log('Auth Context: Merged with stored user data, final user data:', userData);
+      }
       
       // Update state and localStorage
       localStorage.setItem('user', JSON.stringify(userData));
