@@ -9,6 +9,7 @@
 type MockQueryResponse = {
   rows: any[];
   rowCount: number;
+  error?: Error;
 };
 
 // Mock client for transactions
@@ -37,7 +38,11 @@ class MockClient {
       
       // Return the next response if available, or empty result
       if (responseIndex < queryResponses.length) {
-        return Promise.resolve(queryResponses[responseIndex++]);
+        const response = queryResponses[responseIndex++];
+        if (response.error) {
+          return Promise.reject(response.error);
+        }
+        return Promise.resolve(response);
       }
       
       // Default empty response
@@ -57,6 +62,9 @@ class MockPool {
   queryResponses: MockQueryResponse[];
   clientResponses: MockQueryResponse[];
   
+  // Store a custom mock client for transaction tests
+  mockClient: MockClient | null;
+  
   constructor() {
     this.query = jest.fn();
     this.connect = jest.fn();
@@ -65,13 +73,18 @@ class MockPool {
     
     this.queryResponses = [];
     this.clientResponses = [];
+    this.mockClient = null;
     
     // Default query implementation
     this.query.mockImplementation((query: string, params?: any[]) => {
       console.log(`[MockPool] Query: ${query.substring(0, 50)}...`);
       
       if (this.queryResponses.length > 0) {
-        return Promise.resolve(this.queryResponses.shift());
+        const response = this.queryResponses.shift();
+        if (response && response.error) {
+          return Promise.reject(response.error);
+        }
+        return Promise.resolve(response);
       }
       
       return Promise.resolve({ rows: [], rowCount: 0 });
@@ -80,7 +93,11 @@ class MockPool {
     // Default connect implementation
     this.connect.mockImplementation(() => {
       console.log('[MockPool] Connect called');
-      return Promise.resolve(new MockClient(this.clientResponses));
+      if (this.mockClient) {
+        return Promise.resolve(this.mockClient);
+      }
+      const client = new MockClient(this.clientResponses);
+      return Promise.resolve(client);
     });
   }
   
@@ -93,6 +110,7 @@ class MockPool {
     
     this.queryResponses = [];
     this.clientResponses = [];
+    this.mockClient = null;
   }
   
   // Setup responses for direct pool queries
@@ -103,6 +121,11 @@ class MockPool {
   // Setup responses for client queries (transactions)
   setClientResponses(responses: MockQueryResponse[]) {
     this.clientResponses = [...responses];
+  }
+  
+  // Set a custom mock client for transaction tests
+  setClientMock(mockClient: MockClient) {
+    this.mockClient = mockClient;
   }
 }
 
