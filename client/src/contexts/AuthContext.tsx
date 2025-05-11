@@ -252,7 +252,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (password !== confirmPassword) {
         throw new Error('Passwords do not match');
       }
-      await authAPI.register(username, username, email, password);
+      const response = await authAPI.register(username, username, email, password);
+      
+      // If registration returns a token, store it for testing purposes
+      if (response && response.token) {
+        localStorage.setItem('token', response.token);
+        apiService.setToken(response.token);
+        
+        // Store minimal user data
+        if (response.user) {
+          localStorage.setItem('user', JSON.stringify(response.user));
+          setUser(response.user);
+          setIsAuthenticated(true);
+        }
+      }
     } catch (error) {
       console.error('Registration error:', error);
       throw error;

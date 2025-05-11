@@ -160,6 +160,7 @@ const OAuthCallback: React.FC = () => {
         p: 2,
         background: 'transparent',
       }}
+      data-cy="oauth-callback-container"
     >
       <Paper
         elevation={3}
@@ -178,6 +179,7 @@ const OAuthCallback: React.FC = () => {
           variant="h5"
           component="h1"
           sx={{ textAlign: 'center', mb: 4 }}
+          data-cy={error ? "auth-error-title" : "auth-processing-title"}
         >
           {error ? 'Authentication Failed' : 'Processing Authentication'}
         </Typography>
@@ -191,7 +193,7 @@ const OAuthCallback: React.FC = () => {
           </Box>
         ) : error ? (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            <Alert severity="error" sx={{ mb: 2 }}>
+            <Alert severity="error" sx={{ mb: 2 }} data-cy="auth-error-message">
               {error}
             </Alert>
             <Typography variant="body2" sx={{ mb: 2 }}>
@@ -203,6 +205,7 @@ const OAuthCallback: React.FC = () => {
                 color="primary"
                 onClick={handleRetry}
                 sx={{ flex: 1 }}
+                data-cy="retry-auth-button"
               >
                 Try Again
               </Button>
@@ -211,6 +214,7 @@ const OAuthCallback: React.FC = () => {
                 color="primary"
                 onClick={handleManualLogin}
                 sx={{ flex: 1 }}
+                data-cy="manual-login-button"
               >
                 Use Email Login
               </Button>
