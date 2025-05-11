@@ -75,4 +75,64 @@ Cypress.Commands.add('mockFailedOAuth', (provider) => {
   };
   
   cy.loginWithOAuth(provider, mockResponse);
-}) 
+})
+
+/**
+ * Login command to authenticate user
+ * @param {string} email - User email
+ * @param {string} password - User password
+ */
+Cypress.Commands.add('login', (email = 'test@example.com', password = 'password123') => {
+  cy.visit('/login');
+  cy.get('[data-cy="email-input"]').type(email);
+  cy.get('[data-cy="password-input"]').type(password);
+  cy.get('[data-cy="login-button"]').click();
+  
+  // Verify login by checking for user info in the navbar
+  cy.get('[data-cy="user-avatar"]', { timeout: 10000 }).should('exist');
+});
+
+/**
+ * Navigate to a section and wait for it to load
+ * @param {string} route - Route to navigate to
+ * @param {string} titleText - Text to wait for on the page
+ */
+Cypress.Commands.add('visitSection', (route, titleText) => {
+  cy.visit(route);
+  cy.contains(titleText, { timeout: 10000 });
+});
+
+/**
+ * Create a todo item
+ * @param {string} text - Todo text
+ */
+Cypress.Commands.add('createTodo', (text) => {
+  cy.get('[data-cy="add-todo-input"]').type(`${text}{enter}`);
+  cy.contains(text).should('exist');
+});
+
+/**
+ * Create a playlist
+ * @param {string} name - Playlist name
+ */
+Cypress.Commands.add('createPlaylist', (name) => {
+  cy.get('[data-cy="create-playlist-button"]').click();
+  cy.get('[data-cy="playlist-name-input"]').type(name);
+  cy.get('[data-cy="save-playlist-button"]').click();
+  cy.get('[data-cy="playlists-list"]').contains(name).should('exist');
+});
+
+/**
+ * Create a custom theme
+ * @param {string} name - Theme name
+ * @param {string} bgColor - Background color hex code
+ * @param {string} textColor - Text color hex code
+ */
+Cypress.Commands.add('createTheme', (name, bgColor = '#3498db', textColor = '#ffffff') => {
+  cy.get('[data-cy="create-theme-button"]').click();
+  cy.get('[data-cy="theme-name-input"]').type(name);
+  cy.get('[data-cy="background-color-picker"]').invoke('val', bgColor).trigger('change');
+  cy.get('[data-cy="text-color-picker"]').invoke('val', textColor).trigger('change');
+  cy.get('[data-cy="save-theme-button"]').click();
+  cy.get('[data-cy="themes-list"]').contains(name).should('exist');
+}); 
