@@ -247,3 +247,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 - The Pomodoro Technique was developed by Francesco Cirillo
 - Special thanks to all contributors who have helped make VibeFlo better 
+
+## Demo Video
+
+Watch the demo video to see VibeFlo in action: [Watch Video](https://www.loom.com/share/ccf4160871a4473986ac125069fe3eba?sid=557d9b0d-6061-4b1d-aad3-eadcf56a676f) 
