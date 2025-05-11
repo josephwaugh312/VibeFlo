@@ -1,51 +1,83 @@
 #!/bin/bash
 
-# Run the Cypress E2E tests
-echo "Running VibeFlo E2E tests..."
+# Exit on error
+set -e
 
-# Start the development server in the background (if not already running)
-if ! nc -z localhost 3000 &>/dev/null; then
-  echo "Starting frontend development server..."
+echo "=== Starting E2E Tests ==="
+
+# Navigate to client directory if not already there
+cd "$(dirname "$0")"
+
+# Function to check if server is running
+check_server() {
+  for i in {1..30}; do
+    if curl -s http://localhost:3000 > /dev/null; then
+      echo "✅ Development server is running"
+      return 0  # Success
+    fi
+    echo "⌛ Waiting for development server to start... ($i/30)"
+    sleep 2
+  done
+  echo "❌ Development server startup timed out after 60 seconds"
+  return 1  # Failure
+}
+
+# Make sure the development server is running
+if ! curl -s http://localhost:3000 > /dev/null; then
+  echo "Development server not detected. Starting one in the background..."
+  
+  # Force kill any existing processes on port 3000
+  lsof -ti:3000 | xargs kill -9 2>/dev/null || true
+  
+  # Start the dev server with more output
+  echo "Starting development server..."
   npm start &
-  FRONTEND_PID=$!
-  # Wait for frontend to start
-  echo "Waiting for frontend to start..."
-  while ! nc -z localhost 3000 &>/dev/null; do
-    sleep 1
-  done
-  echo "Frontend is up and running on port 3000"
+  dev_server_pid=$!
+  
+  echo "Started development server with PID: $dev_server_pid"
+  
+  # Wait for server to start
+  if ! check_server; then
+    echo "Error: Failed to start development server after 60 seconds"
+    if [ -n "$dev_server_pid" ]; then
+      kill $dev_server_pid 2>/dev/null || true
+    fi
+    exit 1
+  fi
+  
+  echo "Development server started successfully"
+else
+  echo "Development server already running on port 3000"
+  dev_server_pid=""
 fi
 
-# Start the backend server in a different terminal if not already running
-if ! nc -z localhost 5001 &>/dev/null; then
-  echo "Starting backend development server..."
-  cd ../server && npm run dev &
-  BACKEND_PID=$!
-  # Wait for backend to start
-  echo "Waiting for backend to start..."
-  while ! nc -z localhost 5001 &>/dev/null; do
-    sleep 1
-  done
-  echo "Backend is up and running on port 5001"
+# Set up trap to clean up on script exit
+cleanup() {
+  if [ -n "$dev_server_pid" ]; then
+    echo "Stopping development server with PID: $dev_server_pid"
+    kill $dev_server_pid 2>/dev/null || true
+  fi
+  echo "=== E2E Tests Complete with exit code: $test_exit_code ==="
+}
+trap cleanup EXIT
+
+# Run the Cypress tests
+echo "Running Cypress tests..."
+if [ "$1" = "open" ]; then
+  # Run in interactive mode
+  npx cypress open
+else
+  # Run specific tests if provided as arguments
+  if [ -n "$2" ]; then
+    echo "Running specific tests: $2"
+    npx cypress run --spec "$2"
+  else
+    # Run in headless mode by default
+    npx cypress run
+  fi
 fi
 
-# Run Cypress tests
-echo "Starting Cypress tests..."
-npm run cypress:run
+test_exit_code=$?
 
-# Capture the exit code of Cypress tests
-CYPRESS_EXIT_CODE=$?
-
-# Kill the servers if we started them
-if [ -n "$FRONTEND_PID" ]; then
-  echo "Shutting down frontend server..."
-  kill $FRONTEND_PID
-fi
-
-if [ -n "$BACKEND_PID" ]; then
-  echo "Shutting down backend server..."
-  kill $BACKEND_PID
-fi
-
-echo "All E2E tests completed with exit code: $CYPRESS_EXIT_CODE"
-exit $CYPRESS_EXIT_CODE 
+# Exit with the test exit code
+exit $test_exit_code 
