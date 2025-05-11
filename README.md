@@ -64,7 +64,7 @@ The application follows a modern architecture pattern:
 
 VibeFlo follows a comprehensive full-stack architecture with clear separation of concerns and focused components.
 
-![VibeFlo System Architecture](docs/images/vibeflo-system-architecture.png)
+![VibeFlo System Architecture](docs/images/VibeFlo_System_Architecture_Updated_v2.svg)
 
 ### VibeFlo System Architecture Flow Description
 
