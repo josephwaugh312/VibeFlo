@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AppBar, Toolbar, Typography, Button, Box, Avatar, IconButton, Drawer, List, ListItem, ListItemText } from '@mui/material';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import MiniTimer from './pomodoro/MiniTimer';
 
 // Import Material UI icons that could be used as avatars
 import PersonIcon from '@mui/icons-material/Person';
@@ -281,6 +282,13 @@ const Navbar: React.FC = () => {
               </>
             )}
           </Box>
+          
+          {/* Mini Timer */}
+          {isAuthenticated && (
+            <Box sx={{ mr: 2 }}>
+              <MiniTimer />
+            </Box>
+          )}
           
           {/* Auth Section */}
           <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center' }}>

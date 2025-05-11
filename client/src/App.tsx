@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { StatsProvider } from './contexts/StatsContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { TimerProvider } from './contexts/TimerContext';
 import PrivateRoute from './components/PrivateRoute';
 import { MusicPlayer } from './components/music';
 import { MusicPlayerProvider } from './contexts/MusicPlayerContext';
@@ -247,55 +248,49 @@ const App: React.FC = () => {
             <SettingsProvider>
               <StatsProvider>
                 <MusicPlayerProvider>
-                  <Router>
-                    <Box sx={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      minHeight: '100vh',
-                      width: '100%',
-                      overflowX: 'hidden'
-                    }}>
-                      <Navbar />
-                      <Box 
-                        component="main" 
-                        sx={{ 
-                          flexGrow: 1, 
-                          p: 3,
-                          pb: '100px',
-                          width: '100%'
-                        }}
-                      >
-                        <AppRoutes />
+                  <TimerProvider>
+                    <Router>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        minHeight: '100vh',
+                        width: '100%',
+                        overflowX: 'hidden'
+                      }}>
+                        <Navbar />
+                        <Box 
+                          component="main" 
+                          sx={{ 
+                            flexGrow: 1, 
+                            p: 3,
+                            pb: '100px',
+                            width: '100%'
+                          }}
+                        >
+                          <AppRoutes />
+                        </Box>
+                        <AuthenticatedMusicPlayer />
                       </Box>
-                      <AuthenticatedMusicPlayer />
-                    </Box>
-                  </Router>
+                    </Router>
+                  </TimerProvider>
                 </MusicPlayerProvider>
               </StatsProvider>
             </SettingsProvider>
           </ThemeProvider>
         </AuthProvider>
-        <Toaster
-          position="top-right"
+        <Toaster 
+          position="bottom-right"
           toastOptions={{
-            duration: 3000,
             style: {
-              background: '#374151',
-              color: '#ffffff',
-              border: '1px solid #4B5563',
+              background: '#333',
+              color: '#fff',
             },
             success: {
-              iconTheme: {
-                primary: '#10B981',
-                secondary: '#ffffff',
-              },
+              duration: 3000,
             },
             error: {
-              iconTheme: {
-                primary: '#EF4444',
-                secondary: '#ffffff',
-              },
-            },
+              duration: 5000,
+            }
           }}
         />
       </Box>

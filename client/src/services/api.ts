@@ -309,6 +309,21 @@ const apiService = (() => {
             };
           }
           
+          // Get stored user info BEFORE login attempt to preserve avatar
+          let storedUserData = null;
+          let storedAvatarUrl = null;
+          
+          try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              storedUserData = JSON.parse(storedUser);
+              storedAvatarUrl = storedUserData.avatarUrl;
+              console.log('API Service: Found stored user data before login with avatar:', storedAvatarUrl);
+            }
+          } catch (err) {
+            console.error('API Service: Error reading stored user data before login:', err);
+          }
+          
           const response = await api.post(prefixApiEndpoint('/auth/login'), { 
             email: loginIdentifier,
             login: loginIdentifier,
@@ -320,6 +335,31 @@ const apiService = (() => {
           
           // Ensure the response has the expected format
           if (response.data && response.data.token) {
+            // Check if we need to preserve existing user data (like avatar URL)
+            if (response.data.user) {
+              console.log('API Service: User data in login response:', response.data.user);
+              
+              // If no avatar URL in response but we have one stored, add it
+              if (!response.data.user.avatarUrl && storedAvatarUrl) {
+                console.log('API Service: Adding stored avatar URL to login response:', storedAvatarUrl);
+                response.data.user.avatarUrl = storedAvatarUrl;
+              }
+              
+              // Ensure the user data is complete by checking for stored data
+              if (storedUserData && storedUserData.id === response.data.user.id) {
+                console.log('API Service: Merging stored user data with login response');
+                
+                // Preserve fields from stored data that might be missing in the response
+                response.data.user = {
+                  ...response.data.user,
+                  avatarUrl: response.data.user.avatarUrl || storedUserData.avatarUrl,
+                  bio: response.data.user.bio || storedUserData.bio
+                };
+                
+                console.log('API Service: Final user data after merging:', response.data.user);
+              }
+            }
+            
             return {
               success: true,
               token: response.data.token,
@@ -390,6 +430,23 @@ const apiService = (() => {
           const response = await api.get(prefixApiEndpoint('/auth/me'));
           const processedData = safelyProcessResponse(response);
           console.log('API Service: getCurrentUser response:', processedData);
+          
+          // Check if we need to preserve avatar URL from localStorage
+          if (!processedData.avatarUrl) {
+            try {
+              const storedUser = localStorage.getItem('user');
+              if (storedUser) {
+                const parsedUser = JSON.parse(storedUser);
+                if (parsedUser.avatarUrl) {
+                  console.log('API Service: Adding avatar URL from localStorage to user data:', parsedUser.avatarUrl);
+                  processedData.avatarUrl = parsedUser.avatarUrl;
+                }
+              }
+            } catch (err) {
+              console.error('API Service: Error parsing stored user data:', err);
+            }
+          }
+          
           return processedData;
         } catch (error) {
           // Cast error to AxiosError
@@ -433,8 +490,43 @@ const apiService = (() => {
     },
     
     updateProfile: async (userData: any) => {
-      const response = await api.put(prefixApiEndpoint('/users/me'), userData);
-      return response.data;
+      try {
+        console.log('API Service: Updating profile with data:', userData);
+        
+        // Store avatar URL from the request to ensure we preserve it
+        const avatarUrl = userData.avatarUrl;
+        
+        const response = await api.put(prefixApiEndpoint('/users/me'), userData);
+        let updatedUserData = response.data;
+        
+        // Check if the response doesn't include avatarUrl but it was in the request
+        if (avatarUrl && !updatedUserData.avatarUrl) {
+          console.log('API Service: Avatar URL missing in response, preserving from request:', avatarUrl);
+          updatedUserData.avatarUrl = avatarUrl;
+        }
+        
+        // Also preserve avatar URL from localStorage if API doesn't return it
+        if (!updatedUserData.avatarUrl) {
+          try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const parsedUser = JSON.parse(storedUser);
+              if (parsedUser.avatarUrl) {
+                console.log('API Service: Using avatar URL from localStorage:', parsedUser.avatarUrl);
+                updatedUserData.avatarUrl = parsedUser.avatarUrl;
+              }
+            }
+          } catch (err) {
+            console.error('API Service: Error parsing stored user data:', err);
+          }
+        }
+        
+        console.log('API Service: Final user data after update:', updatedUserData);
+        return updatedUserData;
+      } catch (error) {
+        console.error('API Service: Error updating profile:', error);
+        throw error;
+      }
     },
     
     changePassword: async (currentPassword: string, newPassword: string) => {

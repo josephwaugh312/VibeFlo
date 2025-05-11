@@ -32,8 +32,8 @@ interface TodoListProps {
   onClose: () => void;
   onTaskSelect: (task: string) => void;
   currentTask?: string;
-  initialTodos?: Todo[];
-  onTodosChange?: (todos: Todo[]) => void;
+  todos: Todo[];
+  onSave: (todos: Todo[]) => void;
   isAuthenticated?: boolean;
 }
 
@@ -42,16 +42,11 @@ const TodoList: React.FC<TodoListProps> = ({
   onClose,
   onTaskSelect,
   currentTask = '',
-  initialTodos,
-  onTodosChange,
+  todos = [],
+  onSave,
   isAuthenticated = false
 }) => {
-  const [todos, setTodos] = useState<Todo[]>([
-    { id: `todo-1-${generateId()}`, text: '', completed: false, recordedInStats: false },
-    { id: `todo-2-${generateId()}`, text: '', completed: false, recordedInStats: false },
-    { id: `todo-3-${generateId()}`, text: '', completed: false, recordedInStats: false },
-  ]);
-  
+  const [localTodos, setLocalTodos] = useState<Todo[]>([]);
   const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
   const [saving, setSaving] = useState<boolean>(false);
@@ -63,10 +58,10 @@ const TodoList: React.FC<TodoListProps> = ({
     })
   );
 
-  // Load todos from provided initialTodos prop
+  // Load todos from provided todos prop
   useEffect(() => {
-    if (initialTodos && initialTodos.length > 0) {
-      setTodos(initialTodos);
+    if (todos && todos.length > 0) {
+      setLocalTodos(todos);
     } else {
       // Set default empty todos if none provided
       const emptyTodos = [
@@ -74,33 +69,29 @@ const TodoList: React.FC<TodoListProps> = ({
         { id: `todo-2-${generateId()}`, text: '', completed: false, recordedInStats: false },
         { id: `todo-3-${generateId()}`, text: '', completed: false, recordedInStats: false },
       ];
-      setTodos(emptyTodos);
+      setLocalTodos(emptyTodos);
       
-      // Update parent component if onTodosChange is provided
-      if (onTodosChange) {
-        onTodosChange(emptyTodos);
-      }
+      // Update parent component
+      onSave(emptyTodos);
     }
-  }, [initialTodos, onTodosChange]);
+  }, [todos]);
 
   // Save todos when they change
   useEffect(() => {
-    if (onTodosChange) {
-      setSaving(true);
-      // Add a small delay to simulate saving
-      const timeout = setTimeout(() => {
-        onTodosChange(todos);
-        setSaving(false);
-      }, 300);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [todos, onTodosChange]);
+    setSaving(true);
+    // Add a small delay to simulate saving
+    const timeout = setTimeout(() => {
+      onSave(localTodos);
+      setSaving(false);
+    }, 300);
+    
+    return () => clearTimeout(timeout);
+  }, [localTodos, onSave]);
 
   // Select the todo that matches the current task
   useEffect(() => {
     if (currentTask) {
-      const matchingTodo = todos.find(todo => todo.text === currentTask);
+      const matchingTodo = localTodos.find(todo => todo.text === currentTask);
       if (matchingTodo) {
         setSelectedTodoId(matchingTodo.id);
       } else {
@@ -109,10 +100,10 @@ const TodoList: React.FC<TodoListProps> = ({
     } else {
       setSelectedTodoId(null);
     }
-  }, [currentTask, todos]);
+  }, [currentTask, localTodos]);
 
   const handleToggleComplete = (id: string) => {
-    setTodos(prevTodos => 
+    setLocalTodos(prevTodos => 
       prevTodos.map(todo => 
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
       )
@@ -120,7 +111,7 @@ const TodoList: React.FC<TodoListProps> = ({
   };
 
   const handleChangeText = (id: string, newText: string) => {
-    setTodos(prevTodos => 
+    setLocalTodos(prevTodos => 
       prevTodos.map(todo => 
         todo.id === id ? { ...todo, text: newText } : todo
       )
@@ -129,7 +120,7 @@ const TodoList: React.FC<TodoListProps> = ({
 
   const handleSelectTask = (id: string) => {
     setSelectedTodoId(id);
-    const selectedTodo = todos.find(todo => todo.id === id);
+    const selectedTodo = localTodos.find(todo => todo.id === id);
     if (selectedTodo) {
       onTaskSelect(selectedTodo.text);
     }
@@ -140,7 +131,7 @@ const TodoList: React.FC<TodoListProps> = ({
     const { active, over } = event;
     
     if (over && active.id !== over.id) {
-      setTodos((todos) => {
+      setLocalTodos((todos) => {
         const oldIndex = todos.findIndex(todo => todo.id === active.id);
         const newIndex = todos.findIndex(todo => todo.id === over.id);
         
@@ -156,16 +147,14 @@ const TodoList: React.FC<TodoListProps> = ({
       { id: `todo-2-${generateId()}`, text: '', completed: false, recordedInStats: false },
       { id: `todo-3-${generateId()}`, text: '', completed: false, recordedInStats: false },
     ];
-    setTodos(emptyTodos);
+    setLocalTodos(emptyTodos);
     setSelectedTodoId(null);
     if (currentTask) {
       onTaskSelect('');
     }
     
-    // Make sure to call onTodosChange to update localStorage
-    if (onTodosChange) {
-      onTodosChange(emptyTodos);
-    }
+    // Make sure to call onSave to update localStorage
+    onSave(emptyTodos);
     
     toast.success('Tasks have been reset');
   };
@@ -219,9 +208,9 @@ const TodoList: React.FC<TodoListProps> = ({
             collisionDetection={closestCenter} 
             onDragEnd={handleDragEnd}
           >
-            <SortableContext items={todos.map(todo => todo.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={localTodos.map(todo => todo.id)} strategy={verticalListSortingStrategy}>
               <ul className="space-y-8 mb-8 list-none">
-                {todos.map((todo) => (
+                {localTodos.map((todo) => (
                   <SortableTodo
                     key={todo.id}
                     todo={todo}

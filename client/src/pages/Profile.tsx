@@ -132,13 +132,51 @@ const Profile: React.FC = () => {
       if (formData.email !== user.email) updatedData.email = formData.email;
       if (formData.bio !== user.bio) updatedData.bio = formData.bio;
       // Always include avatar URL if it's been changed
-      if (formData.avatarUrl !== user.avatarUrl) updatedData.avatarUrl = formData.avatarUrl;
+      if (formData.avatarUrl !== user.avatarUrl) {
+        updatedData.avatarUrl = formData.avatarUrl;
+        console.log('Profile: Avatar URL changed to:', formData.avatarUrl);
+      }
       
       console.log('Data being sent to updateProfile:', updatedData);
       
       if (Object.keys(updatedData).length > 0) {
+        // Store current avatar URL in localStorage to ensure it persists
+        // even if the server response doesn't include it
+        if (updatedData.avatarUrl) {
+          try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const userData = JSON.parse(storedUser);
+              userData.avatarUrl = updatedData.avatarUrl;
+              localStorage.setItem('user', JSON.stringify(userData));
+              console.log('Profile: Stored avatar URL in localStorage:', updatedData.avatarUrl);
+            }
+          } catch (e) {
+            console.error('Profile: Error storing avatar URL in localStorage:', e);
+          }
+        }
+        
         const updatedUser = await updateProfile(updatedData);
         console.log('Response from updateProfile:', updatedUser);
+        
+        // Double-check that avatar URL is preserved
+        if (updatedData.avatarUrl && !updatedUser.avatarUrl) {
+          console.log('Profile: Avatar URL missing in response, manually adding it');
+          updatedUser.avatarUrl = updatedData.avatarUrl;
+          
+          // Update localStorage with the correct avatar URL
+          try {
+            const storedUser = localStorage.getItem('user');
+            if (storedUser) {
+              const userData = JSON.parse(storedUser);
+              userData.avatarUrl = updatedData.avatarUrl;
+              localStorage.setItem('user', JSON.stringify(userData));
+              console.log('Profile: Re-stored avatar URL in localStorage after update');
+            }
+          } catch (e) {
+            console.error('Profile: Error re-storing avatar URL in localStorage:', e);
+          }
+        }
         
         // Explicitly update the form data with the response from the server
         setFormData({

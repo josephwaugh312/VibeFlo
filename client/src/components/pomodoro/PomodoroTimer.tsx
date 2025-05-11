@@ -1,57 +1,43 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useStats } from '../../contexts/StatsContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import SettingsModal from '../settings/SettingsModal';
 import TodoList, { Todo } from './TodoList';
 import toast from 'react-hot-toast';
-
-// Timer states
-enum TimerState {
-  IDLE = 'idle',
-  RUNNING = 'running',
-  PAUSED = 'paused',
-  COMPLETED = 'completed',
-  POMODORO = 'pomodoro',
-  SHORT_BREAK = 'short_break',
-  LONG_BREAK = 'long_break',
-}
-
-// Timer types
-enum TimerType {
-  POMODORO = 'pomodoro',
-  SHORT_BREAK = 'short_break',
-  LONG_BREAK = 'long_break',
-}
+import { useTimer, TimerState, TimerType } from '../../contexts/TimerContext';
 
 interface PomodoroTimerProps {}
 
 const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
-  const { addSession, refreshStats } = useStats();
-  const { isAuthenticated } = useAuth();
   const { settings, updateSettings } = useSettings();
+  const { isAuthenticated } = useAuth();
   
-  // Ensure default duration if settings is undefined
-  const DEFAULT_POMODORO_DURATION = 25;
-  const pomodoroMinutes = settings?.pomodoro_duration || DEFAULT_POMODORO_DURATION;
+  // Use global timer context instead of local state
+  const {
+    timeLeft,
+    timerState,
+    timerType,
+    completedPomodoros,
+    currentTask,
+    todoItems,
+    startTimer,
+    pauseTimer,
+    resumeTimer,
+    resetTimer,
+    skipTimer,
+    formatTime,
+    setCurrentTask,
+    updateTodoItems
+  } = useTimer();
   
-  // Initialize with valid number to prevent NaN:NaN
-  const [timeLeft, setTimeLeft] = useState<number>(pomodoroMinutes * 60);
-  const [timerState, setTimerState] = useState<TimerState>(TimerState.IDLE);
-  const [timerType, setTimerType] = useState<TimerType>(TimerType.POMODORO);
-  const [completedPomodoros, setCompletedPomodoros] = useState<number>(0);
-  const [task, setTask] = useState<string>('');
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isTodoListOpen, setIsTodoListOpen] = useState<boolean>(false);
-  const [todoItems, setTodoItems] = useState<Todo[]>([]);
-
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const startTimeRef = useRef<number>(0);
 
   // Set the task from the todo list
   const handleTaskSelect = (selectedTask: string) => {
     console.log('Task selected:', selectedTask);
-    setTask(selectedTask);
+    setCurrentTask(selectedTask);
   };
 
   // Load todo items from localStorage on component mount
@@ -61,148 +47,26 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
       try {
         const parsedTodos = JSON.parse(savedTodos);
         console.log('Loaded todos from localStorage:', parsedTodos);
-        setTodoItems(parsedTodos);
+        updateTodoItems(parsedTodos);
         // Automatically select first incomplete task if none is selected
-        if (!task && parsedTodos.length > 0) {
+        if (!currentTask && parsedTodos.length > 0) {
           const firstIncompleteTodo = parsedTodos.find((todo: Todo) => !todo.completed);
           if (firstIncompleteTodo) {
             console.log('Auto-selecting first incomplete todo:', firstIncompleteTodo);
-            setTask(firstIncompleteTodo.text);
+            setCurrentTask(firstIncompleteTodo.text);
           }
         }
       } catch (e) {
         console.error('Error parsing saved todos', e);
       }
     }
-  }, [task]);
-
-  // Keep todoItems in sync with localStorage changes
-  useEffect(() => {
-    const handleStorageChange = () => {
-      const savedTodos = localStorage.getItem('pomodoro-todos');
-      if (savedTodos) {
-        try {
-          setTodoItems(JSON.parse(savedTodos));
-        } catch (e) {
-          console.error('Error parsing saved todos from storage event', e);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  // Ensure timeLeft is updated when settings change
-  useEffect(() => {
-    if (!settings) return;
-    
-    let duration = 0;
-    if (timerType === TimerType.POMODORO) {
-      duration = settings.pomodoro_duration || DEFAULT_POMODORO_DURATION;
-    } else if (timerType === TimerType.SHORT_BREAK) {
-      duration = settings.short_break_duration || 5;
-    } else if (timerType === TimerType.LONG_BREAK) {
-      duration = settings.long_break_duration || 15;
-    }
-    
-    setTimeLeft(duration * 60);
-  }, [timerType, settings]);
+  }, [currentTask]);
 
   // Save todos to localStorage when they change
   const saveTodosToLocalStorage = (todos: Todo[]) => {
     localStorage.setItem('pomodoro-todos', JSON.stringify(todos));
-    setTodoItems(todos);
+    updateTodoItems(todos);
   };
-
-  // Records completed tasks from the todo list
-  const recordCompletedTasks = useCallback(async () => {
-    // Add a debug toast to show that the function is being called
-    console.log("Recording completed task...");
-    toast.success("Pomodoro completed! Recording session...");
-    
-    // Only proceed if user is authenticated
-    if (!isAuthenticated) {
-      console.log('User not authenticated, skipping stats recording');
-      toast.error('Please log in to track your sessions');
-      return;
-    }
-
-    try {
-      // Get all completed todo items
-      const completedTodos = todoItems.filter(todo => todo.completed);
-      console.log('Completed todos:', completedTodos);
-      
-      // If we have a current task, record it directly
-      if (task && task.trim()) {
-        console.log('Current task found:', task);
-        
-        // Find and mark current task as completed in the todo list
-        const updatedTodos = todoItems.map(todo => 
-          todo.text === task ? { ...todo, completed: true, recordedInStats: true } : todo
-        );
-        saveTodosToLocalStorage(updatedTodos);
-      }
-        
-      try {
-        // Prepare task description - use completed todos or current task
-        let taskDescription = "Completed Pomodoro";
-        
-        if (completedTodos.length > 0) {
-          // Use completed todo texts
-          taskDescription = completedTodos.map(todo => todo.text).join(", ");
-          console.log('Using completed todos as task description:', taskDescription);
-        } else if (task && task.trim()) {
-          // Use current task as fallback
-          taskDescription = task;
-          console.log('Using current task as description:', taskDescription);
-        }
-        
-        // Record the session with task description
-        console.log('Recording session with task:', taskDescription);
-        
-        // Calculate actual duration based on elapsed time
-        const endTime = Date.now();
-        const startTime = startTimeRef.current;
-        const elapsedMinutes = Math.round((endTime - startTime) / 60000); // Convert ms to minutes
-        
-        // Use actual elapsed time, fallback to settings duration if something went wrong
-        const actualDuration = startTime > 0 ? elapsedMinutes : pomodoroMinutes;
-        
-        console.log(`Recording session with actual duration: ${actualDuration} minutes (from ${startTime} to ${endTime})`);
-        
-        await addSession({
-          duration: actualDuration,
-          task: taskDescription,
-          completed: true,
-          start_time: new Date(startTime).toISOString(),
-          end_time: new Date(endTime).toISOString()
-        });
-        
-        console.log('Pomodoro session successfully recorded with task:', taskDescription);
-        toast.success('Session recorded!');
-        
-        // Force refresh stats after adding a session
-        await refreshStats();
-        return;
-      } catch (error: unknown) {
-        console.error('Failed to save pomodoro session:', error);
-        if (error instanceof Error || (typeof error === 'object' && error !== null)) {
-          const errorStr = String(error);
-          if (errorStr.includes('401')) {
-            toast.error('Please log in to track your sessions');
-          } else {
-            toast.error('Failed to save session');
-          }
-        } else {
-          toast.error('Failed to save session');
-        }
-      }
-    } catch (error) {
-      console.error('Error in recordCompletedTasks:', error);
-      toast.error('Failed to record session');
-    }
-  }, [task, todoItems, isAuthenticated, addSession, refreshStats, pomodoroMinutes]);
 
   // Request notification permission when component mounts
   useEffect(() => {
@@ -220,155 +84,6 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
       }
     }
   }, [settings.notification_enabled]);
-
-  // Handle timer completion
-  useEffect(() => {
-    if (timeLeft <= 0 && timerState === TimerState.RUNNING) {
-      clearInterval(intervalRef.current!);
-      
-      // If a pomodoro was completed
-      if (timerType === TimerType.POMODORO) {
-        setCompletedPomodoros(prev => prev + 1);
-        
-        // Record completed tasks in stats
-        recordCompletedTasks();
-        
-        // Determine which break to take
-        const newCompletedPomodoros = completedPomodoros + 1;
-        if (newCompletedPomodoros % settings.pomodoros_until_long_break === 0) {
-          setTimerType(TimerType.LONG_BREAK);
-        } else {
-          setTimerType(TimerType.SHORT_BREAK);
-        }
-
-        // Auto start breaks if enabled
-        if (settings.auto_start_breaks) {
-          setTimeout(() => startTimer(), 1000);
-        }
-      } else {
-        // After a break, go back to pomodoro
-        setTimerType(TimerType.POMODORO);
-        
-        // Auto start pomodoros if enabled
-        if (settings.auto_start_pomodoros) {
-          setTimeout(() => startTimer(), 1000);
-        }
-      }
-      
-      setTimerState(TimerState.COMPLETED);
-      
-      // Play a sound to indicate completion if enabled
-      if (settings.sound_enabled) {
-        const audio = new Audio('/sounds/notification.mp3');
-        audio.play().catch(error => console.error('Error playing notification sound:', error));
-      }
-      
-      // Show browser notification if supported and enabled
-      if (settings.notification_enabled && 'Notification' in window) {
-        if (Notification.permission === 'granted') {
-          new Notification(timerType === TimerType.POMODORO ? 'Time for a break!' : 'Break is over, time to focus!');
-        } else if (Notification.permission !== 'denied') {
-          Notification.requestPermission().then(permission => {
-            if (permission === 'granted') {
-              new Notification(timerType === TimerType.POMODORO ? 'Time for a break!' : 'Break is over, time to focus!');
-            }
-          });
-        }
-      }
-    }
-  }, [timeLeft, timerState, timerType, completedPomodoros, task, addSession, isAuthenticated, refreshStats, settings, recordCompletedTasks]);
-
-  // Start the timer
-  const startTimer = () => {
-    setTimerState(TimerState.RUNNING);
-    startTimeRef.current = Date.now();
-    
-    intervalRef.current = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(intervalRef.current!);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  // Pause the timer
-  const pauseTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    setTimerState(TimerState.PAUSED);
-  };
-
-  // Resume the timer
-  const resumeTimer = () => {
-    startTimer();
-  };
-
-  // Reset the timer
-  const resetTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    
-    // Reset the time based on current timer type
-    switch (timerType) {
-      case TimerType.POMODORO:
-        setTimeLeft(pomodoroMinutes * 60);
-        break;
-      case TimerType.SHORT_BREAK:
-        setTimeLeft(5 * 60);
-        break;
-      case TimerType.LONG_BREAK:
-        setTimeLeft(15 * 60);
-        break;
-    }
-    
-    setTimerState(TimerState.IDLE);
-  };
-
-  // Skip to the next timer
-  const skipTimer = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    
-    if (timerType === TimerType.POMODORO) {
-      // If in pomodoro, skip to appropriate break
-      if ((completedPomodoros + 1) % settings.pomodoros_until_long_break === 0) {
-        setTimerType(TimerType.LONG_BREAK);
-      } else {
-        setTimerType(TimerType.SHORT_BREAK);
-      }
-    } else {
-      // If in break, skip to pomodoro
-      setTimerType(TimerType.POMODORO);
-    }
-  };
-
-  // Format seconds to MM:SS - Add protection against NaN
-  const formatTime = (seconds: number): string => {
-    if (!seconds || isNaN(seconds)) {
-      return '25:00'; // Default display if seconds is invalid
-    }
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
-  };
-
-  // Clean up on unmount
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, []);
 
   // Handle settings update
   const handleSettingsUpdate = async (newSettings: any) => {
@@ -409,8 +124,11 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
     <div className="flex flex-col items-center p-6 backdrop-blur-sm bg-white/30 rounded-lg shadow-lg w-full max-w-md">
       <div className="w-full flex justify-between items-center mb-4">
         <div className="flex space-x-2 flex-grow overflow-x-auto hide-scrollbar">
-          <button
-            onClick={() => setTimerType(TimerType.POMODORO)}
+          <button 
+            onClick={() => {
+              resetTimer();
+              timerType !== TimerType.POMODORO && skipTimer();
+            }}
             className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
               timerType === TimerType.POMODORO
                 ? 'bg-indigo-600 text-white'
@@ -419,8 +137,11 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           >
             Pomodoro
           </button>
-          <button
-            onClick={() => setTimerType(TimerType.SHORT_BREAK)}
+          <button 
+            onClick={() => {
+              resetTimer();
+              timerType !== TimerType.SHORT_BREAK && skipTimer();
+            }}
             className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
               timerType === TimerType.SHORT_BREAK
                 ? 'bg-green-600 text-white'
@@ -429,8 +150,11 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           >
             Short Break
           </button>
-          <button
-            onClick={() => setTimerType(TimerType.LONG_BREAK)}
+          <button 
+            onClick={() => {
+              resetTimer();
+              timerType !== TimerType.LONG_BREAK && skipTimer(); 
+            }}
             className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap ${
               timerType === TimerType.LONG_BREAK
                 ? 'bg-blue-600 text-white'
@@ -465,13 +189,13 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
         }
       `}</style>
 
-      <div className="text-7xl font-bold my-8 text-white drop-shadow-lg">{formatTime(timeLeft)}</div>
+      <div className="text-7xl font-bold my-8 text-white drop-shadow-lg" data-cy="timer-display">{formatTime(timeLeft)}</div>
 
       <div className="w-full mb-6 relative">
         <input
           type="text"
-          value={task}
-          onChange={(e) => setTask(e.target.value)}
+          value={currentTask}
+          onChange={(e) => setCurrentTask(e.target.value)}
           onClick={() => setIsTodoListOpen(true)}
           placeholder="What are you working on?"
           className="w-full px-4 py-2 border border-gray-300 bg-black/20 text-white placeholder-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
@@ -541,16 +265,18 @@ const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
           initialSettings={settings}
         />
       )}
-
-      <TodoList 
-        isOpen={isTodoListOpen} 
-        onClose={() => setIsTodoListOpen(false)} 
-        onTaskSelect={handleTaskSelect}
-        currentTask={task}
-        initialTodos={todoItems}
-        onTodosChange={(updatedTodos) => saveTodosToLocalStorage(updatedTodos)}
-        isAuthenticated={isAuthenticated}
-      />
+      
+      {isTodoListOpen && (
+        <TodoList 
+          isOpen={isTodoListOpen} 
+          onClose={() => setIsTodoListOpen(false)}
+          todos={todoItems}
+          onTaskSelect={handleTaskSelect}
+          onSave={saveTodosToLocalStorage}
+          currentTask={currentTask}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
     </div>
   );
 };
