@@ -398,59 +398,11 @@ async function runThemeMigrations() {
       }
     }
     
-    // Get all users
-    const users = await client.query(`
-      SELECT id FROM users
-    `);
-    
-    // Create default themes for all users if they don't exist
-    console.log(`Found ${users.rows.length} users, creating standard themes for each...`);
-    
-    // Insert standard themes for each user
-    for (const user of users.rows) {
-      // Check if user already has themes
-      const userThemes = await client.query(`
-        SELECT COUNT(*) FROM custom_themes WHERE user_id = $1
-      `, [user.id]);
-      
-      if (parseInt(userThemes.rows[0].count) === 0) {
-        console.log(`Creating standard themes for user ${user.id}...`);
-        
-        // Add all standard themes for this user
-        for (let i = 0; i < standardThemes.length; i++) {
-          const theme = standardThemes[i];
-          const isDefault = i === 0; // First theme is default
-          
-          await client.query(`
-            INSERT INTO custom_themes (
-              user_id, name, description, background_color, text_color, primary_color, 
-              secondary_color, accent_color, is_default, is_dark, is_public, image_url,
-              moderation_status
-            ) VALUES (
-              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13
-            )
-          `, [
-            user.id, 
-            theme.name,
-            theme.description,
-            theme.background_color, 
-            theme.text_color, 
-            theme.primary_color,
-            theme.secondary_color, 
-            theme.accent_color, 
-            isDefault, 
-            theme.is_dark,
-            theme.is_public,
-            theme.image_url,
-            'approved'
-          ]);
-        }
-        
-        console.log(`Created ${standardThemes.length} standard themes for user ${user.id}`);
-      } else {
-        console.log(`User ${user.id} already has themes`);
-      }
-    }
+    // REMOVED: User theme creation loop that was causing deployment timeouts
+    // The application handles users without themes gracefully
+    // Users can access standard themes from the 'themes' table
+    // Custom themes are created on-demand when users need them
+    console.log('Skipping user theme pre-population to improve deployment performance');
     
     // Commit transaction
     await client.query('COMMIT');
